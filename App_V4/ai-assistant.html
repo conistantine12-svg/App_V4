@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RRZ - Ask AI Dental Radiology Assistant</title>
+  <script src="shared/aiClient.js" defer></script>
+  <style>
+    :root{
+      --bg1:#0f172a; --bg2:#1e293b; --bg3:#334155;
+      --glass:rgba(15, 23, 42, 0.78);
+      --border:rgba(255,255,255,0.12);
+      --text:#ffffff; --muted:rgba(226,232,240,0.80);
+      --userBg:rgba(59,130,246,0.16); --userBd:rgba(59,130,246,0.35);
+      --aiBg:rgba(16,185,129,0.14); --aiBd:rgba(16,185,129,0.28);
+      --btn1:#06b6d4; --btn2:#2563eb;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; color:var(--text); min-height:100vh; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 50%,var(--bg3) 100%)}
+    .wrap{max-width:1100px; margin:0 auto; padding:18px 14px}
+    .row{display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap}
+    .title{display:flex; gap:12px; align-items:center}
+    .logo{width:48px; height:48px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:var(--glass); border:1px solid var(--border); backdrop-filter:blur(16px)}
+    .logo img{width:36px; height:36px; object-fit:contain}
+    .h1{margin:0; font-weight:800; font-size:18px}
+    .sub{margin:3px 0 0; color:var(--muted); font-size:12px}
+    .glass{background:var(--glass); border:1px solid var(--border); backdrop-filter:blur(16px)}
+    .btn{cursor:pointer; padding:10px 14px; border-radius:14px; border:1px solid var(--border); background:var(--glass); color:var(--text)}
+    .btn:hover{filter:brightness(1.05)}
+
+    .grid{display:grid; grid-template-columns: 3fr 1fr; gap:14px; margin-top:14px}
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr} }
+
+    .card{border-radius:18px; padding:14px}
+    .chatBox{min-height:60vh; display:flex; flex-direction:column}
+    .chat{flex:1; overflow:auto; padding-right:6px}
+    .msg{border-radius:16px; padding:12px; margin-bottom:10px}
+    .msg .who{font-weight:800; margin-bottom:6px}
+    .msg-user{background:var(--userBg); border:1px solid var(--userBd)}
+    .msg-ai{background:var(--aiBg); border:1px solid var(--aiBd)}
+
+    .inputRow{display:flex; gap:10px; margin-top:12px; flex-wrap:wrap}
+    textarea{width:100%; min-height:54px; resize:vertical; padding:12px; border-radius:14px; border:0; outline:none; color:#0f172a}
+    .send{padding:12px 16px; border-radius:14px; border:0; cursor:pointer; font-weight:800; color:white; background:linear-gradient(90deg,var(--btn1),var(--btn2))}
+    .send:disabled{opacity:0.7; cursor:not-allowed}
+
+    .meta{display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:10px; color:var(--muted); font-size:12px}
+    .meta label{display:flex; gap:8px; align-items:center}
+    .meta input{accent-color:#22d3ee}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .side h2{margin:0 0 10px; font-size:14px; font-weight:800}
+    .qbtn{width:100%; text-align:right; padding:10px 12px; border-radius:14px; border:1px solid var(--userBd); background:var(--userBg); color:var(--text); cursor:pointer; margin-bottom:8px}
+    .qbtn:hover{filter:brightness(1.06)}
+    .hr{height:1px; background:rgba(255,255,255,0.10); margin:12px 0}
+    .muted{color:var(--muted); font-size:12px; margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row">
+      <div class="title">
+        <div class="logo glass">
+          <img src="Ask ai.png" alt="AI" onerror="this.style.display='none'; document.getElementById('aiIconFallback').style.display='block'">
+          <span id="aiIconFallback" style="display:none; font-size:22px;">🤖</span>
+        </div>
+        <div>
+          <h1 class="h1">مساعد الأشعة الذكي (Dental Radiology AI Assistant)</h1>
+          <p class="sub">اسأل في أشعة الأسنان، تقرير، تفسير علامات، أو بروتوكولات تشخيصية.</p>
+        </div>
+      </div>
+      <button class="btn glass" onclick="goBack()">⬅ Back to Dashboard</button>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="card glass chatBox">
+          <div id="chat" class="chat"></div>
+
+          <div class="inputRow">
+            <div style="flex:1; min-width:260px">
+              <textarea id="q" placeholder="اكتب سؤالك هنا..."></textarea>
+            </div>
+            <button id="sendBtn" class="send" onclick="send()">Send</button>
+          </div>
+
+          <div class="meta">
+            <label><input id="incPatient" type="checkbox" checked> Include patient info</label>
+            <label><input id="incCeph" type="checkbox" checked> Include last ceph summary (if available)</label>
+            <label><input id="incWarn" type="checkbox" checked> Add “not a diagnosis” disclaimer</label>
+            <span id="status" class="mono" style="margin-inline-start:auto"></span>
+          </div>
+        </div>
+
+        <div class="muted">
+          ملاحظة: هذا المساعد يقدم دعمًا علميًا للطبيب ولا يُعد تشخيصًا نهائيًا. في الحالات المعقدة، يلزم الربط بالسياق السريري والصورة الأصلية.
+        </div>
+      </div>
+
+      <div>
+        <div class="card glass side">
+          <h2>Quick Prompts</h2>
+          <button class="qbtn" onclick="quick('كيف أكتب تقرير بانوراما احترافي لحالة أسنان مطمورة متعددة؟')">تقرير بانوراما</button>
+          <button class="qbtn" onclick="quick('ما هي علامات الآفة حول ذروية radiolucency وكيف أفرقها؟')">Periapical radiolucency</button>
+          <button class="qbtn" onclick="quick('ما هي red flags في CBCT لتخطيط زرعات؟')">CBCT implants red flags</button>
+          <button class="qbtn" onclick="quick('اقترح أسئلة متابعة مهمة قبل إعطاء رأي أشعة عن حالة تقويم.')">أسئلة متابعة</button>
+
+          <div class="hr"></div>
+          <button class="btn" style="width:100%" onclick="clearChat()">🧹 Clear chat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const LS_KEY = 'rrz_ai_assistant_chat_v1';
+
+  function goBack(){ window.location.href = 'dashboard.html'; }
+
+  function escapeHtml(s){
+    return String(s||'').replace(/[&<>"']/g, (c)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  function loadChat(){
+    try{ return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); }catch(e){ return []; }
+  }
+  function saveChat(arr){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(arr||[])); }catch(e){}
+  }
+
+  function render(){
+    const chat = document.getElementById('chat');
+    const msgs = loadChat();
+    if(!msgs.length){
+      chat.innerHTML = `
+        <div class="msg msg-ai">
+          <div class="who">AI</div>
+          <div>اكتب سؤالك وسأحاول تقديم إجابة علمية مختصرة، مع أسئلة متابعة عند الحاجة.</div>
+        </div>`;
+      return;
+    }
+    chat.innerHTML = msgs.map(m=>{
+      const cls = m.role === 'user' ? 'msg-user' : 'msg-ai';
+      const title = m.role === 'user' ? 'You' : 'AI';
+      return `<div class="msg ${cls}">
+        <div class="who">${title}</div>
+        <div style="white-space:pre-wrap">${escapeHtml(m.content)}</div>
+      </div>`;
+    }).join('');
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function quick(t){
+    document.getElementById('q').value = t;
+    document.getElementById('q').focus();
+  }
+
+  function clearChat(){
+    saveChat([]);
+    render();
+  }
+
+  function getPatient(){
+    try{
+      const p = JSON.parse(localStorage.getItem('currentPatient') || 'null');
+      if(!p) return null;
+      return { name:p.name||'', id:p.id||'', age:(p.age??''), gender:p.gender||'' };
+    }catch(e){ return null; }
+  }
+
+  async function send(){
+    const qEl = document.getElementById('q');
+    const sendBtn = document.getElementById('sendBtn');
+    const status = document.getElementById('status');
+    const text = (qEl.value || '').trim();
+    if(!text) return;
+
+    const msgs = loadChat();
+    msgs.push({ role:'user', content:text, at: new Date().toISOString() });
+    saveChat(msgs);
+    qEl.value = '';
+    render();
+
+    sendBtn.disabled = true;
+    status.textContent = 'Calling AI...';
+
+    try{
+      if(!window.RRZ_AI || typeof window.RRZ_AI.call !== 'function'){
+        throw new Error('AI client not available. Ensure you are running on Netlify with Functions enabled.');
+      }
+
+      const includePatient = document.getElementById('incPatient').checked;
+      const includeWarn = document.getElementById('incWarn').checked;
+
+      let composed = text;
+
+      if(includePatient){
+        const p = getPatient();
+        if(p){
+          composed = `[Patient]
+Name: ${p.name}
+ID: ${p.id}
+Age: ${p.age}
+Gender: ${p.gender}
+
+[Question]
+` + composed;
+        }
+      }
+
+      if(includeWarn){
+        composed += "
+
+(اكتب إجابة علمية للطبيب، واذكر حدود الإجابة عند نقص البيانات.)";
+      }
+
+      const res = await window.RRZ_AI.call('ask_radiology', { question: composed, temperature: 0.2 }, { lang:'ar' });
+      if(!res || !res.ok){
+        throw new Error(res?.error || 'AI call failed');
+      }
+
+      const out = res.result || {};
+      const answer = (out && typeof out === 'object' && typeof out.raw === 'string' && Object.keys(out).length === 1)
+        ? out.raw
+        : (out.answer || '');
+
+      let follow = '';
+      if(Array.isArray(out.follow_up_questions) && out.follow_up_questions.length){
+        follow = "\n\nأسئلة متابعة مقترحة:\n- " + out.follow_up_questions.map(x=>String(x)).join("\n- ");
+      }
+
+      msgs.push({ role:'ai', content: (String(answer||'') + follow).trim(), at: new Date().toISOString() });
+      saveChat(msgs);
+      render();
+
+    } catch(e){
+      msgs.push({ role:'ai', content: `تعذر الاتصال بالـ AI الآن.
+Reason: ${String(e)}`, at: new Date().toISOString() });
+      saveChat(msgs);
+      render();
+    } finally {
+      sendBtn.disabled = false;
+      status.textContent = '';
+    }
+  }
+
+  // Init
+  render();
+  try{
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+    }
+  }catch(e){}
+</script>
+</body>
+</html>

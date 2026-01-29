@@ -1,0 +1,4292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+(function(){
+  try{
+    var qs = new URLSearchParams(location.search);
+    var from = qs.get('from') || '';
+    var slot = qs.get('slot') || '';
+    if (from === 'photo' || slot){
+      document.documentElement.classList.add('from-photo');
+      document.addEventListener('DOMContentLoaded', function(){
+        var ov = document.getElementById('auto-load-overlay');
+        if (ov) ov.style.display = 'flex';
+      });
+    }
+  }catch(e){}
+})();
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1220">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    
+    <!-- Add Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <title>Dental Analysis Pro - Curve of Wilson & Anterior Symmetry</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            max-width: 1800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* === Modern Sidebar Skin (RRZ) - START === */
+        :root{
+          --rrz-sb-bg1:#0b1220;
+          --rrz-sb-bg2:#0f1a2a;
+          --rrz-sb-card:rgba(255,255,255,0.06);
+          --rrz-sb-card2:rgba(255,255,255,0.08);
+          --rrz-sb-border:rgba(255,255,255,0.10);
+          --rrz-sb-border2:rgba(255,255,255,0.14);
+          --rrz-sb-text:rgba(255,255,255,0.92);
+          --rrz-sb-muted:rgba(255,255,255,0.62);
+          --rrz-sb-accent:#6ea8ff;
+          --rrz-sb-accent2:#2ecc71;
+        }
+
+        .sidebar{
+          width: 292px;
+          background: radial-gradient(1200px 500px at 20% 0%, rgba(110,168,255,0.18), transparent 55%),
+                      linear-gradient(180deg, var(--rrz-sb-bg1) 0%, var(--rrz-sb-bg2) 100%);
+          color: var(--rrz-sb-text);
+          box-shadow: 8px 0 24px rgba(0,0,0,0.18);
+          border-right: 1px solid rgba(255,255,255,0.06);
+          display: flex;
+          flex-direction: column;
+          padding: 0;
+          overflow: hidden;
+        }
+
+        .sidebar-header{
+          padding: 18px 18px 14px;
+          background: rgba(255,255,255,0.03);
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .sidebar-header h2{
+          font-size: 18px;
+          font-weight: 700;
+          letter-spacing: 0.2px;
+          margin: 0;
+          color: var(--rrz-sb-text);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .sidebar-header h2 i{
+          color: var(--rrz-sb-accent);
+          filter: drop-shadow(0 6px 10px rgba(110,168,255,0.22));
+        }
+
+        .sidebar-subtitle{
+          margin-top: 6px;
+          font-size: 12px;
+          color: var(--rrz-sb-muted);
+          line-height: 1.35;
+        }
+
+        .points-section{
+          padding: 14px 14px 10px;
+          flex: 1;
+          overflow-y: auto;
+        }
+
+        .section-title{
+          font-size: 13px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.86);
+          margin-bottom: 10px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        #points-count{
+          font-variant-numeric: tabular-nums;
+          opacity: 0.85;
+        }
+
+        .points-wheel{
+          background: linear-gradient(180deg, var(--rrz-sb-card2), var(--rrz-sb-card));
+          border: 1px solid var(--rrz-sb-border);
+          border-radius: 16px;
+          padding: 10px 10px;
+          min-height: 340px;
+          color: rgba(255,255,255,0.92);
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+          width: 100%;
+          font-size: 13px;
+          overflow-y: auto;
+        }
+
+        .points-wheel:focus{
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(110,168,255,0.28), inset 0 0 0 1px rgba(255,255,255,0.03);
+        }
+
+        .points-wheel option{
+          padding: 10px 10px;
+          margin: 2px 0;
+          border-radius: 10px;
+          background: rgba(8, 13, 23, 0.98);
+          color: rgba(255,255,255,0.92);
+        }
+
+        .points-wheel option:checked{
+          background: rgba(110,168,255,0.22);
+        }
+
+        .points-wheel::-webkit-scrollbar{
+          width: 10px;
+        }
+        .points-wheel::-webkit-scrollbar-thumb{
+          background: rgba(255,255,255,0.14);
+          border-radius: 999px;
+          border: 2px solid rgba(0,0,0,0.35);
+        }
+        .points-wheel::-webkit-scrollbar-track{
+          background: rgba(0,0,0,0.12);
+          border-radius: 999px;
+        }
+
+        .undo-wrap{
+          display:flex;
+          justify-content:center;
+          margin-top: 14px;
+        }
+
+        #undo-point-btn{
+          width: 100%;
+          max-width: 260px;
+        }
+
+        #undo-point-btn:disabled{
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        .sidebar-controls{
+          padding: 12px 14px 16px;
+          border-top: 1px solid rgba(255,255,255,0.08);
+          background: rgba(0,0,0,0.10);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .btn{
+          border-radius: 14px;
+          padding: 12px 12px;
+          font-size: 14px;
+          letter-spacing: 0.1px;
+          border: none;
+          cursor: pointer;
+          font-weight: 600;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+
+        .btn:focus-visible{
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(110,168,255,0.26);
+        }
+
+        .btn-secondary{
+          background: rgba(255,255,255,0.06);
+          border: 1px solid var(--rrz-sb-border);
+          color: var(--rrz-sb-text);
+        }
+
+        .btn-secondary:hover{
+          background: rgba(255,255,255,0.10);
+          border-color: rgba(255,255,255,0.18);
+        }
+
+        .btn-primary{
+          background: linear-gradient(135deg, rgba(110,168,255,1) 0%, rgba(52,152,219,1) 55%, rgba(41,128,185,1) 100%);
+          box-shadow: 0 14px 26px rgba(52,152,219,0.22);
+          color: white;
+        }
+
+        .btn-primary:hover{
+          transform: translateY(-1px);
+          box-shadow: 0 18px 34px rgba(52,152,219,0.28);
+        }
+
+        .btn-reference{
+          background: linear-gradient(135deg, rgba(170,120,255,1) 0%, rgba(142,68,173,1) 100%);
+          box-shadow: 0 14px 26px rgba(142,68,173,0.20);
+          margin-top: 2px;
+          color: white;
+        }
+
+        .btn-reference:hover{
+          transform: translateY(-1px);
+          box-shadow: 0 18px 34px rgba(142,68,173,0.26);
+        }
+
+        .btn-export{
+          background: linear-gradient(135deg, rgba(255,187,92,1) 0%, rgba(230,126,34,1) 100%);
+          box-shadow: 0 14px 26px rgba(230,126,34,0.20);
+          margin-top: 4px;
+          color: white;
+        }
+
+        .btn-export:hover{
+          transform: translateY(-1px);
+          box-shadow: 0 18px 34px rgba(230,126,34,0.26);
+        }
+
+        /* Responsive Design for Sidebar */
+        @media (max-width: 1200px){
+          .sidebar{ width: 270px; }
+        }
+
+        @media (max-width: 900px){
+          .sidebar{
+            width: 100%;
+            box-shadow: none;
+            border-right: none;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+          }
+          .points-wheel{ min-height: 240px; }
+        }
+        /* === Modern Sidebar Skin (RRZ) - END === */
+
+        /* Hide overlay labels and deviation markers (keep only curves & lines) */
+        .measurement-label, .tooth-deviation { display: none !important; }
+
+        /* === Main Content Styles (unchanged) === */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .main-header {
+            padding: 20px 30px;
+            background: white;
+            border-bottom: 1px solid #eaeaea;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .main-header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .main-header-subtitle {
+            color: #7f8c8d;
+            margin-top: 6px;
+            font-size: 14px;
+        }
+        
+        .analysis-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .image-section {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            position: relative;
+        }
+        
+        /* Enhanced Upload Area */
+        .upload-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.65);
+            z-index: 10;
+            display: none;
+        }
+        
+        .upload-area.active {
+            display: block;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+        
+        .upload-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            border: 2px dashed #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-card:hover {
+            border-color: #3498db;
+            box-shadow: 0 25px 70px rgba(52, 152, 219, 0.2);
+        }
+        
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            color: white;
+            font-size: 32px;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
+        }
+        
+        .upload-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+        
+        .upload-subtitle {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(46, 204, 113, 0.3);
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(46, 204, 113, 0.4);
+        }
+        
+        .upload-note {
+            margin-top: 20px;
+            color: #95a5a6;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .canvas-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            flex: 0 0 auto;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            min-height: 240px;
+            max-height: 480px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .canvas-container.active {
+            opacity: 1;
+        }
+
+        #face-canvas {
+            max-width: 100%;
+            max-height: 460px;
+            width: auto;
+            height: auto;
+            display: block;
+        }
+
+        .image-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .image-controls.active {
+            opacity: 1;
+        }
+        
+        .btn-upload {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+        
+        .btn-reset {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .btn-upload:hover, .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .chart-container.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .analysis-section {
+            width: 550px;
+            padding: 20px;
+            overflow-y: auto;
+            background: white;
+            border-left: 1px solid #eaeaea;
+        }
+        
+        .analysis-tabs {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .tab.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease;
+            font-size: 13px;
+        }
+        
+        .metric-card:hover {
+            transform: translateX(3px);
+        }
+        
+        .metric-card.good {
+            border-left-color: #2ecc71;
+        }
+        
+        .metric-card.warning {
+            border-left-color: #f39c12;
+        }
+        
+        .metric-card.alert {
+            border-left-color: #e74c3c;
+        }
+        
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .metric-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .metric-value {
+            font-weight: 700;
+            font-size: 15px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .metric-value.good {
+            color: #2ecc71;
+        }
+        
+        .metric-value.warning {
+            color: #f39c12;
+        }
+        
+        .metric-value.alert {
+            color: #e74c3c;
+        }
+        
+        .metric-description {
+            color: #7f8c8d;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .progress-container {
+            margin-top: 8px;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #3498db);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 40px auto;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            animation: modalSlideIn 0.4s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 20px;
+        }
+        
+        .close-modal {
+            font-size: 24px;
+            font-weight: bold;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .close-modal:hover {
+            color: #e74c3c;
+        }
+        
+        .reference-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .reference-image-container {
+            text-align: center;
+        }
+        
+        .reference-image {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .reference-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 13px;
+        }
+        
+        .reference-list ol {
+            padding-left: 20px;
+        }
+        
+        .reference-list li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: white;
+            border-top: 1px solid #eaeaea;
+            font-size: 12px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e74c3c;
+        }
+        
+        .status-dot.active {
+            background: #2ecc71;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+        
+        .points-progress {
+            width: 150px;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .points-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Results Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+        
+        .results-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .results-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .results-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .results-table .ideal {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        
+        .results-table .actual {
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .results-table .deviation {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        /* Calibration Modal */
+        .calibration-options {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .calibration-option {
+            flex: 1;
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            font-size: 13px;
+        }
+        
+        .calibration-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .calibration-option.selected {
+            border-color: #3498db;
+            background: #e8f4fc;
+        }
+        
+        .calibration-icon {
+            font-size: 32px;
+            color: #3498db;
+            margin-bottom: 12px;
+        }
+        
+        .calibration-icon svg{ width:36px; height:36px; display:inline-block; }
+        
+        .calibration-input {
+            margin: 15px 0;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .calibration-input.active {
+            display: block;
+        }
+        
+        .calibration-input label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 13px;
+        }
+        
+        .calibration-input input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        /* Export Button */
+        .btn-export {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            margin-top: 10px;
+        }
+        
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(243, 156, 18, 0.3);
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1400px) {
+            .analysis-container {
+                flex-direction: column;
+            }
+            
+            .analysis-section {
+                width: 100%;
+                height: 400px;
+            }
+            
+            .sidebar {
+                width: 320px;
+            }
+        }
+        
+        @media (max-width: 1000px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .points-grid {
+                grid-template-columns: repeat(2, 1fr);
+                max-height: none;
+            }
+            
+            .upload-area {
+                width: 95%;
+            }
+            
+            .upload-card {
+                padding: 25px 20px;
+            }
+            
+            .calibration-options {
+                flex-direction: column;
+            }
+            
+            .analysis-tabs {
+                overflow-x: auto;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .points-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .reference-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .upload-title {
+                font-size: 20px;
+            }
+            
+            .upload-btn {
+                padding: 12px 25px;
+                font-size: 14px;
+            }
+            
+            .analysis-section {
+                padding: 15px;
+            }
+        }
+    
+        .image-section{ position: relative; }
+
+        /* Auto-load overlay (when arriving from photo.html) */
+        html.from-photo #upload-area{ display:none !important; }
+        .image-section{ position: relative; }
+        .auto-load-overlay{
+            position:absolute;
+            inset:0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            z-index:50;
+            background:rgba(0,0,0,0.35);
+            backdrop-filter: blur(2px);
+        }
+        .auto-load-card{
+            background:rgba(15,23,42,0.92);
+            border:1px solid rgba(255,255,255,0.10);
+            border-radius:18px;
+            padding:20px 24px;
+            text-align:center;
+            color:#fff;
+            min-width:220px;
+            box-shadow:0 18px 50px rgba(0,0,0,0.35);
+        }
+        .spinner{
+            width:30px; height:30px;
+            border-radius:50%;
+            border:3px solid rgba(255,255,255,0.25);
+            border-top-color: rgba(255,255,255,0.95);
+            margin:0 auto;
+            animation:spin 0.85s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Undo button under points list */
+        .undo-wrap{
+            display:flex;
+            justify-content:center;
+            margin-top: 12px;
+        }
+        #undo-point-btn{
+            width: 100%;
+            max-width: 240px;
+            font-size: 12px;
+            padding: 10px;
+        }
+        #undo-point-btn:disabled{
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+    
+
+/* Unified Calibration Modal Theme */
+#calibration-modal.modal, #calib-settings-modal.modal{
+  display:none;
+  position:fixed;
+  z-index:1000;
+  left:0; top:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.80);
+  backdrop-filter: blur(5px);
+  overflow:auto;
+}
+#calibration-modal .calib-unified, #calib-settings-modal .calib-unified{
+  background:#ffffff !important;
+  margin:50px auto !important;
+  padding:0 !important;
+  border-radius:20px !important;
+  width:90% !important;
+  max-width:600px !important;
+  box-shadow:0 20px 40px rgba(0,0,0,0.20) !important;
+  overflow:hidden !important;
+  position:relative !important;
+}
+.calib-unified .modal-header{
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d) !important;
+  color:#ffffff !important;
+  padding:20px 30px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:16px !important;
+}
+.calib-unified .modal-header h2,
+.calib-unified .modal-header h3{
+  margin:0 !important;
+  font-size:20px !important;
+  font-weight:700 !important;
+  color:#ffffff !important;
+}
+.calib-unified .close-modal,
+.calib-unified .close-calib{
+  color:#ffffff !important;
+  font-size:28px !important;
+  font-weight:700 !important;
+  cursor:pointer !important;
+  background:transparent !important;
+  border:0 !important;
+  line-height:1 !important;
+}
+.calib-unified .modal-body{
+  padding:25px 30px !important;
+}
+.calib-unified .modal-subtitle{
+  margin:0 0 10px 0 !important;
+  color:#475569 !important;
+  font-size:13px !important;
+}
+.calib-unified .calibration-options,
+.calib-unified .calib-grid{
+  display:flex !important;
+  gap:20px !important;
+  margin:18px 0 0 0 !important;
+  flex-wrap:wrap !important;
+}
+.calib-unified .calibration-option,
+.calib-unified .calib-card{
+  flex:1 1 240px !important;
+  background:#f8f9fa !important;
+  border-radius:15px !important;
+  padding:20px !important;
+  cursor:pointer !important;
+  border:2px solid transparent !important;
+  transition: all 0.25s ease !important;
+  box-shadow:0 10px 20px rgba(0,0,0,0.06) !important;
+}
+.calib-unified .calibration-option:hover,
+.calib-unified .calib-card:hover{
+  transform: translateY(-3px) !important;
+  box-shadow:0 15px 30px rgba(0,0,0,0.10) !important;
+}
+.calib-unified .calibration-option.selected,
+.calib-unified .calib-card.selected{
+  border-color:#b21f1f !important;
+  background:#fff4f4 !important;
+}
+.calib-unified .calibration-icon,
+.calib-unified .calib-icon{
+  width:60px !important;
+  height:60px !important;
+  border-radius:50% !important;
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f) !important;
+  color:#ffffff !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin:0 auto 15px auto !important;
+  font-size:24px !important;
+}
+.calib-unified h3, .calib-unified .calib-card-title{
+  margin:0 0 8px 0 !important;
+  text-align:center !important;
+  font-size:16px !important;
+  color:#0f172a !important;
+}
+.calib-unified p, .calib-unified .calib-card-desc{
+  margin:0 !important;
+  text-align:center !important;
+  color:#475569 !important;
+  font-size:13px !important;
+}
+.calib-unified .calibration-input,
+.calib-unified .calib-manual-input,
+.calib-unified .calib-fields{
+  margin-top:14px !important;
+  background:#ffffff !important;
+  border-radius:12px !important;
+  padding:14px !important;
+  border:1px solid #e2e8f0 !important;
+}
+.calib-unified label{
+  display:block !important;
+  font-size:13px !important;
+  color:#334155 !important;
+  margin-bottom:6px !important;
+}
+.calib-unified input[type="number"],
+.calib-unified input[type="text"]{
+  width:100% !important;
+  padding:12px !important;
+  border:2px solid #e2e8f0 !important;
+  border-radius:10px !important;
+  font-size:14px !important;
+}
+.calib-unified .calib-inline{
+  display:flex !important;
+  gap:10px !important;
+  align-items:center !important;
+}
+.calib-unified .calib-help{
+  margin-top:8px !important;
+  font-size:12px !important;
+  color:#64748b !important;
+}
+.calib-unified .modal-footer,
+.calib-unified .modal-actions,
+.calib-unified .calib-actions{
+  display:flex !important;
+  justify-content:flex-end !important;
+  gap:12px !important;
+  padding:0 30px 25px 30px !important;
+}
+.calib-unified .btn{
+  border-radius:12px !important;
+}
+.calib-unified .calib-radio-row{
+  display:flex !important;
+  gap:8px !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin-top:12px !important;
+  font-size:13px !important;
+  color:#334155 !important;
+}
+
+
+/* === RRZ User Notes Panel (added) === */
+.user-notes-panel{
+  max-width: 900px;
+  margin: 12px auto 0;
+  background: #fff;
+  border: 3px solid #111;
+  border-radius: 18px;
+  padding: 18px 18px 12px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+}
+.user-notes-panel .notes-title{
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0 0 12px;
+  color:#111;
+}
+.user-notes-panel .note-row{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  margin: 14px 0;
+}
+.user-notes-panel .note-label{
+  min-width: 170px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #7b7b7b;
+}
+.user-notes-panel input,
+.user-notes-panel textarea{
+  flex:1;
+  font-size: 16px;
+  border: none;
+  border-bottom: 2px dashed #777;
+  padding: 6px 6px;
+  outline: none;
+  background: transparent;
+}
+.user-notes-panel textarea{
+  border: 2px dashed #777;
+  border-radius: 10px;
+  min-height: 70px;
+  resize: vertical;
+}
+.user-notes-panel .notes-hint{
+  margin-top: 10px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+</style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-ruler-combined"></i> Dental Curve Analysis</h2>
+                <div class="sidebar-subtitle">Curve of Wilson & Anterior Symmetry Analysis</div>
+            </div>
+            
+            <div class="points-section">
+                <div class="section-title">
+                    <span>Dental Landmarks</span>
+                    <span id="points-count">0/12</span>
+                </div>
+                <select aria-label="Points List" class="points-wheel" id="points-list" size="12"></select>
+                <div class="undo-wrap">
+                    <button class="btn btn-secondary" id="undo-point-btn" type="button">
+                        Undo Point Placement
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-controls">
+                <button class="btn btn-primary" id="start-analysis-btn">
+                    <i class="fas fa-calculator"></i> Complete Analysis
+                </button>
+                <button class="btn btn-secondary" id="calibration-btn">
+                    <i class="fas fa-ruler"></i> Calibration
+                </button>
+                <button class="btn btn-reference" id="reference-btn">
+                    <i class="fas fa-question-circle"></i> Reference Guide
+                </button>
+                <button class="btn btn-export" id="export-btn">
+                    <i class="fas fa-download"></i> Export Analysis
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <h1><i class="fas fa-tooth"></i> Dental Curve Analysis Engine</h1>
+                <div class="main-header-subtitle">Analysis of Curve of Wilson depth and anterior teeth symmetry</div>
+            </div>
+            
+            <div class="analysis-container">
+                <div class="image-section">
+                    <div id="auto-load-overlay" class="auto-load-overlay" style="display:none;">
+                        <div class="auto-load-card">
+                            <div class="spinner"></div>
+                            <div style="font-weight:800; margin-top:10px;">Loading image…</div>
+                            <div style="opacity:.75; font-size:13px; margin-top:6px;">Preparing workflow</div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Area -->
+                    <div class="upload-area active" id="upload-area">
+                        <div class="upload-card">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h2 class="upload-title">Upload Dental Frontal Photo</h2>
+                            <p class="upload-subtitle">Upload a clear frontal dental photo with teeth visible. Ensure proper lighting and natural head position.</p>
+                            
+                            <button class="upload-btn" id="main-upload-btn">
+                                <i class="fas fa-camera"></i> Select Image
+                            </button>
+                            
+                            <div class="upload-note">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Supported formats: JPG, PNG, WebP. Max file size: 5MB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Canvas Area -->
+                    <div class="canvas-container" id="canvas-container">
+                        <canvas id="face-canvas" width="800" height="600"></canvas>
+                    </div>
+                    
+                    <!-- Chart Container -->
+                    <div class="chart-container" id="chart-container">
+                        <canvas id="occlusal-chart"></canvas>
+                    </div>
+                    
+                    <!-- Image Controls -->
+
+                    <!-- RRZ_USER_NOTES_PANEL_START -->
+                    <div class="user-notes-panel" id="user-notes-panel" style="display:none;">
+                        <div class="notes-title">Notes:</div>
+                        <div class="note-row">
+                            <div class="note-label">Crowding</div>
+                            <input id="note-crowding" type="text" placeholder="">
+                        </div>
+                        <div class="note-row">
+                            <div class="note-label">Gingival Margin</div>
+                            <input id="note-gingival-margin" type="text" placeholder="">
+                        </div>
+                        <div class="note-row">
+                            <div class="note-label">Gingival color</div>
+                            <input id="note-gingival-color" type="text" placeholder="">
+                        </div>
+                        <div class="note-row" style="align-items:flex-start;">
+                            <div class="note-label" style="padding-top:6px;">Other Findings</div>
+                            <textarea id="note-other-findings" placeholder=""></textarea>
+                        </div>
+                        <div class="notes-hint">These notes will be appended automatically at the end of the final report.</div>
+                    </div>
+                    <!-- RRZ_USER_NOTES_PANEL_END -->
+
+                    <div class="image-controls" id="image-controls">
+                        <button class="btn btn-upload" onclick="document.getElementById('image-upload').click()">
+                            <i class="fas fa-sync-alt"></i> Change Image
+                        </button>
+                        <button class="btn btn-reset" onclick="resetAll()">
+                            <i class="fas fa-redo"></i> Reset All Points
+                        </button>
+                        <div style="margin-left: auto; color: #7f8c8d; font-size: 13px;">
+                            <i class="fas fa-mouse-pointer"></i> Click to place, drag to adjust points
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analysis-section">
+                    <div class="analysis-tabs">
+                        <div class="tab active" data-tab="wilson">Curve of Wilson Analysis</div>
+                        <div class="tab" data-tab="symmetry">Anterior Symmetry</div>
+                        <div class="tab" data-tab="occlusal">Occlusal Plane</div>
+                        <div class="tab" data-tab="summary">Summary</div>
+                    </div>
+                    
+                    <div id="wilson-tab" class="tab-content active">
+                        <h3 style="margin-top: 0; color: #2c3e50; font-size: 16px;">Curve of Wilson Analysis</h3>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Curve of Wilson Depth</div>
+                                <div class="metric-value" id="wilson-depth-status">--</div>
+                            </div>
+                            <div class="metric-description" id="wilson-depth-description">
+                                Depth of mediolateral curve measured from buccal to lingual cusps.
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Depth Measurement</span>
+                                    <span id="depth-value">--</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="depth-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <table class="results-table" id="wilson-table">
+                            <thead>
+                                <tr>
+                                    <th>Tooth</th>
+                                    <th>Vertical Position</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Wilson measurements will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="symmetry-tab" class="tab-content">
+                        <h3 style="margin-top: 0; color: #2c3e50; font-size: 16px;">Anterior Teeth Symmetry</h3>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Overall Symmetry Score</div>
+                                <div class="metric-value" id="symmetry-score">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Percentage similarity between right and left anterior teeth.
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Symmetry Percentage</span>
+                                    <span id="symmetry-percent">--</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="symmetry-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Asymmetry Detection</div>
+                                <div class="metric-value" id="asymmetry-status">--</div>
+                            </div>
+                            <div class="metric-description" id="asymmetry-description">
+                                Detection of significant asymmetries in anterior dental arch.
+                            </div>
+                        </div>
+                        
+                        <table class="results-table" id="symmetry-table">
+                            <thead>
+                                <tr>
+                                    <th>Tooth Pair</th>
+                                    <th>Height Difference</th>
+                                    <th>Horizontal Difference</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Symmetry measurements will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="occlusal-tab" class="tab-content">
+                        <h3 style="margin-top: 0; color: #2c3e50; font-size: 16px;">Occlusal Plane Analysis</h3>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Occlusal Plane Angle</div>
+                                <div class="metric-value" id="occlusal-angle">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Angle of occlusal plane relative to horizontal reference.
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Anterior Occlusal Curve</div>
+                                <div class="metric-value" id="anterior-curve">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Depth of anterior curve from LR4 to LL4.
+                            </div>
+                        </div>
+                        
+                        <table class="results-table" id="occlusal-table">
+                            <thead>
+                                <tr>
+                                    <th>Tooth</th>
+                                    <th>Vertical Position</th>
+                                    <th>Deviation from Plane</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Occlusal measurements will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="summary-tab" class="tab-content">
+                        <h3 style="margin-top: 0; color: #2c3e50; font-size: 16px;">Analysis Summary</h3>
+                        
+                        <div class="metric-card good">
+                            <div class="metric-header">
+                                <div class="metric-title">Overall Assessment</div>
+                                <div class="metric-value" id="overall-assessment">Pending</div>
+                            </div>
+                            <div class="metric-description" id="overall-description">
+                                Complete all measurements for assessment
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Curve of Wilson</div>
+                                <div class="metric-value" id="summary-wilson">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Mediolateral curve assessment
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Anterior Symmetry</div>
+                                <div class="metric-value" id="summary-symmetry">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Anterior teeth arrangement assessment
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Occlusal Plane</div>
+                                <div class="metric-value" id="summary-occlusal">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Overall occlusal plane assessment
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Calibration Status</div>
+                                <div class="metric-value" id="calibration-status">Pixels</div>
+                            </div>
+                            <div class="metric-description" id="calibration-info">
+                                Currently using pixel measurements. Click "Calibration" to set millimeter conversion.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-dot" id="image-status-dot"></div>
+                    <span id="image-status">No image loaded</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="points-status-dot"></div>
+                    <span id="points-status">0 points placed</span>
+                </div>
+                <div class="status-item">
+                    <div class="points-progress">
+                        <div class="points-progress-fill" id="points-progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Calibration Modal -->
+    <div id="calibration-modal" class="modal">
+        <div class="modal-content calib-unified">
+            <div class="modal-header">
+                <h2><i class="fas fa-ruler"></i> Calibration Settings</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <p style="font-size: 13px;">Choose calibration method to convert pixels to real-world measurements.</p>
+            
+            <div class="calibration-options">
+                <div class="calibration-option" id="manual-calibration">
+                    <div class="calibration-icon">
+                        <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false" style="width:36px;height:36px;display:inline-block;" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="10" y="14" width="44" height="36" rx="6"></rect>
+  <path d="M18 22v8M24 22v6M30 22v8M36 22v6M42 22v8M48 22v6"></path>
+  <path d="M18 42v6M24 42v4M30 42v6M36 42v4M42 42v6M48 42v4"></path>
+</svg>
+                    </div>
+                    <h3>Manual (mm)</h3>
+                    <p>Enter a known measurement in millimeters for accurate conversion</p>
+                </div>
+                
+                <div class="calibration-option" id="pixel-calibration">
+                    <div class="calibration-icon">
+                        <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false" style="width:36px;height:36px;display:inline-block;" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="12" y="12" width="40" height="40" rx="6"></rect>
+  <path d="M24 12v40M40 12v40M12 24h40M12 40h40"></path>
+  <path d="M18 58h28" stroke-width="0"></path>
+</svg>
+                    </div>
+                    <h3>Continue with Pixels</h3>
+                    <p>Use pixel measurements without conversion to real units</p>
+                </div>
+            </div>
+            
+            <div class="calibration-input" id="manual-input">
+                <label for="known-distance">Enter known distance in mm (e.g., width between central incisors):</label>
+                <input type="number" id="known-distance" step="0.1" min="1" placeholder="e.g., 8.5">
+                <p style="margin-top: 8px; font-size: 12px; color: #7f8c8d;">
+                    <i class="fas fa-info-circle"></i> Measure a known distance on the teeth in mm and enter it above
+                </p>
+            </div>
+            
+            <div style="text-align: right; margin-top: 20px;">
+                <button class="btn btn-secondary" id="cancel-calibration">Cancel</button>
+                <button class="btn btn-primary" id="apply-calibration">Apply Calibration</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reference Modal -->
+    <div id="reference-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-map-marker-alt"></i> Dental Analysis Reference Guide</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <p style="font-size: 13px;">Place these dental landmarks accurately for precise analysis.</p>
+            
+            <div class="reference-grid">
+                <div class="reference-image-container">
+                    <img src="referance image5.png" alt="Dental landmarks reference" class="reference-image"
+                         onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;800&quot; height=&quot;600&quot; viewBox=&quot;0 0 800 600&quot;><rect width=&quot;800&quot; height=&quot;600&quot; fill=&quot;%23f0f0f0&quot;/><text x=&quot;400&quot; y=&quot;300&quot; font-family=&quot;Arial&quot; font-size=&quot;24&quot; text-anchor=&quot;middle&quot; fill=&quot;%23333&quot;>Dental Reference</text></svg>';">
+                </div>
+
+                <div class="reference-list">
+                    <ol>
+                        <li><strong>LR6 Buccal Cusp</strong> - Buccal cusp tip of lower right 1st molar</li>
+                        <li><strong>LR5 Buccal Cusp</strong> - Buccal cusp tip of lower right 2nd premolar</li>
+                        <li><strong>LR4 Incisal Edge</strong> - Incisal edge of lower right 1st premolar</li>
+                        <li><strong>LR3 Incisal Edge</strong> - Incisal edge of lower right canine</li>
+                        <li><strong>LR2 Incisal Edge</strong> - Incisal edge of lower right lateral incisor</li>
+                        <li><strong>LR1 Incisal Edge</strong> - Incisal edge of lower right central incisor</li>
+                        <li><strong>LL1 Incisal Edge</strong> - Incisal edge of lower left central incisor</li>
+                        <li><strong>LL2 Incisal Edge</strong> - Incisal edge of lower left lateral incisor</li>
+                        <li><strong>LL3 Incisal Edge</strong> - Incisal edge of lower left canine</li>
+                        <li><strong>LL4 Incisal Edge</strong> - Incisal edge of lower left 1st premolar</li>
+                        <li><strong>LL5 Buccal Cusp</strong> - Buccal cusp tip of lower left 2nd premolar</li>
+                        <li><strong>LL6 Buccal Cusp</strong> - Buccal cusp tip of lower left 1st molar</li>
+                    </ol>
+                    <p style="margin-top: 10px; font-size: 12px; color: #7f8c8d;">
+                        <strong>Note:</strong> Curve of Wilson is analyzed for molars and second premolars (LR6, LR5, LL5, LL6).<br>
+                        Anterior symmetry is analyzed for teeth from LR4 to LL4.<br>
+                        Occlusal plane analysis includes all teeth from LR6 to LL6.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <input type="file" id="image-upload" accept="image/*" style="display: none;">
+
+    <script>
+        // Application state - Updated for 12 points
+        let state = {
+            analysisActive: false,
+            imageLoaded: false,
+            points: [],
+            placementHistory: [],
+            currentPointIndex: null,
+            image: null,
+            ctx: null,
+            canvas: null,
+            isDragging: false,
+            dragPointIndex: null,
+            calibration: {
+                method: 'pixels',
+                pixelsPerMM: 1,
+                knownDistanceMM: null
+            },
+            measurements: {},
+            angles: {},
+            pointLabels: [
+                "LR6 Buccal Cusp - Mandatory",
+                "LR5 Buccal Cusp - Mandatory",
+                "LR4 Incisal Edge - Mandatory",
+                "LR3 Incisal Edge - Mandatory",
+                "LR2 Incisal Edge - Mandatory",
+                "LR1 Incisal Edge - Mandatory",
+                "LL1 Incisal Edge - Mandatory",
+                "LL2 Incisal Edge - Mandatory",
+                "LL3 Incisal Edge - Mandatory",
+                "LL4 Incisal Edge - Mandatory",
+                "LL5 Buccal Cusp - Mandatory",
+                "LL6 Buccal Cusp - Mandatory"
+            ],
+            dentalData: [
+                { tooth: "LR6", label: "Right 1st Molar (Buccal)", type: "molar", side: "right", segment: "posterior", analysis: "wilson" },
+                { tooth: "LR5", label: "Right 2nd Premolar (Buccal)", type: "premolar", side: "right", segment: "posterior", analysis: "wilson" },
+                { tooth: "LR4", label: "Right 1st Premolar", type: "premolar", side: "right", segment: "anterior", analysis: "symmetry" },
+                { tooth: "LR3", label: "Right Canine", type: "canine", side: "right", segment: "anterior", analysis: "symmetry" },
+                { tooth: "LR2", label: "Right Lateral Incisor", type: "incisor", side: "right", segment: "anterior", analysis: "symmetry" },
+                { tooth: "LR1", label: "Right Central Incisor", type: "incisor", side: "right", segment: "anterior", analysis: "symmetry" },
+                { tooth: "LL1", label: "Left Central Incisor", type: "incisor", side: "left", segment: "anterior", analysis: "symmetry" },
+                { tooth: "LL2", label: "Left Lateral Incisor", type: "incisor", side: "left", segment: "anterior", analysis: "symmetry" },
+                { tooth: "LL3", label: "Left Canine", type: "canine", side: "left", segment: "anterior", analysis: "symmetry" },
+                { tooth: "LL4", label: "Left 1st Premolar", type: "premolar", side: "left", segment: "anterior", analysis: "symmetry" },
+                { tooth: "LL5", label: "Left 2nd Premolar (Buccal)", type: "premolar", side: "left", segment: "posterior", analysis: "wilson" },
+                { tooth: "LL6", label: "Left 1st Molar (Buccal)", type: "molar", side: "left", segment: "posterior", analysis: "wilson" }
+            ],
+            chart: null,
+            idealWilsonData: [
+                { tooth: "LR6", x: 100, y: 180, type: "molar" },
+                { tooth: "LR5", x: 200, y: 175, type: "premolar" },
+                { tooth: "LL5", x: 600, y: 175, type: "premolar" },
+                { tooth: "LL6", x: 700, y: 180, type: "molar" }
+            ],
+            idealAnteriorData: [
+                { tooth: "LR4", x: 300, y: 165, type: "premolar" },
+                { tooth: "LR3", x: 350, y: 160, type: "canine" },
+                { tooth: "LR2", x: 400, y: 158, type: "incisor" },
+                { tooth: "LR1", x: 425, y: 157, type: "incisor" },
+                { tooth: "LL1", x: 475, y: 157, type: "incisor" },
+                { tooth: "LL2", x: 500, y: 158, type: "incisor" },
+                { tooth: "LL3", x: 550, y: 160, type: "canine" },
+                { tooth: "LL4", x: 600, y: 165, type: "premolar" }
+            ],
+            actualAsymmetricData: [
+                { tooth: "LR6", x: 100, y: 185 },
+                { tooth: "LR5", x: 200, y: 170 },
+                { tooth: "LR4", x: 300, y: 170 },
+                { tooth: "LR3", x: 350, y: 155 },
+                { tooth: "LR2", x: 400, y: 160 },
+                { tooth: "LR1", x: 425, y: 162 },
+                { tooth: "LL1", x: 475, y: 155 },
+                { tooth: "LL2", x: 500, y: 158 },
+                { tooth: "LL3", x: 550, y: 165 },
+                { tooth: "LL4", x: 600, y: 175 },
+                { tooth: "LL5", x: 650, y: 165 },
+                { tooth: "LL6", x: 700, y: 175 }
+            ]
+        };
+
+        let canvas = null;
+        let ctx = null;
+        let measurementLabels = [];
+        let deviationIndicators = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            canvas = document.getElementById('face-canvas');
+            ctx = canvas.getContext('2d');
+            state.canvas = canvas;
+            state.ctx = ctx;
+            
+            document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+            
+            canvas.addEventListener('mousedown', handleCanvasMouseDown);
+            canvas.addEventListener('mousemove', handleCanvasMouseMove);
+            canvas.addEventListener('mouseup', handleCanvasMouseUp);
+            canvas.addEventListener('mouseleave', handleCanvasMouseUp);
+            
+            document.getElementById('main-upload-btn').addEventListener('click', function() {
+                document.getElementById('image-upload').click();
+            });
+            
+            const calibrationBtn = document.getElementById('calibration-btn');
+            const calibrationModal = document.getElementById('calibration-modal');
+            const closeCalibration = document.querySelector('#calibration-modal .close-modal');
+            const cancelCalibration = document.getElementById('cancel-calibration');
+            const applyCalibration = document.getElementById('apply-calibration');
+            const manualCalibration = document.getElementById('manual-calibration');
+            const pixelCalibration = document.getElementById('pixel-calibration');
+            
+            calibrationBtn.addEventListener('click', function() {
+                if (!state.imageLoaded) {
+                    alert("Please upload an image first");
+                    return;
+                }
+                calibrationModal.style.display = 'block';
+            });
+            
+            closeCalibration.addEventListener('click', function() {
+                calibrationModal.style.display = 'none';
+            });
+            
+            cancelCalibration.addEventListener('click', function() {
+                calibrationModal.style.display = 'none';
+            });
+            
+            manualCalibration.addEventListener('click', function() {
+                manualCalibration.classList.add('selected');
+                pixelCalibration.classList.remove('selected');
+                document.getElementById('manual-input').classList.add('active');
+            });
+            
+            pixelCalibration.addEventListener('click', function() {
+                pixelCalibration.classList.add('selected');
+                manualCalibration.classList.remove('selected');
+                document.getElementById('manual-input').classList.remove('active');
+            });
+            
+            applyCalibration.addEventListener('click', function() {
+                if (manualCalibration.classList.contains('selected')) {
+                    const knownDistance = parseFloat(document.getElementById('known-distance').value);
+                    if (!knownDistance || knownDistance <= 0) {
+                        alert("Please enter a valid distance in mm");
+                        return;
+                    }
+                    
+                    if (state.points[5] && state.points[6]) {
+                        const incisorWidthPixels = calculateDistance(state.points[5], state.points[6]);
+                        state.calibration.pixelsPerMM = incisorWidthPixels / knownDistance;
+                        state.calibration.method = 'mm';
+                        state.calibration.knownDistanceMM = knownDistance;
+                        
+                        document.getElementById('calibration-status').textContent = 'Millimeters';
+                        document.getElementById('calibration-info').textContent = 
+                            `Calibrated: ${state.calibration.pixelsPerMM.toFixed(2)} pixels/mm (based on ${knownDistance}mm incisor width)`;
+                    } else {
+                        alert("Please place central incisor points first for accurate calibration");
+                        return;
+                    }
+                } else {
+                    state.calibration.method = 'pixels';
+                    state.calibration.pixelsPerMM = 1;
+                    document.getElementById('calibration-status').textContent = 'Pixels';
+                    document.getElementById('calibration-info').textContent = 
+                        'Using pixel measurements without conversion';
+                }
+                
+                calibrationModal.style.display = 'none';
+                invalidateAnalysisState();
+            });
+            
+            const referenceBtn = document.getElementById('reference-btn');
+            const closeModal = document.querySelector('#reference-modal .close-modal');
+            const modal = document.getElementById('reference-modal');
+            
+            referenceBtn.addEventListener('click', function() {
+                modal.style.display = 'block';
+            });
+            
+            closeModal.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+                if (event.target === calibrationModal) {
+                    calibrationModal.style.display = 'none';
+                }
+            });
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            document.getElementById('start-analysis-btn').addEventListener('click', function() {
+                if (!state.imageLoaded) {
+                    alert("Please upload an image first");
+                    return;
+                }
+                
+                const allPointsPlaced = state.points.every(p => p !== null && p !== undefined);
+                
+                if (!allPointsPlaced) {
+                    const placedCount = state.points.filter(p => p).length;
+                    alert(`Please place all points before analysis. Currently placed: ${placedCount}/12 points.`);
+                    return;
+                }
+                
+                performAnalysis();
+            });
+            
+            document.getElementById('export-btn').addEventListener('click', function() {
+                exportAnalysis();
+            });
+            
+            initializePointsList();
+            const undoBtn = document.getElementById('undo-point-btn');
+            if (undoBtn) {
+                undoBtn.addEventListener('click', undoPointPlacement);
+            }
+
+            
+            updateStatus();
+            updateUndoButton();
+        
+            rrzAutoLoadFromPhoto();
+            // Safety: never leave overlay stuck (e.g. IndexedDB blocked on some browsers)
+            const RRZ_AUTOLOAD_TIMEOUT_MS = 2500;
+            setTimeout(() => {
+                try{
+                    const ov = document.getElementById('auto-load-overlay');
+                    if (!ov) return;
+                    if (ov.style.display !== 'none' && !state.imageLoaded){
+                        ov.style.display = 'none';
+                        document.documentElement.classList.remove('from-photo');
+                        const ua = document.getElementById('upload-area');
+                        if (ua) ua.classList.add('active');
+                    }
+                }catch(e){}
+            }, RRZ_AUTOLOAD_TIMEOUT_MS);
+
+        });
+
+        function initializePointsList() {
+            const pointsList = document.getElementById('points-list');
+            pointsList.innerHTML = '';
+            
+            state.pointLabels.forEach((label, index) => {
+                const parts = label.split(' - ');
+                const clean = (s) => String(s || '')
+                    .replace(/[()]/g, '')
+                    .replace(/\boptional\b/ig, '')
+                    .replace(/\s{2,}/g, ' ')
+                    .trim();
+                const name = clean(parts[0] || '');
+                const status = clean(parts.slice(1).join(' - ') || '');
+
+                const baseText = `${index + 1}. ${name}${status ? ' - ' + status : ''}`;
+
+                const opt = document.createElement('option');
+                opt.value = String(index);
+                opt.id = `point-option-${index}`;
+                opt.dataset.baseText = baseText;
+                opt.textContent = baseText;
+
+                pointsList.appendChild(opt);
+            });
+        }
+
+        function selectPoint(index) {
+            if (!state.imageLoaded) {
+                alert("Please upload an image first");
+                return;
+            }
+            
+            const pointsList = document.getElementById('points-list');
+            if (pointsList) {
+                pointsList.value = String(index);
+            }
+
+            state.currentPointIndex = index;
+            state.canvas.style.cursor = 'crosshair';
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File size exceeds 5MB limit. Please choose a smaller image.");
+                return;
+            }
+            
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert("Please upload a valid image file (JPG, PNG, or WebP).");
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const maxWidth = 800;
+                    const maxHeight = 600;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                        height = (maxWidth / width) * height;
+                        width = maxWidth;
+                    }
+                    
+                    if (height > maxHeight) {
+                        width = (maxHeight / height) * width;
+                        height = maxHeight;
+                    }
+                    
+                    state.canvas.width = width;
+                    state.canvas.height = height;
+                    
+                    state.ctx.drawImage(img, 0, 0, width, height);
+                    state.image = img;
+                    state.imageLoaded = true;
+                    
+                    document.getElementById('upload-area').classList.remove('active');
+                    document.getElementById('canvas-container').classList.add('active');
+                    document.getElementById('image-controls').classList.add('active');
+                    
+                    state.points = [];
+                    state.placementHistory = [];
+                    updateUndoButton();
+            state.placementHistory = [];
+            updateUndoButton();
+                    state.currentPointIndex = null;
+                    measurementLabels = [];
+                    deviationIndicators = [];
+                    resetPointListUI();
+                    resetAnalysis();
+                    updateStatus();
+                    
+                    setTimeout(() => selectPoint(0), 500);
+                
+
+                    setTimeout(() => {
+                        const m = document.getElementById('calibration-modal');
+                        if (m) m.style.display = 'block';
+                    }, 800);
+};
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                alert("Error reading file. Please try again.");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        const RRZ_DB_NAME = "rrz_clinical_photos_db";
+        const RRZ_DB_STORE = "images";
+        const RRZ_DB_VER = 1;
+
+        function rrzOpenDB(){
+            return new Promise((resolve, reject)=>{
+                const req = indexedDB.open(RRZ_DB_NAME, RRZ_DB_VER);
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains(RRZ_DB_STORE)){
+                        db.createObjectStore(RRZ_DB_STORE, { keyPath:"id" });
+                    }
+                };
+                req.onsuccess = ()=> resolve(req.result);
+                req.onerror = ()=> reject(req.error);
+            });
+        }
+
+        async function rrzGetImageRecord(id){
+            const db = await rrzOpenDB();
+            return new Promise((resolve, reject)=>{
+                const tx = db.transaction(RRZ_DB_STORE, "readonly");
+                const req = tx.objectStore(RRZ_DB_STORE).get(String(id||""));
+                req.onsuccess = ()=> { const r = req.result; db.close(); resolve(r || null); };
+                req.onerror = ()=> { db.close(); reject(req.error); };
+            });
+        }
+
+        function rrzGetSlotId(){
+            try{
+                const qs = new URLSearchParams(location.search);
+                return qs.get("slot") || sessionStorage.getItem("rrz_workflow_slot") || "";
+            }catch(e){ return ""; }
+        }
+
+        function rrzLoadImageFromBlob(blob){
+            return new Promise((resolve, reject)=>{
+                try{
+                    const reader = new FileReader();
+                    reader.onload = function(e){
+                        const img = new Image();
+                        img.onload = function(){
+                            const maxWidth = 800;
+                            const maxHeight = 600;
+                            let width = img.width;
+                            height = img.height;
+                            if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+                            if (height > maxHeight){ width = (maxHeight / height) * width; height = maxHeight; }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.clearRect(0,0,width,height);
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            state.image = img;
+                            state.imageLoaded = true;
+
+                            const ua = document.getElementById('upload-area');
+                            if (ua) ua.classList.remove('active');
+                            const cc = document.getElementById('canvas-container');
+                            if (cc) cc.classList.add('active');
+                            const ic = document.getElementById('image-controls');
+                            if (ic) ic.classList.add('active');
+
+                            state.points = [];
+                            state.placementHistory = [];
+                            updateUndoButton();
+                            state.currentPointIndex = null;
+                            measurementLabels = [];
+                            deviationIndicators = [];
+                            resetPointListUI();
+                            resetAnalysis();
+
+                            if (typeof updateStatus === "function") updateStatus();
+
+                            
+
+                            setTimeout(() => { 
+                                try{ if (typeof selectPoint === "function") selectPoint(0); }catch(e){} 
+                            }, 500);
+                            setTimeout(() => { 
+                                try{ const m = document.getElementById('calibration-modal'); if (m) m.style.display = 'block'; }catch(e){} 
+                            }, 800);
+resolve(true);
+                        };
+                        img.onerror = ()=> reject(new Error("Image decode failed"));
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = ()=> reject(reader.error || new Error("File read failed"));
+                    reader.readAsDataURL(blob);
+                }catch(err){ reject(err); }
+            });
+        }
+
+        async function rrzAutoLoadFromPhoto(){
+            let qs;
+            try{ qs = new URLSearchParams(location.search); }catch(e){ qs = null; }
+            const from = qs ? (qs.get("from")||"") : "";
+            const slot = rrzGetSlotId();
+            if (!slot) { 
+                const ov = document.getElementById('auto-load-overlay');
+                if (ov) ov.style.display = 'none';
+                document.documentElement.classList.remove('from-photo');
+                return;
+            }
+
+            if (from === "photo") document.documentElement.classList.add('from-photo');
+
+            try{
+                const rec = await rrzGetImageRecord(slot);
+                let blob = (rec && rec.blob) ? rec.blob : null;
+
+                // Fallback: try sessionStorage dataURL set by photo.html
+                if (!blob){
+                    try{
+                        const keys = [
+                            `rrz_${slot}_image_dataurl`,
+                            `rrz_${slot}_image`,
+                            'rrz_uploaded_image',
+                            'uploadedImageDataUrl',
+                            'selectedImageDataUrl'
+                        ];
+                        let dataUrl = null;
+                        for(const k of keys){
+                            const v = (sessionStorage.getItem(k) || '').trim();
+                            if (v && v.startsWith('data:image')) { dataUrl = v; break; }
+                        }
+                        if (dataUrl){
+                            blob = await (await fetch(dataUrl)).blob();
+                        }
+                    }catch(e){}
+                }
+
+                if (!blob){
+                    document.documentElement.classList.remove('from-photo');
+                    const ov = document.getElementById('auto-load-overlay');
+                    if (ov) ov.style.display = 'none';
+                    const ua = document.getElementById('upload-area');
+                    if (ua) ua.classList.add('active');
+                    return;
+                }
+
+                await rrzLoadImageFromBlob(blob);
+
+                const ov = document.getElementById('auto-load-overlay');
+                if (ov) ov.style.display = 'none';
+            }catch(err){
+                document.documentElement.classList.remove('from-photo');
+                const ov = document.getElementById('auto-load-overlay');
+                if (ov) ov.style.display = 'none';
+                const ua = document.getElementById('upload-area');
+                if (ua) ua.classList.add('active');
+                console.warn(err);
+            }
+        }
+
+        function getCanvasPointerPos(evt) {
+            const rect = state.canvas.getBoundingClientRect();
+            const e = (evt && evt.touches && evt.touches[0]) ? evt.touches[0] : evt;
+            const scaleX = state.canvas.width / rect.width;
+            const scaleY = state.canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function handleCanvasMouseDown(event) {
+            if (!state.imageLoaded) return;
+            
+            const { x, y } = getCanvasPointerPos(event);
+            
+            for (let i = 0; i < state.points.length; i++) {
+                if (state.points[i]) {
+                    const point = state.points[i];
+                    const distance = Math.sqrt(Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2));
+                    
+                    if (distance < 7) {
+                        state.isDragging = true;
+                        state.dragPointIndex = i;
+                        state.canvas.style.cursor = 'grabbing';
+                        invalidateAnalysisState();
+                        selectPoint(i);
+                        return;
+                    }
+                }
+            }
+            
+            if (state.currentPointIndex !== null) {
+                const wasEmpty = !state.points[state.currentPointIndex];
+                state.points[state.currentPointIndex] = {x, y, label: state.pointLabels[state.currentPointIndex]};
+                invalidateAnalysisState();
+                if (wasEmpty) {
+                    state.placementHistory.push(state.currentPointIndex);
+                    updateUndoButton();
+                }
+                
+                drawAllPoints();
+                updatePointStatus(state.currentPointIndex, true);
+                
+                const placedCount = state.points.filter(p => p).length;
+                if (placedCount < state.pointLabels.length) {
+                    let nextIndex = (state.currentPointIndex + 1) % state.pointLabels.length;
+                    while (state.points[nextIndex] && nextIndex !== state.currentPointIndex) {
+                        nextIndex = (nextIndex + 1) % state.pointLabels.length;
+                    }
+                    selectPoint(nextIndex);
+                } else {
+                    state.currentPointIndex = null;
+                    state.canvas.style.cursor = 'default';
+                }
+                
+                updateStatus();
+            }
+        }
+
+        function handleCanvasMouseMove(event) {
+            if (!state.imageLoaded || !state.isDragging || state.dragPointIndex === null) return;
+            
+            const { x, y } = getCanvasPointerPos(event);
+            
+            state.points[state.dragPointIndex] = {
+                ...state.points[state.dragPointIndex],
+                x, y
+            };
+            
+            drawAllPoints();
+        }
+
+        function handleCanvasMouseUp() {
+            if (state.isDragging) {
+                state.isDragging = false;
+                state.dragPointIndex = null;
+                state.canvas.style.cursor = state.currentPointIndex !== null ? 'crosshair' : 'default';
+            }
+        }
+
+        function drawAllPoints() {
+            state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+            
+            if (state.image) {
+                state.ctx.drawImage(state.image, 0, 0, state.canvas.width, state.canvas.height);
+            }
+            
+            measurementLabels.forEach(label => {
+                if (label.element && label.element.parentNode) {
+                    label.element.parentNode.removeChild(label.element);
+                }
+            });
+            measurementLabels = [];
+            
+            deviationIndicators.forEach(indicator => {
+                if (indicator.element && indicator.element.parentNode) {
+                    indicator.element.parentNode.removeChild(indicator.element);
+                }
+            });
+            deviationIndicators = [];
+            
+            state.points.forEach((point, index) => {
+                if (point) {
+                    drawPoint(point.x, point.y, index);
+                }
+            });
+            
+            if (state.analysisActive) {
+                drawCurveAnalysis();
+            }
+        }
+
+        function drawPoint(x, y, index) {
+            let color = '#3498db';
+            
+            const pointData = state.dentalData[index];
+            if (pointData) {
+                if (pointData.analysis === 'wilson') {
+                    color = '#9b59b6';
+                } else if (pointData.analysis === 'symmetry') {
+                    color = '#2ecc71';
+                }
+            }
+            
+            state.ctx.beginPath();
+            state.ctx.arc(x, y, 4, 0, Math.PI * 2);
+            state.ctx.fillStyle = color;
+            state.ctx.fill();
+            state.ctx.strokeStyle = 'white';
+            state.ctx.lineWidth = 1.5;
+            state.ctx.stroke();
+            
+            state.ctx.font = 'bold 10px Arial';
+            state.ctx.fillStyle = 'white';
+            state.ctx.textAlign = 'center';
+            state.ctx.textBaseline = 'middle';
+            state.ctx.fillText(index + 1, x, y);
+            
+            state.ctx.beginPath();
+            state.ctx.arc(x, y, 8, 0, Math.PI * 2);
+            state.ctx.strokeStyle = color.replace(')', ', 0.3)').replace('rgb', 'rgba');
+            state.ctx.lineWidth = 1;
+            state.ctx.stroke();
+        }
+
+        function drawCurveAnalysis() {
+            const points = state.points;
+            const validPoints = points.filter(p => p);
+            
+            if (validPoints.length >= 8) {
+                drawWilsonCurve();
+                drawAnteriorAnalysis();
+                drawOcclusalPlane();
+            }
+        }
+
+        function drawWilsonCurve() {
+            const canvasWidth = state.canvas.width;
+            const canvasHeight = state.canvas.height;
+            
+            const wilsonIndices = [0, 1, 10, 11];
+            const wilsonPoints = [];
+            
+            wilsonIndices.forEach(index => {
+                if (state.points[index]) {
+                    wilsonPoints.push({
+                        ...state.points[index],
+                        tooth: state.dentalData[index].tooth,
+                        index: index
+                    });
+                }
+            });
+            
+            if (wilsonPoints.length >= 3) {
+                wilsonPoints.sort((a, b) => a.x - b.x);
+                
+                drawCatmullRomSpline(wilsonPoints, '#9b59b6');
+                drawIdealWilsonCurve();
+                
+                if (wilsonPoints.length > 1) {
+                    const firstPoint = wilsonPoints[0];
+                    const lastPoint = wilsonPoints[wilsonPoints.length - 1];
+                    
+                    state.ctx.beginPath();
+                    state.ctx.moveTo(firstPoint.x, firstPoint.y);
+                    state.ctx.lineTo(lastPoint.x, lastPoint.y);
+                    state.ctx.strokeStyle = '#2c3e50';
+                    state.ctx.lineWidth = 1;
+                    state.ctx.setLineDash([5, 5]);
+                    state.ctx.stroke();
+                    state.ctx.setLineDash([]);
+                }
+                
+                if (wilsonPoints.length >= 2) {
+                    const yValues = wilsonPoints.map(p => p.y);
+                    const minY = Math.min(...yValues);
+                    const maxY = Math.max(...yValues);
+                    const wilsonDepth = maxY - minY;
+                    
+                    const lowestPoint = wilsonPoints.find(p => p.y === maxY);
+                    if (lowestPoint) {
+                        const labelElement = document.createElement('div');
+                        labelElement.className = 'measurement-label';
+                        labelElement.style.left = (lowestPoint.x - 50) + 'px';
+                        labelElement.style.top = (lowestPoint.y + 20) + 'px';
+                        labelElement.innerHTML = `Wilson Depth: ${formatDistance(wilsonDepth)}`;
+                        
+                        document.getElementById('canvas-container').appendChild(labelElement);
+                        measurementLabels.push({element: labelElement, x: lowestPoint.x, y: lowestPoint.y});
+                    }
+                }
+            }
+        }
+
+        function drawIdealWilsonCurve() {
+            const canvasWidth = state.canvas.width;
+            const canvasHeight = state.canvas.height;
+            
+            const idealPoints = state.idealWilsonData.map(point => {
+                const x = (point.x / 800) * canvasWidth;
+                const y = (point.y / 200) * canvasHeight * 0.7 + canvasHeight * 0.2;
+                return { x, y, tooth: point.tooth };
+            });
+            
+            idealPoints.sort((a, b) => a.x - b.x);
+            drawCatmullRomSpline(idealPoints, '#2ecc71');
+        }
+
+        function drawAnteriorAnalysis() {
+            const canvasWidth = state.canvas.width;
+            const canvasHeight = state.canvas.height;
+            
+            const anteriorIndices = [2, 3, 4, 5, 6, 7, 8, 9];
+            const anteriorPoints = [];
+            
+            anteriorIndices.forEach(index => {
+                if (state.points[index]) {
+                    anteriorPoints.push({
+                        ...state.points[index],
+                        tooth: state.dentalData[index].tooth,
+                        index: index,
+                        side: state.dentalData[index].side
+                    });
+                }
+            });
+            
+            if (anteriorPoints.length >= 4) {
+                anteriorPoints.sort((a, b) => a.x - b.x);
+                drawCatmullRomSpline(anteriorPoints, '#3498db');
+                drawIdealAnteriorCurve();
+                drawSymmetryLines(anteriorPoints);
+                
+                if (anteriorPoints.length >= 2) {
+                    const rightPoints = anteriorPoints.filter(p => p.side === 'right');
+                    const leftPoints = anteriorPoints.filter(p => p.side === 'left');
+                    
+                    if (rightPoints.length > 0 && leftPoints.length > 0) {
+                        const avgRightX = rightPoints.reduce((sum, p) => sum + p.x, 0) / rightPoints.length;
+                        const avgLeftX = leftPoints.reduce((sum, p) => sum + p.x, 0) / leftPoints.length;
+                        const midlineX = (avgRightX + avgLeftX) / 2;
+                        
+                        state.ctx.beginPath();
+                        state.ctx.moveTo(midlineX, 0);
+                        state.ctx.lineTo(midlineX, state.canvas.height);
+                        state.ctx.strokeStyle = '#e74c3c';
+                        state.ctx.lineWidth = 1;
+                        state.ctx.setLineDash([2, 2]);
+                        state.ctx.stroke();
+                        state.ctx.setLineDash([]);
+                        
+                        const labelElement = document.createElement('div');
+                        labelElement.className = 'measurement-label';
+                        labelElement.style.left = (midlineX - 40) + 'px';
+                        labelElement.style.top = '20px';
+                        labelElement.innerHTML = `Midline`;
+                        
+                        document.getElementById('canvas-container').appendChild(labelElement);
+                        measurementLabels.push({element: labelElement, x: midlineX, y: 20});
+                    }
+                }
+            }
+        }
+
+        function drawIdealAnteriorCurve() {
+            const canvasWidth = state.canvas.width;
+            const canvasHeight = state.canvas.height;
+            
+            const idealPoints = state.idealAnteriorData.map(point => {
+                const x = (point.x / 800) * canvasWidth;
+                const y = (point.y / 200) * canvasHeight * 0.7 + canvasHeight * 0.2;
+                return { x, y, tooth: point.tooth };
+            });
+            
+            idealPoints.sort((a, b) => a.x - b.x);
+            drawCatmullRomSpline(idealPoints, '#f39c12');
+        }
+
+        function drawOcclusalPlane() {
+            const canvasWidth = state.canvas.width;
+            const canvasHeight = state.canvas.height;
+            
+            const occlusalPoints = [];
+            
+            state.points.forEach((point, index) => {
+                if (point) {
+                    occlusalPoints.push({
+                        ...point,
+                        tooth: state.dentalData[index].tooth,
+                        index: index
+                    });
+                }
+            });
+            
+            if (occlusalPoints.length >= 6) {
+                occlusalPoints.sort((a, b) => a.x - b.x);
+                drawOcclusalPlaneLine(occlusalPoints);
+                drawOcclusalDeviations(occlusalPoints);
+            }
+        }
+
+        function drawOcclusalPlaneLine(points) {
+            if (points.length < 2) return;
+            
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            const n = points.length;
+            
+            points.forEach(p => {
+                sumX += p.x;
+                sumY += p.y;
+                sumXY += p.x * p.y;
+                sumX2 += p.x * p.x;
+            });
+            
+            const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+            
+            const minX = Math.min(...points.map(p => p.x));
+            const maxX = Math.max(...points.map(p => p.x));
+            
+            const y1 = slope * minX + intercept;
+            const y2 = slope * maxX + intercept;
+            
+            state.ctx.beginPath();
+            state.ctx.moveTo(minX, y1);
+            state.ctx.lineTo(maxX, y2);
+            state.ctx.strokeStyle = '#e74c3c';
+            state.ctx.lineWidth = 2;
+            state.ctx.setLineDash([5, 3]);
+            state.ctx.stroke();
+            state.ctx.setLineDash([]);
+            
+            const angle = Math.atan(slope) * (180 / Math.PI);
+            
+            const labelElement = document.createElement('div');
+            labelElement.className = 'measurement-label';
+            labelElement.style.left = (minX + (maxX - minX) / 2 - 60) + 'px';
+            labelElement.style.top = (y1 + (y2 - y1) / 2 - 30) + 'px';
+            labelElement.innerHTML = `Occlusal Plane: ${angle.toFixed(1)}°`;
+            
+            document.getElementById('canvas-container').appendChild(labelElement);
+            measurementLabels.push({
+                element: labelElement, 
+                x: minX + (maxX - minX) / 2, 
+                y: y1 + (y2 - y1) / 2
+            });
+            
+            state.measurements.occlusalPlaneAngle = angle;
+            state.measurements.occlusalSlope = slope;
+            state.measurements.occlusalIntercept = intercept;
+        }
+
+        function drawOcclusalDeviations(points) {
+            if (!state.measurements.occlusalSlope || !state.measurements.occlusalIntercept) return;
+            
+            const slope = state.measurements.occlusalSlope;
+            const intercept = state.measurements.occlusalIntercept;
+            
+            points.forEach(point => {
+                const expectedY = slope * point.x + intercept;
+                const deviation = point.y - expectedY;
+                
+                state.ctx.beginPath();
+                state.ctx.moveTo(point.x, point.y);
+                state.ctx.lineTo(point.x, expectedY);
+                state.ctx.strokeStyle = deviation > 0 ? '#e74c3c' : '#3498db';
+                state.ctx.lineWidth = 1;
+                state.ctx.setLineDash([2, 2]);
+                state.ctx.stroke();
+                state.ctx.setLineDash([]);
+                
+                if (Math.abs(deviation) > 5) {
+                    const indicator = document.createElement('div');
+                    indicator.className = 'tooth-deviation';
+                    
+                    if (Math.abs(deviation) > 15) {
+                        indicator.classList.add('deviation-severe');
+                    } else if (Math.abs(deviation) > 8) {
+                        indicator.classList.add('deviation-moderate');
+                    } else {
+                        indicator.classList.add('deviation-normal');
+                    }
+                    
+                    indicator.style.left = (point.x - 10) + 'px';
+                    indicator.style.top = (point.y - 10) + 'px';
+                    
+                    document.getElementById('canvas-container').appendChild(indicator);
+                    deviationIndicators.push({
+                        element: indicator, 
+                        x: point.x, 
+                        y: point.y
+                    });
+                }
+            });
+        }
+
+        function drawSymmetryLines(anteriorPoints) {
+            const symmetryPairs = [
+                { rightIndex: 2, leftIndex: 9 },
+                { rightIndex: 3, leftIndex: 8 },
+                { rightIndex: 4, leftIndex: 7 },
+                { rightIndex: 5, leftIndex: 6 }
+            ];
+            
+            symmetryPairs.forEach(pair => {
+                const rightPoint = state.points[pair.rightIndex];
+                const leftPoint = state.points[pair.leftIndex];
+                
+                if (rightPoint && leftPoint) {
+                    const midX = (rightPoint.x + leftPoint.x) / 2;
+                    const midY = (rightPoint.y + leftPoint.y) / 2;
+                    
+                    state.ctx.beginPath();
+                    state.ctx.moveTo(rightPoint.x, rightPoint.y);
+                    state.ctx.lineTo(leftPoint.x, leftPoint.y);
+                    state.ctx.strokeStyle = '#e74c3c';
+                    state.ctx.lineWidth = 1;
+                    state.ctx.setLineDash([3, 3]);
+                    state.ctx.stroke();
+                    state.ctx.setLineDash([]);
+                    
+                    const heightDiff = Math.abs(rightPoint.y - leftPoint.y);
+                    
+                    if (heightDiff > 5) {
+                        const indicator = document.createElement('div');
+                        indicator.className = 'tooth-deviation';
+                        
+                        if (heightDiff > 15) {
+                            indicator.classList.add('deviation-severe');
+                        } else if (heightDiff > 8) {
+                            indicator.classList.add('deviation-moderate');
+                        } else {
+                            indicator.classList.add('deviation-normal');
+                        }
+                        
+                        indicator.style.left = (midX - 10) + 'px';
+                        indicator.style.top = (midY - 10) + 'px';
+                        
+                        document.getElementById('canvas-container').appendChild(indicator);
+                        deviationIndicators.push({element: indicator, x: midX, y: midY});
+                        
+                        const labelElement = document.createElement('div');
+                        labelElement.className = 'measurement-label';
+                        labelElement.style.left = (midX - 40) + 'px';
+                        labelElement.style.top = (midY - 30) + 'px';
+                        labelElement.innerHTML = `ΔH: ${formatDistance(heightDiff)}`;
+                        
+                        document.getElementById('canvas-container').appendChild(labelElement);
+                        measurementLabels.push({element: labelElement, x: midX, y: midY});
+                    }
+                }
+            });
+        }
+
+        function drawCatmullRomSpline(points, color) {
+            const validPoints = points.filter(p => p);
+            if (validPoints.length < 3) return;
+            
+            state.ctx.beginPath();
+            state.ctx.moveTo(validPoints[0].x, validPoints[0].y);
+            
+            for (let i = 0; i < validPoints.length - 1; i++) {
+                const p0 = i > 0 ? validPoints[i - 1] : validPoints[i];
+                const p1 = validPoints[i];
+                const p2 = validPoints[i + 1];
+                const p3 = i < validPoints.length - 2 ? validPoints[i + 2] : p2;
+                
+                for (let t = 0; t <= 1; t += 0.05) {
+                    const t2 = t * t;
+                    const t3 = t2 * t;
+                    
+                    const x = 0.5 * ((2 * p1.x) +
+                        (-p0.x + p2.x) * t +
+                        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+                        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+                    
+                    const y = 0.5 * ((2 * p1.y) +
+                        (-p0.y + p2.y) * t +
+                        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+                        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+                    
+                    state.ctx.lineTo(x, y);
+                }
+            }
+            
+            state.ctx.strokeStyle = color;
+            state.ctx.lineWidth = 2;
+            state.ctx.stroke();
+        }
+
+        function updatePointStatus(index, placed) {
+            const opt = document.getElementById(`point-option-${index}`);
+            if (!opt) return;
+
+            const base = opt.dataset.baseText || opt.textContent.replace(/^✓\s*/, '');
+            opt.dataset.baseText = base;
+
+            opt.textContent = placed ? `✓ ${base}` : base;
+        }
+
+        function updateStatus() {
+            const placedCount = state.points.filter(p => p).length;
+            
+            document.getElementById('points-count').textContent = `${placedCount}/12`;
+            document.getElementById('points-status').textContent = `${placedCount} points placed`;
+            
+            const progressPercent = (placedCount / 12) * 100;
+            document.getElementById('points-progress-fill').style.width = `${progressPercent}%`;
+            
+            const imageStatusDot = document.getElementById('image-status-dot');
+            const pointsStatusDot = document.getElementById('points-status-dot');
+            
+            if (state.imageLoaded) {
+                document.getElementById('image-status').textContent = 'Image loaded';
+                imageStatusDot.classList.add('active');
+            } else {
+                document.getElementById('image-status').textContent = 'No image loaded';
+                imageStatusDot.classList.remove('active');
+            }
+            
+            if (placedCount >= 12) {
+                pointsStatusDot.classList.add('active');
+            } else {
+                pointsStatusDot.classList.remove('active');
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+            
+            if (tabId === 'wilson' && state.analysisActive) {
+                document.getElementById('chart-container').classList.add('active');
+                updateWilsonChart();
+            } else {
+                document.getElementById('chart-container').classList.remove('active');
+            }
+        }
+
+        function updateUndoButton() {
+            const btn = document.getElementById('undo-point-btn');
+            if (!btn) return;
+            const canUndo = Array.isArray(state.placementHistory) && state.placementHistory.length > 0;
+            btn.disabled = !canUndo;
+        }
+
+        function undoPointPlacement() {
+            if (!state.imageLoaded) return;
+            if (!Array.isArray(state.placementHistory) || state.placementHistory.length === 0) {
+                updateUndoButton();
+                return;
+            }
+
+            const lastIdx = state.placementHistory.pop();
+            if (lastIdx === null || lastIdx === undefined) {
+                updateUndoButton();
+                return;
+            }
+
+            state.points[lastIdx] = null;
+            updatePointStatus(lastIdx, false);
+            resetAnalysis();
+            drawAllPoints();
+            updateStatus();
+            try { selectPoint(lastIdx); } catch(e) {}
+            updateUndoButton();
+        }
+
+        function resetAll() {
+            if (!state.imageLoaded) return;
+            
+            state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+            state.ctx.drawImage(state.image, 0, 0, state.canvas.width, state.canvas.height);
+            
+            measurementLabels.forEach(label => {
+                if (label.element && label.element.parentNode) {
+                    label.element.parentNode.removeChild(label.element);
+                }
+            });
+            measurementLabels = [];
+            
+            deviationIndicators.forEach(indicator => {
+                if (indicator.element && indicator.element.parentNode) {
+                    indicator.element.parentNode.removeChild(indicator.element);
+                }
+            });
+            deviationIndicators = [];
+            
+            state.points = [];
+            state.currentPointIndex = null;
+            state.isDragging = false;
+            state.dragPointIndex = null;
+            state.canvas.style.cursor = 'default';
+            state.measurements = {};
+            state.angles = {};
+            
+            resetPointListUI();
+            resetAnalysis();
+            updateStatus();
+            
+            selectPoint(0);
+        }
+
+        function resetPointListUI() {
+            for (let i = 0; i < state.pointLabels.length; i++) {
+                updatePointStatus(i, false);
+            }
+        }
+
+        function resetAnalysis() {
+            state.analysisActive = false;
+            
+            const tableIds = ['wilson-table', 'symmetry-table', 'occlusal-table'];
+            tableIds.forEach(id => {
+                const table = document.getElementById(id);
+                if (table) {
+                    const tbody = table.querySelector('tbody');
+                    if (tbody) tbody.innerHTML = '';
+                }
+            });
+            
+            const metricIds = [
+                'wilson-depth-status', 'depth-value',
+                'symmetry-score', 'symmetry-percent', 'asymmetry-status',
+                'occlusal-angle', 'anterior-curve',
+                'overall-assessment', 'summary-wilson', 'summary-symmetry', 'summary-occlusal'
+            ];
+            
+            metricIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = '--';
+            });
+            
+            const progressIds = ['depth-progress', 'symmetry-progress'];
+            progressIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.style.width = '0%';
+            });
+            
+            const descriptionIds = [
+                'overall-description', 'wilson-depth-description',
+                'asymmetry-description'
+            ];
+            
+            descriptionIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    switch(id) {
+                        case 'overall-description':
+                            element.textContent = 'Complete all measurements for assessment';
+                            break;
+                        case 'wilson-depth-description':
+                            element.textContent = 'Depth of mediolateral curve measured from buccal to lingual cusps';
+                            break;
+                        case 'asymmetry-description':
+                            element.textContent = 'Detection of significant asymmetries in anterior dental arch';
+                            break;
+                    }
+                }
+            });
+            
+            const overallAssessment = document.getElementById('overall-assessment');
+            if (overallAssessment) {
+                overallAssessment.textContent = 'Pending';
+                overallAssessment.className = 'metric-value';
+            }
+            
+            document.getElementById('chart-container').classList.remove('active');
+            
+            if (state.imageLoaded) { 
+                try { 
+                    drawAllPoints(); 
+                } catch(e) {} 
+            }
+        }
+
+        function calculateDistance(p1, p2) {
+            return Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        }
+
+        function calculateAngle(p1, p2, p3, p4) {
+            const dx1 = p2.x - p1.x;
+            const dy1 = p2.y - p1.y;
+            const dx2 = p4.x - p3.x;
+            const dy2 = p4.y - p3.y;
+            
+            const angle1 = Math.atan2(dy1, dx1);
+            const angle2 = Math.atan2(dy2, dx2);
+            
+            let angle = Math.abs(angle1 - angle2) * (180 / Math.PI);
+            
+            if (angle > 90) {
+                angle = 180 - angle;
+            }
+            
+            return angle;
+        }
+
+        function formatDistance(distanceInPixels) {
+            if (state.calibration.method === 'mm' && state.calibration.pixelsPerMM && state.calibration.pixelsPerMM > 0) {
+                const distanceInMM = distanceInPixels / state.calibration.pixelsPerMM;
+                return distanceInMM.toFixed(1) + ' mm';
+            } else {
+                return Math.round(distanceInPixels) + ' px';
+            }
+        }
+
+        function performAnalysis() {
+            const allPointsPlaced = state.points.every(p => p !== null && p !== undefined);
+            
+            if (!allPointsPlaced) return;
+            
+            state.analysisActive = true;
+            state.measurements = {};
+            state.angles = {};
+            
+            calculateDentalMeasurements();
+            updateAnalysisUI();
+            drawAllPoints();
+        }
+
+        function calculateDentalMeasurements() {
+            const points = state.points;
+            
+            calculateWilsonCurveMeasurements();
+            calculateAnteriorSymmetryMeasurements();
+            calculateOcclusalPlaneMeasurements();
+            calculateOverallAssessment();
+        }
+
+        function calculateWilsonCurveMeasurements() {
+            const points = state.points;
+            const wilsonIndices = [0, 1, 10, 11];
+            const wilsonPoints = [];
+            
+            wilsonIndices.forEach(index => {
+                if (points[index]) {
+                    wilsonPoints.push({
+                        point: points[index],
+                        tooth: state.dentalData[index].tooth,
+                        label: state.dentalData[index].label,
+                        index: index
+                    });
+                }
+            });
+            
+            if (wilsonPoints.length >= 3) {
+                wilsonPoints.sort((a, b) => a.point.x - b.point.x);
+                
+                const yValues = wilsonPoints.map(p => p.point.y);
+                const minY = Math.min(...yValues);
+                const maxY = Math.max(...yValues);
+                state.measurements.wilsonDepth = maxY - minY;
+                
+                state.measurements.wilsonDeviations = [];
+                wilsonPoints.forEach(wilsonPoint => {
+                    const idealPoint = state.idealWilsonData.find(p => p.tooth === wilsonPoint.tooth);
+                    if (idealPoint) {
+                        const canvasWidth = state.canvas.width;
+                        const canvasHeight = state.canvas.height;
+                        const idealX = (idealPoint.x / 800) * canvasWidth;
+                        const idealY = (idealPoint.y / 200) * canvasHeight * 0.7 + canvasHeight * 0.2;
+                        
+                        const deviation = wilsonPoint.point.y - idealY;
+                        
+                        state.measurements.wilsonDeviations.push({
+                            tooth: wilsonPoint.tooth,
+                            label: wilsonPoint.label,
+                            deviation: deviation,
+                            distance: Math.abs(deviation),
+                            actualY: wilsonPoint.point.y,
+                            idealY: idealY
+                        });
+                    }
+                });
+            }
+        }
+
+        function calculateAnteriorSymmetryMeasurements() {
+            const points = state.points;
+            const anteriorIndices = [2, 3, 4, 5, 6, 7, 8, 9];
+            const anteriorPoints = [];
+            
+            anteriorIndices.forEach(index => {
+                if (points[index]) {
+                    anteriorPoints.push({
+                        point: points[index],
+                        tooth: state.dentalData[index].tooth,
+                        label: state.dentalData[index].label,
+                        side: state.dentalData[index].side,
+                        index: index
+                    });
+                }
+            });
+            
+            if (anteriorPoints.length >= 4) {
+                const rightPoints = anteriorPoints.filter(p => p.side === 'right');
+                const leftPoints = anteriorPoints.filter(p => p.side === 'left');
+                
+                const symmetryPairs = [
+                    { rightTooth: "LR4", leftTooth: "LL4", rightIndex: 2, leftIndex: 9 },
+                    { rightTooth: "LR3", leftTooth: "LL3", rightIndex: 3, leftIndex: 8 },
+                    { rightTooth: "LR2", leftTooth: "LL2", rightIndex: 4, leftIndex: 7 },
+                    { rightTooth: "LR1", leftTooth: "LL1", rightIndex: 5, leftIndex: 6 }
+                ];
+                
+                state.measurements.symmetryPairs = [];
+                let totalHeightDifference = 0;
+                let totalHorizontalDifference = 0;
+                let pairCount = 0;
+
+                const pmm = (state.calibration.method === 'mm' && state.calibration.pixelsPerMM && state.calibration.pixelsPerMM > 0)
+                    ? state.calibration.pixelsPerMM
+                    : null;
+                const symThrPx = pmm ? (1.0 * pmm) : 10;
+                const slightThrPx = pmm ? (2.0 * pmm) : 15;
+                
+                symmetryPairs.forEach(pair => {
+                    const rightPoint = points[pair.rightIndex];
+                    const leftPoint = points[pair.leftIndex];
+                    
+                    if (rightPoint && leftPoint) {
+                        const heightDiff = Math.abs(rightPoint.y - leftPoint.y);
+                        const rightDist = Math.abs(rightPoint.x - (points[5].x + points[6].x) / 2);
+                        const leftDist = Math.abs(leftPoint.x - (points[5].x + points[6].x) / 2);
+                        const horizontalDiff = Math.abs(rightDist - leftDist);
+                        
+                        state.measurements.symmetryPairs.push({
+                            rightTooth: pair.rightTooth,
+                            leftTooth: pair.leftTooth,
+                            heightDifference: heightDiff,
+                            horizontalDifference: horizontalDiff,
+                            totalDifference: heightDiff + horizontalDiff,
+                            isSymmetric: (heightDiff <= symThrPx && horizontalDiff <= symThrPx)
+                        });
+                        
+                        totalHeightDifference += heightDiff;
+                        totalHorizontalDifference += horizontalDiff;
+                        pairCount++;
+                    }
+                });
+                
+                if (pairCount > 0) {
+                    const avgHeightDiff = totalHeightDifference / pairCount;
+                    const avgHorizontalDiff = totalHorizontalDifference / pairCount;
+
+                    let heightScore, horizontalScore;
+
+                    if (pmm) {
+                        const avgHeightMM = avgHeightDiff / pmm;
+                        const avgHorizontalMM = avgHorizontalDiff / pmm;
+                        heightScore = Math.max(0, 100 - (avgHeightMM * 25));
+                        horizontalScore = Math.max(0, 100 - (avgHorizontalMM * 20));
+                    } else {
+                        heightScore = Math.max(0, 100 - (avgHeightDiff * 2));
+                        horizontalScore = Math.max(0, 100 - (avgHorizontalDiff * 2));
+                    }
+
+                    state.measurements.symmetryScore = Math.round((heightScore * 0.6 + horizontalScore * 0.4));
+                    state.measurements.symmetryPercent = state.measurements.symmetryScore.toFixed(0) + '%';
+                    const symmetricPairs = state.measurements.symmetryPairs.filter(pair => pair.isSymmetric).length;
+                    state.measurements.symmetricPairsPercent = Math.round((symmetricPairs / pairCount) * 100);
+                    }
+                
+                if (rightPoints.length > 0 && leftPoints.length > 0) {
+                    const avgRightY = rightPoints.reduce((sum, p) => sum + p.point.y, 0) / rightPoints.length;
+                    const avgLeftY = leftPoints.reduce((sum, p) => sum + p.point.y, 0) / leftPoints.length;
+                    state.measurements.anteriorTilt = avgRightY - avgLeftY;
+                }
+                
+                if (anteriorPoints.length >= 4) {
+                    const yValues = anteriorPoints.map(p => p.point.y);
+                    const minY = Math.min(...yValues);
+                    const maxY = Math.max(...yValues);
+                    state.measurements.anteriorCurveDepth = maxY - minY;
+                }
+            }
+        }
+
+        function calculateOcclusalPlaneMeasurements() {
+            const points = state.points;
+            
+            if (points.length >= 6) {
+                const allPoints = [];
+                
+                points.forEach((point, index) => {
+                    if (point) {
+                        allPoints.push({
+                            point: point,
+                            tooth: state.dentalData[index].tooth,
+                            label: state.dentalData[index].label,
+                            index: index
+                        });
+                    }
+                });
+                
+                allPoints.sort((a, b) => a.point.x - b.point.x);
+                
+                let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+                const n = allPoints.length;
+                
+                allPoints.forEach(p => {
+                    sumX += p.point.x;
+                    sumY += p.point.y;
+                    sumXY += p.point.x * p.point.y;
+                    sumX2 += p.point.x * p.point.x;
+                });
+                
+                const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+                const intercept = (sumY - slope * sumX) / n;
+                
+                const angle = Math.atan(slope) * (180 / Math.PI);
+                state.measurements.occlusalPlaneAngle = angle;
+                
+                state.measurements.occlusalDeviations = [];
+                let totalDeviation = 0;
+                
+                allPoints.forEach(p => {
+                    const expectedY = slope * p.point.x + intercept;
+                    const deviation = p.point.y - expectedY;
+                    
+                    state.measurements.occlusalDeviations.push({
+                        tooth: p.tooth,
+                        label: p.label,
+                        deviation: deviation,
+                        distance: Math.abs(deviation),
+                        actualY: p.point.y,
+                        expectedY: expectedY
+                    });
+                    
+                    totalDeviation += Math.abs(deviation);
+                });
+                
+                state.measurements.avgOcclusalDeviation = totalDeviation / n;
+                
+                let sumSquaredDev = 0;
+                state.measurements.occlusalDeviations.forEach(d => {
+                    sumSquaredDev += d.deviation * d.deviation;
+                });
+                state.measurements.occlusalFlatness = Math.sqrt(sumSquaredDev / n);
+            }
+        }
+
+        function calculateOverallAssessment() {
+            let issues = [];
+            
+            if (state.measurements.wilsonDepth !== undefined) {
+                if (state.calibration.method === 'mm') {
+                    const depthMM = state.measurements.wilsonDepth / state.calibration.pixelsPerMM;
+                    if (depthMM > 3) {
+                        issues.push('Deep Curve of Wilson');
+                    } else if (depthMM < 1) {
+                        issues.push('Flat Curve of Wilson');
+                    }
+                } else {
+                    if (state.measurements.wilsonDepth > 30) {
+                        issues.push('Deep Curve of Wilson');
+                    } else if (state.measurements.wilsonDepth < 10) {
+                        issues.push('Flat Curve of Wilson');
+                    }
+                }
+            }
+            
+            if (state.measurements.symmetryScore !== undefined) {
+                if (state.measurements.symmetryScore < 70) {
+                    issues.push('Severe Anterior Asymmetry');
+                } else if (state.measurements.symmetryScore < 85) {
+                    issues.push('Moderate Anterior Asymmetry');
+                }
+            }
+            
+            if (state.measurements.anteriorTilt !== undefined) {
+                const tiltAbs = Math.abs(state.measurements.anteriorTilt);
+                if (state.calibration.method === 'mm') {
+                    const tiltMM = tiltAbs / state.calibration.pixelsPerMM;
+                    if (tiltMM > 2) {
+                        issues.push('Significant Anterior Plane Tilt');
+                    }
+                } else {
+                    if (tiltAbs > 15) {
+                        issues.push('Significant Anterior Plane Tilt');
+                    }
+                }
+            }
+            
+            if (state.measurements.occlusalPlaneAngle !== undefined) {
+                const angleAbs = Math.abs(state.measurements.occlusalPlaneAngle);
+                if (angleAbs > 5) {
+                    issues.push('Steep Occlusal Plane');
+                }
+            }
+            
+            if (state.measurements.avgOcclusalDeviation !== undefined) {
+                if (state.calibration.method === 'mm') {
+                    const devMM = state.measurements.avgOcclusalDeviation / state.calibration.pixelsPerMM;
+                    if (devMM > 1.5) {
+                        issues.push('Irregular Occlusal Plane');
+                    }
+                } else {
+                    if (state.measurements.avgOcclusalDeviation > 10) {
+                        issues.push('Irregular Occlusal Plane');
+                    }
+                }
+            }
+            
+            state.measurements.overallIssues = issues;
+            state.measurements.issueCount = issues.length;
+        }
+
+        function clearAnalysisUI() {
+            const tableIds = ['wilson-table', 'symmetry-table', 'occlusal-table'];
+            tableIds.forEach(id => {
+                const t = document.getElementById(id);
+                if (!t) return;
+                const tb = t.querySelector('tbody');
+                if (tb) tb.innerHTML = '';
+            });
+
+            const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            const setWidth = (id, val) => { const el = document.getElementById(id); if (el) el.style.width = val; };
+
+            setText('wilson-depth-status', '—');
+            setText('depth-value', '—');
+            setWidth('depth-progress', '0%');
+
+            setText('symmetry-score', '—');
+            setText('symmetry-percent', '—');
+            setText('asymmetry-status', '—');
+
+            setText('occlusal-angle', '—');
+            setText('anterior-curve', '—');
+
+            setText('summary-wilson', '—');
+            setText('summary-symmetry', '—');
+            setText('summary-occlusal', '—');
+
+            setText('overall-assessment', 'Not analyzed');
+            setText('overall-description', 'Place all points, then press Complete Analysis.');
+        }
+
+        function invalidateAnalysisState() {
+            state.analysisActive = false;
+            state.measurements = {};
+            state.angles = {};
+            clearAnalysisUI();
+        }
+
+        function updateAnalysisUI() {
+            updateWilsonTab();
+            updateSymmetryTab();
+            updateOcclusalTab();
+            updateSummaryTab();
+            
+            if (document.querySelector('.tab.active').getAttribute('data-tab') === 'wilson') {
+                document.getElementById('chart-container').classList.add('active');
+                updateWilsonChart();
+            }
+        }
+
+        function updateWilsonTab() {
+            const wilsonTable = document.getElementById('wilson-table').querySelector('tbody');
+            wilsonTable.innerHTML = '';
+            
+            if (state.measurements.wilsonDepth !== undefined) {
+                const depth = formatDistance(state.measurements.wilsonDepth);
+                document.getElementById('wilson-depth-status').textContent = 'Measured';
+                document.getElementById('depth-value').textContent = depth;
+                
+                const depthPercent = Math.min(100, (state.measurements.wilsonDepth / (40 * state.calibration.pixelsPerMM)) * 100);
+                document.getElementById('depth-progress').style.width = depthPercent + '%';
+                
+                const depthRow = document.createElement('tr');
+                depthRow.innerHTML = `
+                    <td>Curve of Wilson Depth</td>
+                    <td>${depth}</td>
+                    <td><span class="good">Measured</span></td>
+                `;
+                wilsonTable.appendChild(depthRow);
+                
+                document.getElementById('wilson-depth-description').textContent = 
+                    `Depth of mediolateral curve: ${depth}`;
+            }
+            
+            if (state.measurements.wilsonDeviations && state.measurements.wilsonDeviations.length > 0) {
+                state.measurements.wilsonDeviations.forEach(deviation => {
+                    const row = document.createElement('tr');
+                    const devDistance = formatDistance(Math.abs(deviation.deviation));
+                    const direction = deviation.deviation > 0 ? 'Below Ideal' : 'Above Ideal';
+                    
+                    let status = 'Normal';
+                    let statusClass = 'good';
+                    
+                    const absDev = Math.abs(deviation.deviation);
+                    if (state.calibration.method === 'mm') {
+                        const devMM = absDev / state.calibration.pixelsPerMM;
+                        if (devMM > 2) {
+                            status = 'Severe';
+                            statusClass = 'alert';
+                        } else if (devMM > 1) {
+                            status = 'Moderate';
+                            statusClass = 'warning';
+                        }
+                    } else {
+                        if (absDev > 15) {
+                            status = 'Severe';
+                            statusClass = 'alert';
+                        } else if (absDev > 8) {
+                            status = 'Moderate';
+                            statusClass = 'warning';
+                        }
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${deviation.tooth} (${deviation.label})</td>
+                        <td>${direction}: ${devDistance}</td>
+                        <td><span class="${statusClass}">${status}</span></td>
+                    `;
+                    wilsonTable.appendChild(row);
+                });
+            }
+        }
+
+        function updateSymmetryTab() {
+            const symmetryTable = document.getElementById('symmetry-table').querySelector('tbody');
+            symmetryTable.innerHTML = '';
+            
+            if (state.measurements.symmetryPairs && state.measurements.symmetryPairs.length > 0) {
+                if (state.measurements.symmetryScore !== undefined) {
+                    document.getElementById('symmetry-score').textContent = state.measurements.symmetryScore.toFixed(0);
+                    document.getElementById('symmetry-percent').textContent = state.measurements.symmetryScore.toFixed(0) + '%';
+                    document.getElementById('symmetry-progress').style.width = state.measurements.symmetryScore + '%';
+                    
+                    const scoreRow = document.createElement('tr');
+                    scoreRow.innerHTML = `
+                        <td>Overall Symmetry Score</td>
+                        <td>${state.measurements.symmetryScore.toFixed(0)}%</td>
+                        <td><span class="${state.measurements.symmetryScore > 85 ? 'good' : (state.measurements.symmetryScore > 70 ? 'warning' : 'alert')}">
+                            ${state.measurements.symmetryScore > 85 ? 'Good' : (state.measurements.symmetryScore > 70 ? 'Moderate' : 'Poor')}
+                        </span></td>
+                    `;
+                    symmetryTable.appendChild(scoreRow);
+                    
+                    if (state.measurements.symmetryScore < 70) {
+                        document.getElementById('asymmetry-status').textContent = 'Detected';
+                        document.getElementById('asymmetry-description').textContent = 
+                            'Significant asymmetry detected in anterior teeth - requires orthodontic intervention';
+                    } else if (state.measurements.symmetryScore < 85) {
+                        document.getElementById('asymmetry-status').textContent = 'Moderate';
+                        document.getElementById('asymmetry-description').textContent = 
+                            'Moderate asymmetry detected - may require minor correction';
+                    } else {
+                        document.getElementById('asymmetry-status').textContent = 'Normal';
+                        document.getElementById('asymmetry-description').textContent = 
+                            'Anterior symmetry within normal limits';
+                    }
+                }
+                
+                state.measurements.symmetryPairs.forEach(pair => {
+                    const row = document.createElement('tr');
+                    const heightDiff = formatDistance(pair.heightDifference);
+                    const horizontalDiff = formatDistance(pair.horizontalDifference);
+                    
+                    let status = 'Asymmetric';
+                    let statusClass = 'alert';
+                    
+                    const pmm = (state.calibration.method === 'mm' && state.calibration.pixelsPerMM && state.calibration.pixelsPerMM > 0)
+                        ? state.calibration.pixelsPerMM
+                        : null;
+                    const symThrPx = pmm ? (1.0 * pmm) : 10;
+                    const slightThrPx = pmm ? (2.0 * pmm) : 15;
+
+                    if (pair.heightDifference <= symThrPx && pair.horizontalDifference <= symThrPx) {
+                        status = 'Symmetric';
+                        statusClass = 'good';
+                    } else if (pair.heightDifference <= slightThrPx && pair.horizontalDifference <= slightThrPx) {
+                        status = 'Slight Asymmetry';
+                        statusClass = 'warning';
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${pair.rightTooth} vs ${pair.leftTooth}</td>
+                        <td>${heightDiff}</td>
+                        <td>${horizontalDiff}</td>
+                        <td><span class="${statusClass}">${status}</span></td>
+                    `;
+                    symmetryTable.appendChild(row);
+                });
+                
+                if (state.measurements.anteriorTilt !== undefined) {
+                    const tilt = formatDistance(Math.abs(state.measurements.anteriorTilt));
+                    const direction = state.measurements.anteriorTilt > 0 ? 'Right side lower' : 'Left side lower';
+                    
+                    const tiltRow = document.createElement('tr');
+                    tiltRow.innerHTML = `
+                        <td>Anterior Plane Tilt</td>
+                        <td>${direction}: ${tilt}</td>
+                        <td><span class="${Math.abs(state.measurements.anteriorTilt) > 15 ? 'warning' : 'good'}">
+                            ${Math.abs(state.measurements.anteriorTilt) > 15 ? 'Significant' : 'Normal'}
+                        </span></td>
+                    `;
+                    symmetryTable.appendChild(tiltRow);
+                }
+                
+                if (state.measurements.anteriorCurveDepth !== undefined) {
+                    const curveDepth = formatDistance(state.measurements.anteriorCurveDepth);
+                    document.getElementById('anterior-curve').textContent = curveDepth;
+                }
+            }
+        }
+
+        function updateOcclusalTab() {
+            const occlusalTable = document.getElementById('occlusal-table').querySelector('tbody');
+            occlusalTable.innerHTML = '';
+            
+            if (state.measurements.occlusalPlaneAngle !== undefined) {
+                const angle = state.measurements.occlusalPlaneAngle.toFixed(1);
+                document.getElementById('occlusal-angle').textContent = angle + '°';
+                
+                const angleRow = document.createElement('tr');
+                let angleStatus = 'Normal';
+                let angleClass = 'good';
+                
+                if (Math.abs(state.measurements.occlusalPlaneAngle) > 5) {
+                    angleStatus = 'Steep';
+                    angleClass = 'warning';
+                } else if (Math.abs(state.measurements.occlusalPlaneAngle) > 8) {
+                    angleStatus = 'Very Steep';
+                    angleClass = 'alert';
+                }
+                
+                angleRow.innerHTML = `
+                    <td>Occlusal Plane Angle</td>
+                    <td>${angle}°</td>
+                    <td>${angleStatus}</td>
+                    <td><span class="${angleClass}">${angleStatus}</span></td>
+                `;
+                occlusalTable.appendChild(angleRow);
+            }
+            
+            if (state.measurements.anteriorCurveDepth !== undefined) {
+                const curveDepth = formatDistance(state.measurements.anteriorCurveDepth);
+                const curveRow = document.createElement('tr');
+                
+                let curveStatus = 'Normal';
+                let curveClass = 'good';
+                
+                if (state.calibration.method === 'mm') {
+                    const depthMM = state.measurements.anteriorCurveDepth / state.calibration.pixelsPerMM;
+                    if (depthMM > 2) {
+                        curveStatus = 'Deep';
+                        curveClass = 'warning';
+                    } else if (depthMM > 3) {
+                        curveStatus = 'Very Deep';
+                        curveClass = 'alert';
+                    } else if (depthMM < 0.5) {
+                        curveStatus = 'Flat';
+                        curveClass = 'warning';
+                    }
+                } else {
+                    if (state.measurements.anteriorCurveDepth > 15) {
+                        curveStatus = 'Deep';
+                        curveClass = 'warning';
+                    } else if (state.measurements.anteriorCurveDepth > 25) {
+                        curveStatus = 'Very Deep';
+                        curveClass = 'alert';
+                    } else if (state.measurements.anteriorCurveDepth < 5) {
+                        curveStatus = 'Flat';
+                        curveClass = 'warning';
+                    }
+                }
+                
+                curveRow.innerHTML = `
+                    <td>Anterior Curve Depth</td>
+                    <td>${curveDepth}</td>
+                    <td>${curveStatus}</td>
+                    <td><span class="${curveClass}">${curveStatus}</span></td>
+                `;
+                occlusalTable.appendChild(curveRow);
+            }
+            
+            if (state.measurements.occlusalDeviations && state.measurements.occlusalDeviations.length > 0) {
+                state.measurements.occlusalDeviations.forEach(deviation => {
+                    const row = document.createElement('tr');
+                    const devDistance = formatDistance(Math.abs(deviation.deviation));
+                    const direction = deviation.deviation > 0 ? 'Below Plane' : 'Above Plane';
+                    
+                    let status = 'Normal';
+                    let statusClass = 'good';
+                    
+                    const absDev = Math.abs(deviation.deviation);
+                    if (state.calibration.method === 'mm') {
+                        const devMM = absDev / state.calibration.pixelsPerMM;
+                        if (devMM > 2) {
+                            status = 'Severe';
+                            statusClass = 'alert';
+                        } else if (devMM > 1) {
+                            status = 'Moderate';
+                            statusClass = 'warning';
+                        }
+                    } else {
+                        if (absDev > 15) {
+                            status = 'Severe';
+                            statusClass = 'alert';
+                        } else if (absDev > 8) {
+                            status = 'Moderate';
+                            statusClass = 'warning';
+                        }
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${deviation.tooth} (${deviation.label})</td>
+                        <td>${direction}</td>
+                        <td>${devDistance}</td>
+                        <td><span class="${statusClass}">${status}</span></td>
+                    `;
+                    occlusalTable.appendChild(row);
+                });
+            }
+            
+            if (state.measurements.avgOcclusalDeviation !== undefined) {
+                const avgDev = formatDistance(state.measurements.avgOcclusalDeviation);
+                const avgRow = document.createElement('tr');
+                
+                let avgStatus = 'Smooth';
+                let avgClass = 'good';
+                
+                if (state.calibration.method === 'mm') {
+                    const devMM = state.measurements.avgOcclusalDeviation / state.calibration.pixelsPerMM;
+                    if (devMM > 1.5) {
+                        avgStatus = 'Irregular';
+                        avgClass = 'warning';
+                    } else if (devMM > 2.5) {
+                        avgStatus = 'Very Irregular';
+                        avgClass = 'alert';
+                    }
+                } else {
+                    if (state.measurements.avgOcclusalDeviation > 10) {
+                        avgStatus = 'Irregular';
+                        avgClass = 'warning';
+                    } else if (state.measurements.avgOcclusalDeviation > 20) {
+                        avgStatus = 'Very Irregular';
+                        avgClass = 'alert';
+                    }
+                }
+                
+                avgRow.innerHTML = `
+                    <td>Average Deviation</td>
+                    <td>${avgDev}</td>
+                    <td>${avgStatus}</td>
+                    <td><span class="${avgClass}">${avgStatus}</span></td>
+                `;
+                occlusalTable.appendChild(avgRow);
+            }
+        }
+
+        function updateSummaryTab() {
+            let overallStatus = 'Normal';
+            let overallClass = 'good';
+            
+            if (state.measurements.wilsonDepth !== undefined) {
+                const depth = formatDistance(state.measurements.wilsonDepth);
+                document.getElementById('summary-wilson').textContent = depth;
+                
+                if (state.calibration.method === 'mm') {
+                    const depthMM = state.measurements.wilsonDepth / state.calibration.pixelsPerMM;
+                    if (depthMM > 3 || depthMM < 1) {
+                        overallStatus = 'Needs Attention';
+                        overallClass = 'warning';
+                    }
+                } else {
+                    if (state.measurements.wilsonDepth > 30 || state.measurements.wilsonDepth < 10) {
+                        overallStatus = 'Needs Attention';
+                        overallClass = 'warning';
+                    }
+                }
+            }
+            
+            if (state.measurements.symmetryScore !== undefined) {
+                document.getElementById('summary-symmetry').textContent = state.measurements.symmetryScore.toFixed(0) + '%';
+                
+                if (state.measurements.symmetryScore < 70) {
+                    overallStatus = 'Abnormal';
+                    overallClass = 'alert';
+                } else if (state.measurements.symmetryScore < 85 && overallClass !== 'alert') {
+                    overallStatus = 'Needs Attention';
+                    overallClass = 'warning';
+                }
+            }
+            
+            if (state.measurements.occlusalPlaneAngle !== undefined) {
+                const angle = state.measurements.occlusalPlaneAngle.toFixed(1) + '°';
+                document.getElementById('summary-occlusal').textContent = angle;
+                
+                if (Math.abs(state.measurements.occlusalPlaneAngle) > 5 && overallClass !== 'alert') {
+                    overallStatus = 'Needs Attention';
+                    overallClass = 'warning';
+                }
+                
+                if (Math.abs(state.measurements.occlusalPlaneAngle) > 8) {
+                    overallStatus = 'Abnormal';
+                    overallClass = 'alert';
+                }
+            }
+            
+            document.getElementById('overall-assessment').textContent = overallStatus;
+            document.getElementById('overall-assessment').className = 'metric-value ' + overallClass;
+            
+            if (state.measurements.overallIssues && state.measurements.overallIssues.length > 0) {
+                document.getElementById('overall-description').textContent = 
+                    'Clinical Findings: ' + state.measurements.overallIssues.join(', ');
+            } else {
+                document.getElementById('overall-description').textContent = 'All measurements within normal limits';
+            }
+        }
+
+        function updateWilsonChart() {
+            const chartCanvas = document.getElementById('occlusal-chart');
+            if (!chartCanvas) return;
+            
+            if (state.chart) {
+                state.chart.destroy();
+            }
+            
+            const wilsonIndices = [0, 1, 10, 11];
+            const wilsonData = [];
+            const idealWilsonData = [];
+            
+            wilsonIndices.forEach(index => {
+                if (state.points[index]) {
+                    const point = state.points[index];
+                    const dentalInfo = state.dentalData[index];
+                    const idealPoint = state.idealWilsonData.find(p => p.tooth === dentalInfo.tooth);
+                    
+                    wilsonData.push({
+                        tooth: dentalInfo.tooth,
+                        x: point.x,
+                        y: point.y
+                    });
+                    
+                    if (idealPoint) {
+                        const canvasWidth = state.canvas.width;
+                        const canvasHeight = state.canvas.height;
+                        const idealX = (idealPoint.x / 800) * canvasWidth;
+                        const idealY = (idealPoint.y / 200) * canvasHeight * 0.7 + canvasHeight * 0.2;
+                        
+                        idealWilsonData.push({
+                            tooth: dentalInfo.tooth,
+                            x: idealX,
+                            y: idealY
+                        });
+                    }
+                }
+            });
+            
+            const anteriorIndices = [2, 3, 4, 5, 6, 7, 8, 9];
+            const anteriorData = [];
+            const idealAnteriorData = [];
+            
+            anteriorIndices.forEach(index => {
+                if (state.points[index]) {
+                    const point = state.points[index];
+                    const dentalInfo = state.dentalData[index];
+                    const idealPoint = state.idealAnteriorData.find(p => p.tooth === dentalInfo.tooth);
+                    
+                    anteriorData.push({
+                        tooth: dentalInfo.tooth,
+                        x: point.x,
+                        y: point.y
+                    });
+                    
+                    if (idealPoint) {
+                        const canvasWidth = state.canvas.width;
+                        const canvasHeight = state.canvas.height;
+                        const idealX = (idealPoint.x / 800) * canvasWidth;
+                        const idealY = (idealPoint.y / 200) * canvasHeight * 0.7 + canvasHeight * 0.2;
+                        
+                        idealAnteriorData.push({
+                            tooth: dentalInfo.tooth,
+                            x: idealX,
+                            y: idealY
+                        });
+                    }
+                }
+            });
+            
+            if (wilsonData.length >= 3 && anteriorData.length >= 4) {
+                wilsonData.sort((a, b) => a.x - b.x);
+                idealWilsonData.sort((a, b) => a.x - b.x);
+                anteriorData.sort((a, b) => a.x - b.x);
+                idealAnteriorData.sort((a, b) => a.x - b.x);
+                
+                const allLabels = [...wilsonData.map(d => d.tooth), ...anteriorData.map(d => d.tooth)];
+                
+                const datasets = [
+                    {
+                        label: 'Actual Wilson Curve (Posterior)',
+                        data: wilsonData.map(d => state.calibration.method === 'mm' ? (d.y / state.calibration.pixelsPerMM).toFixed(1) : Math.round(d.y)),
+                        borderColor: '#9b59b6',
+                        backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Ideal Wilson Curve',
+                        data: wilsonData.map((d, i) => i < idealWilsonData.length ? (state.calibration.method === 'mm' ? (idealWilsonData[i].y / state.calibration.pixelsPerMM).toFixed(1) : Math.round(idealWilsonData[i].y)) : null),
+                        borderColor: '#2ecc71',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        borderDash: [5, 5]
+                    },
+                    {
+                        label: 'Actual Anterior Teeth',
+                        data: anteriorData.map(d => state.calibration.method === 'mm' ? (d.y / state.calibration.pixelsPerMM).toFixed(1) : Math.round(d.y)),
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Ideal Anterior Teeth',
+                        data: anteriorData.map((d, i) => i < idealAnteriorData.length ? (state.calibration.method === 'mm' ? (idealAnteriorData[i].y / state.calibration.pixelsPerMM).toFixed(1) : Math.round(idealAnteriorData[i].y)) : null),
+                        borderColor: '#f39c12',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        borderDash: [5, 5]
+                    }
+                ];
+                
+                const ctx = chartCanvas.getContext('2d');
+                state.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: allLabels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Dental Curve Analysis - Posterior & Anterior Teeth',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += context.parsed.y + (state.calibration.method === 'mm' ? ' mm' : ' px');
+                                        }
+                                        return label;
+                                    }
+                                }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: state.calibration.method === 'mm' ? 'Vertical Position (mm)' : 'Vertical Position (pixels)',
+                                    reverse: true
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + (state.calibration.method === 'mm' ? ' mm' : ' px');
+                                    }
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Tooth Position (Right to Left)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function exportAnalysis() {
+            if (!state.imageLoaded || !state.analysisActive) {
+                alert("Please place all points and press Complete Analysis before exporting.");
+                return;
+            }
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Dental Curve Analysis Report - Curve of Wilson & Anterior Symmetry</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; font-size: 12px; }
+                        .header { text-align: center; margin-bottom: 20px; }
+                        .header h1 { color: #2c3e50; font-size: 20px; }
+                        .image-container { text-align: center; margin: 15px 0; }
+                        .image-container img { max-width: 100%; max-height: 300px; border: 1px solid #ddd; }
+                        .results { margin-top: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 11px; }
+                        th { background: #2c3e50; color: white; padding: 8px; text-align: left; font-weight: 600; }
+                        td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
+                        .section { margin: 20px 0; }
+                        .section h3 { color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 4px; font-size: 14px; }
+                        .timestamp { color: #7f8c8d; font-size: 11px; }
+                        .good { color: #2ecc71; }
+                        .warning { color: #f39c12; }
+                        .alert { color: #e74c3c; }
+                        @media print {
+                            .no-print { display: none; }
+                            body { padding: 0; }
+                        }
+                        .chart-container { margin: 15px 0; text-align: center; }
+                        .chart-container img { max-width: 100%; height: 200px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Dental Curve Analysis Report</h1>
+                        <div class="timestamp">Generated: ${new Date().toLocaleString()}</div>
+                        <div class="timestamp"><strong>Focus:</strong> Curve of Wilson (Posterior) & Anterior Symmetry (LR4 to LL4)</div>
+                    </div>
+                    
+                    <div class="image-container">
+                        <h3>Analyzed Dental Frontal Image with Measurements</h3>
+                        <img src="${state.canvas.toDataURL('image/png')}" alt="Dental Analysis">
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Summary Assessment</h3>
+                        <table>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Status</th>
+                                <th>Value</th>
+                            </tr>
+            `);
+            
+            const summaryData = [
+                ['Overall Assessment', document.getElementById('overall-assessment').textContent, document.getElementById('overall-description').textContent],
+                ['Curve of Wilson Depth', state.measurements.wilsonDepth ? formatDistance(state.measurements.wilsonDepth) : '--', ''],
+                ['Anterior Symmetry Score', state.measurements.symmetryPercent || '--', state.measurements.symmetryScore ? (state.measurements.symmetryScore > 85 ? 'Good' : state.measurements.symmetryScore > 70 ? 'Moderate' : 'Poor') : ''],
+                ['Occlusal Plane Angle', state.measurements.occlusalPlaneAngle ? state.measurements.occlusalPlaneAngle.toFixed(1) + '°' : '--', ''],
+                ['Anterior Curve Depth', state.measurements.anteriorCurveDepth ? formatDistance(state.measurements.anteriorCurveDepth) : '--', ''],
+                ['Average Occlusal Deviation', state.measurements.avgOcclusalDeviation ? formatDistance(state.measurements.avgOcclusalDeviation) : '--', '']
+            ];
+            
+            summaryData.forEach(([parameter, status, value]) => {
+                let statusClass = 'good';
+                if (status.includes('Abnormal') || status.includes('Severe') || status.includes('Attention') || 
+                    status.includes('Steep') || status.includes('Irregular') || status.includes('Deep') || status.includes('Flat')) {
+                    statusClass = status.includes('Severe') || status.includes('Abnormal') || status.includes('Very') ? 'alert' : 'warning';
+                }
+                
+                printWindow.document.write(`
+                    <tr>
+                        <td>${parameter}</td>
+                        <td class="${statusClass}">${status}</td>
+                        <td>${value}</td>
+                    </tr>
+                `);
+            });
+            
+            printWindow.document.write(`
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Detailed Analysis</h3>
+                        
+                        <h4>Curve of Wilson Analysis (Posterior Teeth: LR6, LR5, LL5, LL6)</h4>
+                        <table>
+                            <tr>
+                                <th>Tooth</th>
+                                <th>Deviation from Ideal</th>
+                                <th>Status</th>
+                            </tr>
+            `);
+            
+            if (state.measurements.wilsonDeviations) {
+                state.measurements.wilsonDeviations.forEach(deviation => {
+                    const devDistance = formatDistance(Math.abs(deviation.deviation));
+                    const direction = deviation.deviation > 0 ? 'Below Ideal' : 'Above Ideal';
+                    
+                    let status = 'Normal';
+                    let statusClass = 'good';
+                    
+                    const absDev = Math.abs(deviation.deviation);
+                    if (state.calibration.method === 'mm') {
+                        const devMM = absDev / state.calibration.pixelsPerMM;
+                        if (devMM > 2) {
+                            status = 'Severe';
+                            statusClass = 'alert';
+                        } else if (devMM > 1) {
+                            status = 'Moderate';
+                            statusClass = 'warning';
+                        }
+                    } else {
+                        if (absDev > 15) {
+                            status = 'Severe';
+                            statusClass = 'alert';
+                        } else if (absDev > 8) {
+                            status = 'Moderate';
+                            statusClass = 'warning';
+                        }
+                    }
+                    
+                    printWindow.document.write(`
+                        <tr>
+                            <td>${deviation.tooth}</td>
+                            <td>${direction}: ${devDistance}</td>
+                            <td class="${statusClass}">${status}</td>
+                        </tr>
+                    `);
+                });
+            }
+            
+            printWindow.document.write(`
+                        </table>
+                        
+                        <h4>Anterior Symmetry Analysis (All Anterior Teeth)</h4>
+                        <table>
+                            <tr>
+                                <th>Tooth Pair</th>
+                                <th>Height Difference</th>
+                                <th>Horizontal Difference</th>
+                                <th>Status</th>
+                            </tr>
+            `);
+            
+            if (state.measurements.symmetryPairs) {
+                state.measurements.symmetryPairs.forEach(pair => {
+                    const heightDiff = formatDistance(pair.heightDifference);
+                    const horizontalDiff = formatDistance(pair.horizontalDifference);
+                    
+                    let status = 'Asymmetric';
+                    let statusClass = 'alert';
+                    
+                    const pmm = (state.calibration.method === 'mm' && state.calibration.pixelsPerMM && state.calibration.pixelsPerMM > 0)
+                        ? state.calibration.pixelsPerMM
+                        : null;
+                    const symThrPx = pmm ? (1.0 * pmm) : 10;
+                    const slightThrPx = pmm ? (2.0 * pmm) : 15;
+
+                    if (pair.heightDifference <= symThrPx && pair.horizontalDifference <= symThrPx) {
+                        status = 'Symmetric';
+                        statusClass = 'good';
+                    } else if (pair.heightDifference <= slightThrPx && pair.horizontalDifference <= slightThrPx) {
+                        status = 'Slight Asymmetry';
+                        statusClass = 'warning';
+                    }
+                    
+                    printWindow.document.write(`
+                        <tr>
+                            <td>${pair.rightTooth} vs ${pair.leftTooth}</td>
+                            <td>${heightDiff}</td>
+                            <td>${horizontalDiff}</td>
+                            <td class="${statusClass}">${status}</td>
+                        </tr>
+                    `);
+                });
+            }
+            
+            printWindow.document.write(`
+                        </table>
+                        
+                        <h4>Occlusal Plane Analysis (All Teeth)</h4>
+                        <table>
+                            <tr>
+                                <th>Tooth</th>
+                                <th>Deviation from Plane</th>
+                                <th>Distance</th>
+                                <th>Status</th>
+                            </tr>
+            `);
+            
+            if (state.measurements.occlusalDeviations) {
+                state.measurements.occlusalDeviations.forEach(deviation => {
+                    const devDistance = formatDistance(Math.abs(deviation.deviation));
+                    const direction = deviation.deviation > 0 ? 'Below Plane' : 'Above Plane';
+                    
+                    let status = 'Normal';
+                    let statusClass = 'good';
+                    
+                    const absDev = Math.abs(deviation.deviation);
+                    if (state.calibration.method === 'mm') {
+                        const devMM = absDev / state.calibration.pixelsPerMM;
+                        if (devMM > 2) {
+                            status = 'Severe';
+                            statusClass = 'alert';
+                        } else if (devMM > 1) {
+                            status = 'Moderate';
+                            statusClass = 'warning';
+                        }
+                    } else {
+                        if (absDev > 15) {
+                            status = 'Severe';
+                            statusClass = 'alert';
+                        } else if (absDev > 8) {
+                            status = 'Moderate';
+                            statusClass = 'warning';
+                        }
+                    }
+                    
+                    printWindow.document.write(`
+                        <tr>
+                            <td>${deviation.tooth}</td>
+                            <td>${direction}</td>
+                            <td>${devDistance}</td>
+                            <td class="${statusClass}">${status}</td>
+                        </tr>
+                    `);
+                });
+            }
+            
+            printWindow.document.write(`
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Clinical Recommendations</h3>
+                        <p><strong>Curve of Wilson:</strong> ${state.measurements.wilsonDepth && state.calibration.method === 'mm' && 
+                          state.measurements.wilsonDepth / state.calibration.pixelsPerMM > 3 ? 
+                          'Deep Curve of Wilson detected; may indicate excessive buccal crown inclination.' :
+                          state.measurements.wilsonDepth && state.measurements.wilsonDepth / state.calibration.pixelsPerMM < 1 ?
+                          'Flat Curve of Wilson; may lack proper buccal-lingual crown inclination.' :
+                          'Curve of Wilson within normal range.'}</p>
+                        <p><strong>Anterior Symmetry:</strong> ${state.measurements.symmetryScore && state.measurements.symmetryScore < 70 ? 
+                          'Severe anterior asymmetry detected; requires orthodontic correction for optimal esthetics and function.' :
+                          state.measurements.symmetryScore && state.measurements.symmetryScore < 85 ?
+                          'Moderate anterior asymmetry; may benefit from selective adjustment or minor orthodontic treatment.' :
+                          'Anterior symmetry within acceptable range.'}</p>
+                        <p><strong>Occlusal Plane:</strong> ${state.measurements.occlusalPlaneAngle && Math.abs(state.measurements.occlusalPlaneAngle) > 5 ? 
+                          'Steep occlusal plane detected; may affect occlusal function and require corrective treatment.' :
+                          state.measurements.avgOcclusalDeviation && state.calibration.method === 'mm' &&
+                          state.measurements.avgOcclusalDeviation / state.calibration.pixelsPerMM > 1.5 ?
+                          'Irregular occlusal plane detected; may require occlusal adjustment.' :
+                          'Occlusal plane within normal limits.'}</p>
+                        <p><strong>Overall:</strong> ${state.measurements.issueCount > 2 ? 
+                          'Multiple abnormalities detected. Comprehensive orthodontic evaluation recommended.' :
+                          state.measurements.issueCount > 0 ?
+                          'Minor abnormalities detected. Monitor and consider preventive measures.' :
+                          'All parameters within normal limits. No immediate intervention required.'}</p>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Calibration Information</h3>
+                        <p>Measurement unit: ${state.calibration.method === 'mm' ? 'Millimeters' : 'Pixels'}</p>
+                        ${state.calibration.method === 'mm' ? 
+                          `<p>Conversion factor: ${state.calibration.pixelsPerMM.toFixed(2)} pixels per mm</p>` : 
+                          ''}
+                        <p><strong>Analysis Focus:</strong></p>
+                        <ul>
+                            <li>Curve of Wilson: Mediolateral curve analysis for molars and second premolars (LR6, LR5, LL5, LL6)</li>
+                            <li>Anterior Symmetry: Dental arrangement analysis for all anterior teeth (LR4 to LL4 including incisors)</li>
+                            <li>Occlusal Plane: Overall occlusal plane analysis including all teeth from LR6 to LL6</li>
+                        </ul>
+                    </div>
+                    
+                    ${rrzNotesToPrintHtml()}
+
+                    <div class="no-print" style="margin-top: 20px; text-align: center;">
+                        <button onclick="window.print()" style="padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                            Print Report
+                        </button>
+                    </div>
+                    
+                    <script>
+                        window.onload = function() {
+                            // window.print();
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+        }
+    </script>
+
+<script>
+(function(){
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    });
+  }
+})();
+
+
+// === RRZ NOTES HELPERS (added) ===
+(function(){
+  function rrzNotesSlotKey(){
+    try{
+      const qs = new URLSearchParams(location.search);
+      const slot = qs.get('slot') || '';
+      const from = qs.get('from') || '';
+      return (slot ? ('slot:'+slot) : '') + (from ? ('|from:'+from) : '');
+    }catch(e){
+      return '';
+    }
+  }
+
+  function rrzNotesStorageKey(){
+    return 'rrz_photo_notes::' + location.pathname + '::' + rrzNotesSlotKey();
+  }
+
+  function rrzReadNotes(){
+    const empty = { crowding:'', gingivalMargin:'', gingivalColor:'', otherFindings:'' };
+    try{
+      const raw = localStorage.getItem(rrzNotesStorageKey());
+      if(!raw) return empty;
+      const obj = JSON.parse(raw);
+      return {
+        crowding: (obj.crowding||''),
+        gingivalMargin: (obj.gingivalMargin||''),
+        gingivalColor: (obj.gingivalColor||''),
+        otherFindings: (obj.otherFindings||'')
+      };
+    }catch(e){
+      return empty;
+    }
+  }
+
+  function rrzWriteNotes(n){
+    try{ localStorage.setItem(rrzNotesStorageKey(), JSON.stringify(n||{})); }catch(e){}
+  }
+
+  function rrzEscapeHtml(str){
+    return String(str||'')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+  }
+
+  window.rrzGetNotes = function(){
+    const n = rrzReadNotes();
+    const c = document.getElementById('note-crowding');
+    const gm = document.getElementById('note-gingival-margin');
+    const gc = document.getElementById('note-gingival-color');
+    const of = document.getElementById('note-other-findings');
+    if(c) n.crowding = (c.value||'').trim();
+    if(gm) n.gingivalMargin = (gm.value||'').trim();
+    if(gc) n.gingivalColor = (gc.value||'').trim();
+    if(of) n.otherFindings = (of.value||'').trim();
+    rrzWriteNotes(n);
+    return n;
+  };
+
+  window.rrzNotesToPrintHtml = function(){
+    const n = window.rrzGetNotes ? window.rrzGetNotes() : rrzReadNotes();
+    const rows = [];
+    if(n.crowding) rows.push(['Crowding', n.crowding]);
+    if(n.gingivalMargin) rows.push(['Gingival Margin', n.gingivalMargin]);
+    if(n.gingivalColor) rows.push(['Gingival color', n.gingivalColor]);
+    if(n.otherFindings) rows.push(['Other Findings', n.otherFindings]);
+    if(!rows.length) return '';
+    return `
+      <div class="section" style="margin-top:18px;">
+        <hr style="border:0; border-top:1px solid #cbd5e1; margin: 14px 0;"/>
+        <h3>Notes</h3>
+        <table>
+          <tr><th>Item</th><th>Value</th></tr>
+          ${rows.map(([k,v]) => `<tr><td>${rrzEscapeHtml(k)}</td><td>${rrzEscapeHtml(v)}</td></tr>`).join('')}
+        </table>
+      </div>
+    `;
+  };
+
+  window.rrzNotesToReportHtml = function(){
+    const n = window.rrzGetNotes ? window.rrzGetNotes() : rrzReadNotes();
+    const rows = [];
+    if(n.crowding) rows.push(`<div class="p-item"><div class="p-title">Crowding</div><div class="p-value">${rrzEscapeHtml(n.crowding)}</div></div>`);
+    if(n.gingivalMargin) rows.push(`<div class="p-item"><div class="p-title">Gingival Margin</div><div class="p-value">${rrzEscapeHtml(n.gingivalMargin)}</div></div>`);
+    if(n.gingivalColor) rows.push(`<div class="p-item"><div class="p-title">Gingival color</div><div class="p-value">${rrzEscapeHtml(n.gingivalColor)}</div></div>`);
+    if(n.otherFindings) rows.push(`<div class="p-item"><div class="p-title">Other Findings</div><div class="p-value">${rrzEscapeHtml(n.otherFindings)}</div></div>`);
+    if(!rows.length) return '';
+    return `
+      <div style="margin-top:14px;">
+        <hr style="border:0; border-top:1px solid #cbd5e1; margin: 14px 0;"/>
+        <div style="font-weight:800; margin: 0 0 10px;">Notes</div>
+        ${rows.join('')}
+      </div>
+    `;
+  };
+
+  window.rrzInitNotes = function(){
+    const panel = document.getElementById('user-notes-panel');
+    if(!panel) return;
+    const n = rrzReadNotes();
+    const c = document.getElementById('note-crowding');
+    const gm = document.getElementById('note-gingival-margin');
+    const gc = document.getElementById('note-gingival-color');
+    const of = document.getElementById('note-other-findings');
+    if(c) c.value = n.crowding || '';
+    if(gm) gm.value = n.gingivalMargin || '';
+    if(gc) gc.value = n.gingivalColor || '';
+    if(of) of.value = n.otherFindings || '';
+
+    const saveNow = () => { try{ window.rrzGetNotes && window.rrzGetNotes(); }catch(e){} };
+    [c,gm,gc,of].forEach(el => { if(el){ el.addEventListener('input', saveNow); el.addEventListener('change', saveNow); } });
+
+    const toggle = (on) => { panel.style.display = on ? 'block' : 'none'; };
+
+    // Toggle based on common global state flags if present
+    try{
+      if(typeof state === 'object' && state && ('imageLoaded' in state)) toggle(!!state.imageLoaded);
+      else toggle(false);
+    }catch(e){ toggle(false); }
+
+
+    // RRZ_NOTES_VISIBILITY_WATCH: ensure panel appears after auto-load from dashboard/PWA caches.
+    (function(){
+      let tries = 0;
+      const qs = (function(){ try{ return new URLSearchParams(location.search); }catch(e){ return null; } })();
+      const openedFromDashboard = !!(qs && ((qs.get('from') === 'photo') || qs.get('slot')));
+      const t = setInterval(() => {
+        tries++;
+        let loaded = false;
+        try{ loaded = !!(typeof state === 'object' && state && state.imageLoaded); }catch(e){}
+        if (loaded){
+          try{ toggle(true); }catch(e){}
+          clearInterval(t);
+          return;
+        }
+        // After ~3 seconds: if opened from dashboard, show notes anyway (even if image load failed),
+        // so user can still type notes and the page won't look "missing".
+        if (tries >= 30){
+          if (openedFromDashboard){
+            try{ toggle(true); }catch(e){}
+          }
+          clearInterval(t);
+        }
+      }, 100);
+    })();
+    // Hook image upload/reset buttons if present (supports different ids)
+    const up = document.getElementById('image-upload') || document.getElementById('file-input');
+    if(up){ up.addEventListener('change', () => setTimeout(() => toggle(true), 80)); }
+
+    const ch = document.getElementById('change-img-btn');
+    if(ch){ ch.addEventListener('click', () => setTimeout(() => toggle(true), 80)); }
+
+    const rs = document.getElementById('reset-btn');
+    if(rs){ rs.addEventListener('click', () => setTimeout(() => {
+      try{ if(typeof state === 'object' && state && ('imageLoaded' in state)) toggle(!!state.imageLoaded); }
+      catch(e){}
+    }, 80)); }
+
+    // If resetAll() exists (some workflows use inline onclick), wrap it once.
+    try{
+      if(typeof window.resetAll === 'function' && !window.resetAll.__rrz_wrapped){
+        const _orig = window.resetAll;
+        const _wrap = function(){
+          const ret = _orig.apply(this, arguments);
+          setTimeout(() => {
+            try{ if(typeof state === 'object' && state && ('imageLoaded' in state)) toggle(!!state.imageLoaded); else toggle(false); }
+            catch(e){ toggle(false); }
+          }, 80);
+          return ret;
+        };
+        _wrap.__rrz_wrapped = true;
+        window.resetAll = _wrap;
+      }
+    }catch(e){}
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    try{ window.rrzInitNotes && window.rrzInitNotes(); }catch(e){}
+  });
+})();
+
+</script>
+</body>
+</html>

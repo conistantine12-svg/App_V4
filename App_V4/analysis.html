@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Royal Ray Zone | Unified Suite</title>
+  <script src="https://unpkg.com/fabric@5.3.0/dist/fabric.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <style>
+    /* تحسين استجابة الـ Canvas وتوسيط الحاوية */
+    #analysis-overlay .panoCanvas-wrapper {
+        min-height: 100vh; /* يخلي الحاوية بطول الشاشة */
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden; /* عشان الصورة لو كبرت متعملش سكرول */
+    }
+    
+   /* تأكد أن الـ Wrapper يأخذ كامل مساحة التطبيق المتاحة */
+/* 1. الإعدادات العامة للحاوية */
+    #analysis-overlay .panoCanvas-wrapper {
+        width: 100vw; 
+        height: 100vh;
+        position: relative;
+        background: #000;
+        overflow: hidden;
+    }
+
+    /* 2. الإعدادات الأساسية للصورة */
+    #panoCanvas {
+        position: absolute !important;
+        top: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        height: auto !important;
+        object-fit: contain;
+    }
+
+    /* 3. للكمبيوتر والتابلت بالعرض (تكبير وإزاحة لليمين) */
+    @media (min-width: 768px) {
+        #panoCanvas {
+            left: 65% !important; /* يزق الصورة يمين عشان القائمة اللي عالشمال */
+            width: 110% !important; /* حجم كبير للكمبيوتر */
+        }
+    }
+
+    /* 4. للموبايل (توسيط كامل وحجم أكبر) */
+    @media (max-width: 767px) {
+        #panoCanvas {
+            left: 50% !important; /* توسيط سنتر في الموبايل */
+            width: 160% !important; /* تكبير بزيادة عشان تفاصيل الأشعة تبان في الشاشة الصغيرة */
+        }
+    }
+    
+    :root { 
+        --primary: #1a3c5a; 
+        --accent: #3498db; 
+        --success: #27ae60;
+        --danger: #e74c3c;
+        --warning: #f39c12;
+        --bg-dark: #0f172a;
+        --gold: #c5a059;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-dark); color: white; overflow: hidden; }
+    
+    .en-text { direction: ltr; display: inline-block; text-align: left; }
+    
+    #main-home { 
+        display: flex; justify-content: center; align-items: center; height: 100vh; 
+        background: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('a.jpg') center/cover no-repeat;
+    }
+    
+    .container { background: rgba(255, 255, 255, 0.95); padding: 35px; border-radius: 30px; text-align: center; width: 90%; max-width: 450px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); color: var(--primary); border: 2px solid var(--gold); }
+    
+    .upload-group { margin-top: 25px; display: flex; flex-direction: column; gap: 12px; }
+    
+    .upload-btn { 
+        display: block; width: 100%; padding: 14px; background: #f8fafc; 
+        border: 2px solid #e2e8f0; border-radius: 15px; color: var(--primary); 
+        font-weight: 600; cursor: pointer; transition: 0.3s; text-align: center;
+        text-decoration: none;
+    }
+    .upload-btn:hover { border-color: var(--accent); background: #f0f9ff; }
+    .main-upload { background: var(--primary) !important; color: white !important; border: none !important; }
+    .planner-btn { background: var(--gold) !important; color: white !important; border: none !important; }
+    
+    #analysis-view { display: none; height: 100vh; flex-direction: column; background: #000; position: relative; }
+    .engine-header { padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; background: var(--primary); border-bottom: 2px solid var(--gold); }
+    
+   .floating-footer { 
+    position: absolute; 
+    top: 50%;           /* ينزل لنصف الشاشة من الأعلى */
+    left: 50%;          /* يتحرك لنصف الشاشة من اليسار */
+    transform: translate(-50%, -50%); /* يضمن التوسيط التام للمنتصف */
+    width: 80%;         /* تكبير العرض (يمكنك زيادة النسبة حسب رغبتك) */
+    height: auto;       /* جعل الطول يتناسب تلقائياً */
+    display: flex; 
+    justify-content: center; 
+    align-items: center; /* لتوسيط المحتوى داخلياً */
+    z-index: 10;
+}
+    
+    #canvas-container-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #000; }
+    
+    #analysis-board { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 1500; display: none; flex-direction: column; }
+    .board-grid { display: grid; grid-template-columns: 1fr 350px; height: calc(100% - 130px); padding: 20px; gap: 20px; }
+    .preview-box { background: #000; border-radius: 15px; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 1px solid var(--gold); }
+    .preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    
+    .data-box { background: #1e293b; border-radius: 15px; padding: 20px; overflow-y: auto; border: 1px solid #334155; }
+    .data-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #334155; font-size: 14px; direction: ltr; color: white; }
+    
+    #finalReport { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #e2e8f0; color: #1e293b; z-index: 2000; display: none; overflow-y: auto; padding: 30px 10px; }
+    .report-card { 
+        max-width: 700px; margin: 0 auto; background: white; 
+        border-radius: 0; box-shadow: 0 0 40px rgba(0,0,0,0.2); 
+        border: 15px solid white; outline: 2px solid var(--primary);
+        position: relative; padding-bottom: 40px;
+    }
+    .report-header { text-align: center; border-bottom: 3px double var(--gold); padding-bottom: 15px; margin-bottom: 25px; }
+    .report-header h1 { color: var(--primary); font-size: 28px; letter-spacing: 2px; }
+    
+    .report-body { padding: 0 30px; display: grid; grid-template-columns: 1fr; gap: 20px; }
+    .report-section { background: #fdfdfd; padding: 15px; border-left: 5px solid var(--primary); border-radius: 0 10px 10px 0; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
+    .report-section h3 { color: var(--primary); margin-bottom: 12px; font-size: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+    
+    .report-item { margin: 8px 0; font-size: 15px; display: flex; justify-content: space-between; direction: ltr; }
+    .status-badge { padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+    .normal { color: var(--success); font-weight: bold; }
+    .abnormal { color: var(--danger); font-weight: bold; }
+    
+    .btn-group { padding: 25px 15px 50px 15px; background: #1e293b; display: flex; justify-content: center; gap: 10px; border-top: 1px solid #334155; }
+    .action-btn { padding: 14px 28px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
+    
+    @media (max-width: 768px) { .board-grid { grid-template-columns: 1fr; } .report-card { width: 95%; } }
+
+    /* === RRZ Add-on: Landmark sidebar + Report pages === */
+    .lm-sidebar{
+        position: absolute;
+        top: 72px;
+        left: 12px;
+        width: 260px;
+        max-height: calc(100vh - 170px);
+        overflow: auto;
+        background: rgba(15,23,42,0.75);
+        border: 1px solid rgba(197,160,89,0.55);
+        border-radius: 14px;
+        padding: 10px;
+        z-index: 60;
+        backdrop-filter: blur(10px);
+    }
+    .lm-sidebar h4{ margin: 0 0 10px 0; color: var(--gold); font-size: 12px; letter-spacing: 1px; }
+    .lm-item{
+        display:flex; align-items:flex-start; gap:10px; padding: 8px 8px;
+        border-radius: 10px; cursor: pointer; transition: .15s;
+        border: 1px solid rgba(255,255,255,0.08); margin-bottom: 8px;
+    }
+    .lm-item:hover{ background: rgba(197,160,89,0.18); border-color: rgba(197,160,89,0.35); }
+    .lm-badge{
+        min-width: 44px; text-align:center; padding: 4px 8px;
+        border-radius: 10px; font-weight: 900; font-size: 12px;
+        color:#0b1220; background: rgba(255,255,255,0.9);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    .lm-full{ font-size: 11px; line-height: 1.35; color: #e5e7eb; direction: ltr; text-align:left; opacity: .95; }
+
+    .rp-nav{ display:flex; gap:8px; justify-content:center; margin: 10px 0 12px 0; flex-wrap: wrap; }
+    .rp-btn{
+        padding: 8px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.06); color: #e5e7eb; cursor:pointer;
+        font-weight: 800; font-size: 12px; transition: .18s;
+    }
+    
+    .rrzBackWrap{ display:flex; justify-content:flex-start; margin:10px 0; }
+    .rrzBackBtn{ border:1px solid var(--gold); background:transparent; color:var(--gold); padding:6px 12px; border-radius:10px; cursor:pointer; font-weight:700; white-space:nowrap; }
+    .rrzBackBtn:hover{ background: rgba(212,175,55,0.12); }
+    .rp-btn.active{ background: rgba(197,160,89,0.92); border-color: rgba(197,160,89,0.92); color:#0b1220; }
+    .rp-page{ display:none; }
+    .rp-page.active{ display:block; }
+
+    /* === RRZ V5.1 patch: place Go Back at bottom-left of each analysis sub-page (sidebar) === */
+    #analysis-board .rp-page{ position: relative; padding-bottom: 64px; }
+    #analysis-board .rp-page .rrzBackWrap{ position: absolute; bottom: 12px; left: 12px; margin: 0; }
+
+    /* === RRZ Patch: ensure Final Report button is always visible === */
+    #analysis-board{ overflow:hidden; }
+    #analysis-board .board-grid{ flex:1, height:auto !important; min-height:0; }
+    #analysis-board .btn-group{ flex:0 0 auto; padding-bottom:20px; }
+    .rrz-final-fab{
+        position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:1600;
+        padding:12px 18px; border-radius:999px; border:1px solid rgba(197,160,89,0.9);
+        background:rgba(197,160,89,0.95); color:#0b1220; font-weight:900; cursor:pointer;
+        box-shadow:0 14px 28px rgba(0,0,0,0.45);
+    }
+    .rrz-final-fab:hover{ filter:brightness(1.02); }
+
+    /* === NEW: Zoom & Pan Controls === */
+    .zoom-controls {
+        position: absolute; top: 80px; right: 20px;
+        display: flex; flex-direction: column; gap: 8px; z-index: 100;
+    }
+    .zoom-btn {
+        width: 42px; height: 42px; border-radius: 12px;
+        background: rgba(15, 23, 42, 0.9); border: 1px solid var(--gold);
+        color: var(--gold); font-size: 18px; font-weight: bold;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(5px); transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .zoom-btn:hover { background: var(--gold); color: #0b1220; }
+    .zoom-btn.active { background: var(--success); color: white; border-color: var(--success); }
+
+    /* === RRZ V4: Header actions (Generate + Final) === */
+    .rrzHeaderActions{
+        display:flex;
+        gap:10px;
+        align-items:center;
+        flex-wrap: nowrap;
+        }
+    .rrzHdrBtn{
+        padding:8px 14px;
+        border-radius:30px;
+        border:1px solid var(--gold);
+        background:rgba(255,255,255,0.08);
+        color:white;
+        cursor:pointer;
+        font-weight:700;
+        font-size:12px;
+        transition:0.15s;
+        white-space:nowrap;
+    }
+    .rrzHdrBtn:hover{ background:rgba(197,160,89,0.18); }
+    .rrzHdrBtn.primary{
+        background: rgba(197,160,89,0.92);
+        border-color: rgba(197,160,89,0.92);
+        color:#0b1220;
+    }
+    
+    /* Print helpers */
+    @media print{
+        body{ background:white !important; }
+        .no-print{ display:none !important; }
+    }
+
+    /* === Panorama Styles (Merged) === */
+    :root { 
+        --primary: #0f172a; --accent: #38bdf8; --success: #10b981;
+        --danger: #ef4444; --warning: #f59e0b; --gold: #c5a059;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--primary); color: white; overflow: hidden; }
+
+    #main-home { 
+        display: flex; justify-content: center; align-items: center; height: 100vh; 
+        background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    }
+    .container { background: rgba(255, 255, 255, 0.05); padding: 40px; border-radius: 40px; text-align: center; border: 1px solid var(--gold); backdrop-filter: blur(10px); }
+    .upload-btn { display: block; padding: 16px 30px; background: var(--gold); color: black; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 20px; text-decoration: none; }
+
+    #analysis-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 5000; flex-direction: column; }
+    .header { background: rgba(15, 23, 42, 0.9); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gold); }
+    
+    .canvas-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; }
+    
+    .sidebar { position: absolute; left: 20px; top: 20px; background: rgba(15, 23, 42, 0.9); padding: 20px; border-radius: 15px; border-left: 4px solid var(--gold); min-width: 260px; z-index: 6000; display: none; }
+    
+    .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; }
+    .color-indicator { width: 12px; height: 12px; border-radius: 2px; }
+    
+    .stats-box { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-top: 15px; border: 1px dashed var(--accent); }
+
+    /* --- Panoramic Findings + Report (V6_2 Pano extension) --- */
+    .pano-mini-title{margin-top:0;margin-bottom:8px;font-size:13px;}
+    .pano-actions-tight{gap:8px;margin-top:6px;margin-bottom:6px;}
+
+    .pano-section-title{margin-top:12px;margin-bottom:8px;color:var(--gold);font-weight:700;letter-spacing:1px;}
+    .pano-findings{max-height:26vh;overflow:auto;padding-right:6px;}
+    .pano-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0;background:rgba(255,255,255,0.04);padding:8px 10px;border-radius:10px;border:1px solid rgba(197,160,89,0.25);}
+    .pano-row label{font-size:11px;color:#e5e7eb;line-height:1.3;}
+    .pano-row input[type="number"]{width:58px;background:#0b1220;color:#fff;border:1px solid rgba(56,189,248,0.35);border-radius:10px;padding:4px 6px;outline:none;}
+    .pano-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+    .pano-btn{border:none;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;transition:0.2s;box-shadow:0 0 0 1px rgba(197,160,89,0.25) inset;}
+    .pano-btn.primary{background:var(--gold);color:#111;}
+    .pano-btn.secondary{background:rgba(255,255,255,0.08);color:#fff;}
+    .pano-btn.danger{background:rgba(239,68,68,0.9);color:#fff;}
+    .pano-btn:hover{transform:translateY(-1px);}
+    .pano-json{display:none; width:100%;min-height:80px;resize:vertical;background:#0b1220;color:#e5e7eb;border:1px solid rgba(56,189,248,0.35);border-radius:12px;padding:10px;margin-top:8px;outline:none;font-size:12px;line-height:1.4;}
+    .pano-hint{display:none; font-size:11px;color:rgba(255,255,255,0.65);margin-top:6px;line-height:1.35;}
+    #pano-report-overlay{display:none;position:fixed;inset:0;background:#05070c;z-index:9000;flex-direction:column;}
+    #pano-report-overlay .rpt-header{background:rgba(15,23,42,0.92);padding:12px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--gold);}
+    #pano-report-overlay .rpt-body{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:16px;}
+    .rpt-card{background:rgba(255,255,255,0.04);border:1px solid rgba(197,160,89,0.35);border-radius:18px;padding:14px;}
+    .rpt-imgwrap{display:flex;justify-content:center;}
+    #reportImage{max-width:100%;height:auto;border-radius:14px;border:1px solid rgba(56,189,248,0.25);}
+    #reportList{margin:0;padding:0 18px;line-height:1.8;color:#e5e7eb;}
+    #reportList li{margin:6px 0;}
+    .rpt-empty{color:rgba(255,255,255,0.7);font-size:13px;}
+
+    /* === PANORAMA CANVAS LAYOUT FIX + MAGNIFY TOOL === */
+    .panoCanvas-wrapper{
+      display:flex;
+      gap:18px;
+      padding:16px 18px 18px 18px;
+      height: calc(100vh - 72px);
+      box-sizing:border-box;
+    }
+    .panoCanvas-wrapper .sidebar{
+      flex: 0 0 360px;
+      max-width: 360px;
+    }
+    #panoCanvas{
+      flex: 1 1 auto;
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #000;
+    }
+    .pano-zoombar{
+      display:flex;
+      gap:10px;
+      margin-top:10px;
+      justify-content:space-between;
+    }
+    .pano-zoombar .pano-btn{
+      flex:1;
+      padding:10px 10px;
+      border-radius:12px;
+      font-weight:700;
+    }
+    .pano-btn.ghost{
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.16);
+      color: #fff;
+    }
+    .pano-btn.ghost.active{
+      outline:2px solid rgba(212,175,55,0.65);
+      box-shadow: 0 0 0 3px rgba(212,175,55,0.15);
+    }
+    .rrzHomeFab{
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      z-index: 9999;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(212,175,55,0.45);
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+    }
+    .rrzHomeFab:hover{
+      background: rgba(0,0,0,0.70);
+    }
+  </style>
+</head>
+<body>
+
+<div id="main-home">
+  <div class="container">
+    <h1 style="font-size: 36px; margin-bottom: 0; letter-spacing: 1px;">Royal</h1>
+    <p style="color:var(--gold); letter-spacing:6px; font-weight: bold; margin-bottom: 20px;">RAY ZONE</p>
+
+    <div class="upload-group">
+      <label for="imgLoader" class="upload-btn">☠ Upload Cephalometric</label>
+      <input type="file" id="imgLoader" accept="image/*" style="display:none">
+
+      <label class="upload-btn" onclick="document.getElementById('panoInp').click()">🦷 Upload Panorama</label>
+      <input type="file" id="panoInp" accept="image/*" style="display:none" onchange="processFile(this)">
+
+      <label class="upload-btn" onclick="alert('Clinic Photos Upload logic would go here')">📷 Upload Clinic Photos</label>
+      <label class="upload-btn planner-btn" onclick="alert('Treatment Planner coming soon...')">🗓 Treatment Planner</label>
+    </div>
+
+    <p style="margin-top: 25px; font-size: 12px; color: #94a3b8;">CephPro Elite v2.2 • Panorama Supervisely Report</p>
+  </div>
+</div>
+
+<!-- ===================== CEPHALOMETRIC MODULE ===================== -->
+<div id="analysis-view">
+  <button class="rrzHomeFab" onclick="showHome()">← Home</button>
+
+  <div class="engine-header">
+    <button onclick="showHome()" style="color:white; background:none; border:none; cursor:pointer; font-size: 18px;">✖</button>
+    <span style="font-weight: bold; color: var(--gold);">ANALYSIS MODE</span>
+    <div class="rrzHeaderActions">
+      <button class="rrzHdrBtn primary" onclick="generateAnalysis()">Generate Report 📐</button>
+    </div>
+  </div>
+  
+  <div class="zoom-controls">
+    <button class="zoom-btn" onclick="togglePan()" id="btnPan" title="Move Image">✋</button>
+    <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">➕</button>
+    <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">➖</button>
+    <button class="zoom-btn" onclick="resetZoom()" title="Reset Zoom">⟲</button>
+  </div>
+
+  <div id="canvas-container-wrapper"><canvas id="mainCanvas"></canvas></div>
+ 
+
+  <div class="floating-footer" style="display:none;">
+    <button onclick="generateAnalysis()" class="action-btn" style="background:var(--gold); color:white; min-width: 250px; box-shadow: 0 10px 20px rgba(0,0,0,0.4);">Generate Report 📐</button>
+  </div>
+</div>
+
+<div id="analysis-board">
+  <button class="rrzHomeFab" onclick="showHome()">← Home</button>
+
+  <div class="engine-header">
+    <span>Digital Measurements</span>
+    <div class="rrzHeaderActions">
+      <button class="rrzHdrBtn primary" onclick="generateAnalysis()">Generate Report 📐</button>
+      <button class="rrzHdrBtn" onclick="closeAnalysis()">Edit Points</button>
+    </div>
+  </div>
+  
+  <div class="board-grid" id="captureBoard">
+    <div class="preview-box" id="resultPreview"></div>
+    <div class="data-box">
+      <h3 style="color: var(--gold); margin-bottom:15px; text-align: center;">Cephalometric Data</h3>
+      <div class="rp-nav">
+        <button class="rp-btn active" id="btn_rp_quick" onclick="showReportPage('rp_quick')">Quick</button>
+        <button class="rp-btn" id="btn_rp_steiner" onclick="showReportPage('rp_steiner')">Steiner</button>
+        <button class="rp-btn" id="btn_rp_downs" onclick="showReportPage('rp_downs')">Downs</button>
+        <button class="rp-btn" id="btn_rp_eastman" onclick="showReportPage('rp_eastman')">Eastman</button>
+      </div>
+      
+      <div class="rp-page active" id="rp_quick">
+        <div class="rrzBackWrap"><button class="rrzBackBtn" onclick="rrzGoBack()">Go Back</button></div>
+        <div style="margin:8px 0 10px 0; font-size:12px; color:#cbd5e1; text-align:center;">Quick Angles</div>
+        <div class="data-row"><span>SNA Angle (Maxilla)</span> <span id="b_sna" style="color:var(--accent)">-</span></div>
+        <div class="data-row"><span>SNB Angle (Mandible)</span> <span id="b_snb" style="color:var(--accent)">-</span></div>
+        <div class="data-row"><span>ANB Angle (Relation)</span> <span id="b_anb" style="color:var(--accent)">-</span></div>
+        <div class="data-row"><span>FMA (FH to Mand. Plane)</span> <span id="b_fma" style="color:var(--accent)">-</span></div>
+        <div class="data-row"><span>Interincisal Angle</span> <span id="b_inter" style="color:var(--accent)">-</span></div>
+      </div>
+      
+      <div class="rp-page" id="rp_steiner">
+        <div class="rrzBackWrap"><button class="rrzBackBtn" onclick="rrzGoBack()">Go Back</button></div>
+        <div style="margin:6px 0 8px 0; font-size:12px; color:#cbd5e1; text-align:center;">Steiner</div>
+        <div class="data-row"><span>SNA</span> <span id="st_sna">-</span></div>
+        <div class="data-row"><span>SNB</span> <span id="st_snb">-</span></div>
+        <div class="data-row"><span>ANB</span> <span id="st_anb">-</span></div>
+        <div class="data-row"><span>Occlusal to SN</span> <span id="st_op_sn">-</span></div>
+        <div class="data-row"><span>Mand. Plane to SN</span> <span id="st_mp_sn">-</span></div>
+        <div class="data-row"><span>U1 to NA</span> <span id="st_u1na">-</span></div>
+        <div class="data-row"><span>L1 to NB</span> <span id="st_l1nb">-</span></div>
+        <div class="data-row"><span>Interincisal</span> <span id="st_inter">-</span></div>
+      </div>
+      
+      <div class="rp-page" id="rp_downs">
+        <div class="rrzBackWrap"><button class="rrzBackBtn" onclick="rrzGoBack()">Go Back</button></div>
+        <div style="margin:6px 0 8px 0; font-size:12px; color:#cbd5e1; text-align:center;">Downs</div>
+        <div class="data-row"><span>Facial Angle</span> <span id="dn_facial">-</span></div>
+        <div class="data-row"><span>Angle of Convexity</span> <span id="dn_convex">-</span></div>
+        <div class="data-row"><span>Mand. Plane Angle</span> <span id="dn_mp">-</span></div>
+        <div class="data-row"><span>Y-axis</span> <span id="dn_yaxis">-</span></div>
+        <div class="data-row"><span>Cant of Occlusal</span> <span id="dn_cant_op">-</span></div>
+        <div class="data-row"><span>Interincisal</span> <span id="dn_inter">-</span></div>
+        <div class="data-row"><span>L1 to Occlusal</span> <span id="dn_l1_occl">-</span></div>
+        <div class="data-row"><span>L1 to Mand. Plane</span> <span id="dn_l1_mp">-</span></div>
+        <div class="data-row"><span>U1 to A-Pog</span> <span id="dn_u1_apog">-</span></div>
+      </div>
+      
+      <div class="rp-page" id="rp_eastman">
+        <div class="rrzBackWrap"><button class="rrzBackBtn" onclick="rrzGoBack()">Go Back</button></div>
+        <div style="margin:6px 0 8px 0; font-size:12px; color:#cbd5e1; text-align:center;">Eastman</div>
+        <div class="data-row"><span>SNA/SNB/ANB</span> <span id="ea_sna_snb_anb">-</span></div>
+        <div class="data-row"><span>SN to Max Plane</span> <span id="ea_sn_mx">-</span></div>
+        <div class="data-row"><span>Wits Appraisal</span> <span id="ea_wits">-</span></div>
+        <div class="data-row"><span>U1 to Max Plane</span> <span id="ea_u1_mx">-</span></div>
+        <div class="data-row"><span>L1 to Mand Plane</span> <span id="ea_l1_mp">-</span></div>
+        <div class="data-row"><span>Interincisal</span> <span id="ea_inter">-</span></div>
+        <div class="data-row"><span>Max-Mand Plane</span> <span id="ea_mx_mp">-</span></div>
+      </div>
+      
+    </div>
+  </div>
+  
+  <div class="btn-group">
+    <button class="action-btn" style="background: var(--success); color:white; min-width: 250px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);" onclick="showFinalReport()">Final Report View 📄</button>
+  </div>
+  <button class="rrz-final-fab" onclick="showFinalReport()">Final Report View 📄</button>
+</div>
+
+<div id="finalReport">
+  <div class="report-card" id="printableReport">
+    <div class="report-header">
+      <div class="rrzBackWrap" style="justify-content:flex-end;"><button class="rrzBackBtn" onclick="rrzGoBack()">Go Back</button></div>
+      <p style="color: var(--gold); font-weight: bold;">ROYAL RAY ZONE</p>
+      <h1>CEPHALOMETRIC ANALYSIS</h1>
+      <p style="font-size: 12px; color: #666;">Date: <span id="reportDate"></span> | Case ID: #RYL-2024</p>
+    </div>
+
+    <div class="report-body">
+      <div class="report-section">
+        <h3>Skeletal Analysis <span>💀</span></h3>
+        <div class="report-item"><span>Maxillary Position (SNA)</span> <span id="r_sna_status">--</span></div>
+        <div class="report-item"><span>Mandibular Position (SNB)</span> <span id="r_snb_status">--</span></div>
+        <div class="report-item"><span>Maxillo-Mandibular (ANB)</span> <span id="r_anb_status">--</span></div>
+      </div>
+
+      <div class="report-section" style="border-left-color: var(--success);">
+        <h3>Dental Analysis <span>🦷</span></h3>
+        <div class="report-item"><span>Interincisal Angle</span> <span id="r_inter_val">--</span></div>
+        <div class="report-item"><span>Upper Incisor to NA</span> <span class="abnormal">Proclined</span></div>
+        <div class="report-item"><span>Lower Incisor to NB</span> <span class="abnormal">Proclined</span></div>
+        <div class="report-item"><span>Interincisal Status</span> <span id="r_inter_status" class="abnormal">Reduced</span></div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 200px; gap: 20px;">
+        <div class="report-section" style="border-left-color: var(--warning);">
+          <h3>Soft Tissue <span>👤</span></h3>
+          <div class="report-item"><span>Upper Lip to E-Line</span> <span class="normal">Normal</span></div>
+          <div class="report-item"><span>Lower Lip to E-Line</span> <span class="abnormal">Protruded</span></div>
+          <div class="report-item"><span>Nasolabial Angle</span> <span class="normal">Acute</span></div>
+        </div>
+        <div style="border: 1px solid var(--gold); padding: 5px; background: #000; height: 180px; display: flex; align-items: center; justify-content: center;">
+          <img id="reportMiniImg" style="max-width: 100%; max-height: 100%;" src="">
+        </div>
+      </div>
+
+      <div class="rp-nav" style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
+        <button class="rp-btn active" id="btn_fr_written" onclick="showFinalPage('fr_written')">Written Report</button>
+        <button class="rp-btn" id="btn_fr_final" onclick="showFinalPage('fr_final')">Final Summary</button>
+        <button class="rp-btn" id="btn_fr_downs" onclick="showFinalPage('fr_downs')">Downs</button>
+        <button class="rp-btn" id="btn_fr_steiner" onclick="showFinalPage('fr_steiner')">Steiner</button>
+        <button class="rp-btn" id="btn_fr_eastman" onclick="showFinalPage('fr_eastman')">Eastman</button>
+      </div>
+
+      <div class="rp-page active" id="fr_written">
+        <div class="rrzBackWrap"><button class="rrzBackBtn" onclick="rrzGoBack()">Go Back</button></div>
+        <div class="report-section" style="border-left-color: var(--gold);">
+          <h3>Written Report <span>📝</span></h3>
+          <div class="report-item"><span>Date</span> <span id="wr_date">--</span></div>
+          <div class="report-item"><span>Case ID</span> <span id="wr_case">#RYL-2024</span></div>
+          <div class="report-item"><span>Generated From</span> <span class="normal">Cephalometric Analysis</span></div>
+        </div>
+
+        <div class="report-section" style="border-left-color: var(--success);">
+          <h3>Final Summary Table <span>✅</span></h3>
+          <div id="tbl_written_final" style="direction:ltr;"></div>
+        </div>
+
+        <div class="report-section" style="border-left-color: var(--primary);">
+          <h3>Steiner Analysis <span>📊</span></h3>
+          <div id="tbl_written_steiner" style="direction:ltr;"></div>
+        </div>
+
+        <div class="report-section" style="border-left-color: var(--primary);">
+          <h3>Downs Analysis <span>📊</span></h3>
+          <div id="tbl_written_downs" style="direction:ltr;"></div>
+        </div>
+
+        <div class="report-section" style="border-left-color: var(--primary);">
+          <h3>Eastman Analysis <span>📊</span></h3>
+          <div id="tbl_written_eastman" style="direction:ltr;"></div>
+        </div>
+      </div>
+
+      <div class="rp-page" id="fr_final">
+        <div class="rrzBackWrap"><button class="rrzBackBtn" onclick="rrzGoBack()">Go Back</button></div>
+        <div class="report-section" style="border-left-color: var(--gold);">
+          <h3>Final Summary Table <span>✅</span></h3>
+          <div id="tbl_final" style="direction:ltr;"></div>
+        </div>
+      </div>
+
+      <div class="rp-page" id="fr_downs">
+        <div class="rrzBackWrap"><button class="rrzBackBtn" onclick="rrzGoBack()">Go Back</button></div>
+        <div class="report-section" style="border-left-color: var(--primary);">
+          <h3>Downs Analysis <span>📊</span></h3>
+          <div id="tbl_downs" style="direction:ltr;"></div>
+        </div>
+      </div>
+
+      <div class="rp-page" id="fr_steiner">
+        <div class="rrzBackWrap"><button class="rrzBackBtn" onclick="rrzGoBack()">Go Back</button></div>
+        <div class="report-section" style="border-left-color: var(--primary);">
+          <h3>Steiner Analysis <span>📊</span></h3>
+          <div id="tbl_steiner" style="direction:ltr;"></div>
+        </div>
+      </div>
+
+      <div class="rp-page" id="fr_eastman">
+        <div class="rrzBackWrap"><button class="rrzBackBtn" onclick="rrzGoBack()">Go Back</button></div>
+        <div class="report-section" style="border-left-color: var(--primary);">
+          <h3>Eastman Analysis <span>📊</span></h3>
+          <div id="tbl_eastman" style="direction:ltr;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 30px; padding: 0 30px; text-align: right; font-size: 14px;">
+      <p>Digital Signature</p>
+      <p style="font-family: 'cursive'; color: var(--primary); font-size: 20px;">Royal Ray Expert</p>
+    </div>
+  </div>
+  
+  <div style="text-align: center; margin-top: 25px; padding-bottom: 50px;">
+    <button class="action-btn no-print" style="background: rgba(255,255,255,0.08); border:1px solid var(--gold); color:#0b1220;" onclick="printFinalReport('written')">Print Written 🖨️</button>
+    <button class="action-btn no-print" style="background: rgba(255,255,255,0.08); border:1px solid var(--gold); color:#0b1220;" onclick="printFinalReport('final')">Print Final ✅</button>
+    <button class="action-btn no-print" style="background: rgba(255,255,255,0.08); border:1px solid var(--gold); color:#0b1220;" onclick="printFinalReport('steiner')">Print Steiner</button>
+    <button class="action-btn no-print" style="background: rgba(255,255,255,0.08); border:1px solid var(--gold); color:#0b1220;" onclick="printFinalReport('downs')">Print Downs</button>
+    <button class="action-btn no-print" style="background: rgba(255,255,255,0.08); border:1px solid var(--gold); color:#0b1220;" onclick="printFinalReport('eastman')">Print Eastman</button>
+    <button class="action-btn no-print" style="background: rgba(197,160,89,0.92); border-color: rgba(197,160,89,0.92); color:#0b1220;" onclick="printFinalReport('all')">Print All / PDF</button>
+    <button class="action-btn" style="background:#64748b; color:white;" onclick="document.getElementById('finalReport').style.display='none'">Go Back</button>
+    <button class="action-btn" style="background:var(--primary); color:white;" onclick="saveDivAsImage('printableReport', 'Royal_Ceph_Analysis')">Download Image 📥</button>
+  </div>
+</div>
+
+<!-- ===================== PANORAMA MODULE ===================== -->
+<div id="analysis-overlay">
+  <div class="header">
+    <button onclick="exitAnalysis()" style="background:var(--danger); border:none; color:white; padding:8px 15px; border-radius:5px; cursor:pointer;">EXIT</button>
+    <span style="font-weight:bold; letter-spacing:2px; color:var(--gold);">SKELETAL &amp; DENTAL ALIGNMENT</span>
+    <button onclick="alert('Exporting Analysis...')" style="background:var(--success); border:none; color:white; padding:8px 15px; border-radius:5px; cursor:pointer;">SAVE</button>
+  </div>
+  <div class="panoCanvas-wrapper">
+    <div class="sidebar" id="data-sidebar">
+      <div class="pano-section-title pano-mini-title">Panoramic Findings</div>
+      <div class="pano-actions pano-actions-tight">
+        <button class="pano-btn secondary" onclick="document.getElementById('maskInp').click()">Upload Mask</button>
+        <input accept="image/*" hidden id="maskInp" type="file" onchange="processMask(this)"/>
+        <button class="pano-btn primary" onclick="openPanoReport()">Report</button>
+      </div>
+      <div class="pano-zoombar" aria-label="Panorama zoom controls">
+        <button class="pano-btn ghost" id="panoMagnifyBtn" onclick="togglePanoMagnify()">Magnify</button>
+        <button class="pano-btn ghost" onclick="panoZoom(-1)">−</button>
+        <button class="pano-btn ghost" onclick="panoZoom(1)">+</button>
+        <button class="pano-btn ghost" id="panoMoveBtn" onclick="togglePanoMove()">Move</button>
+        <button class="pano-btn ghost" onclick="panoFit()">Fit</button>
+      </div>
+
+      <div class="pano-section-title">Counts</div>
+      <div class="pano-findings" id="panoFindings"></div>
+      <div class="stats-box" style="margin-top:16px;">
+        <p style="font-size: 11px; color: var(--accent);">Jaw Symmetry Index</p>
+        <p style="font-size: 18px; font-weight: bold;">98.2% <span style="font-size:10px; color:var(--success);">Optimal</span></p>
+      </div>
+    </div>
+    <canvas id="panoCanvas"></canvas>
+  </div>
+</div>
+
+<div id="pano-report-overlay">
+  <div class="rpt-header">
+    <button onclick="closePanoReport()" style="background:var(--danger); border:none; color:white; padding:8px 14px; border-radius:10px; cursor:pointer;">Go Back</button>
+    <span style="font-weight:bold; letter-spacing:2px; color:var(--gold);">PANORAMIC REPORT</span>
+    <button onclick="downloadPanoReport()" style="background:var(--gold); border:none; color:#0b1220; padding:8px 14px; border-radius:10px; cursor:pointer; font-weight:800;">Download</button>
+    <button onclick="printPanoReport()" style="background:var(--success); border:none; color:white; padding:8px 14px; border-radius:10px; cursor:pointer;">PRINT / PDF</button>
+  </div>
+  <div class="rpt-body">
+    <div class="rpt-card rpt-imgwrap">
+      <img alt="Panoramic with Mask" id="reportImage"/>
+    </div>
+    <div class="rpt-card">
+      <h3 style="margin:0 0 10px 0;color:var(--gold);">Findings (Positive Only)</h3>
+      <ul id="reportList"></ul>
+      <div class="rpt-empty" id="reportEmpty" style="display:none;">لا توجد ملاحظات إيجابية مسجلة (Counts كلها = 0).</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// تأكد من تحميل الـ canvas بشكل صحيح أولاً
+window.addEventListener('load', function() {
+    setTimeout(() => {
+        ensurePanoCanvasSized();
+        console.log('✅ Panorama Canvas initialized');
+    }, 100);
+});
+
+// Shared navigation
+function showHome(){
+    try {
+        const av = document.getElementById('analysis-view'); if(av) av.style.display = 'none';
+        const ab = document.getElementById('analysis-board'); if(ab) ab.style.display = 'none';
+        const fr = document.getElementById('finalReport'); if(fr) fr.style.display = 'none';
+        const po = document.getElementById('analysis-overlay'); if(po) po.style.display = 'none';
+        const pr = document.getElementById('pano-report-overlay'); if(pr) pr.style.display = 'none';
+        const mh = document.getElementById('main-home'); if(mh) mh.style.display = 'flex';
+    } catch(e) {
+        console.error("Navigation error:", e);
+    }
+}
+</script>
+
+<script>
+// ===================== CEPHALOMETRIC MODULE =====================
+const canvas = new fabric.Canvas('mainCanvas', { selection: false });
+let cephPoints = {};
+let tracingLines = [];
+let angleLabels = [];
+let labelObjects = {};
+let pointMeta = {};
+const pointRadius = 4;
+
+// === ZOOM & PAN LOGIC ===
+let isPanning = false;
+
+function zoomIn() {
+    let zoom = canvas.getZoom();
+    zoom *= 1.1;
+    if (zoom > 5) zoom = 5;
+    canvas.zoomToPoint({ x: canvas.width / 2, y: canvas.height / 2 }, zoom);
+}
+
+function zoomOut() {
+    let zoom = canvas.getZoom();
+    zoom /= 1.1;
+    if (zoom < 0.5) zoom = 0.5;
+    canvas.zoomToPoint({ x: canvas.width / 2, y: canvas.height / 2 }, zoom);
+}
+
+function resetZoom() {
+    canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
+}
+
+function togglePan(){
+    isPanning = !isPanning;
+    const btn = document.getElementById('btnPan');
+    if(isPanning){
+        btn.classList.add('active');
+        canvas.selection = false;
+        canvas.forEachObject(o => o.selectable = false);
+    } else {
+        btn.classList.remove('active');
+        canvas.selection = false;
+        canvas.forEachObject(o => o.selectable = true);
+    }
+}
+
+// Mouse Events for Panning
+let isDragging = false;
+let lastPosX, lastPosY;
+
+canvas.on('mouse:down', function(opt) {
+    var evt = opt.e;
+    if (isPanning) {
+        isDragging = true;
+        selection = false;
+        lastPosX = evt.clientX;
+        lastPosY = evt.clientY;
+    }
+});
+
+canvas.on('mouse:move', function(opt) {
+    if (isPanning && isDragging) {
+        var e = opt.e;
+        var vpt = this.viewportTransform;
+        vpt[4] += e.clientX - lastPosX;
+        vpt[5] += e.clientY - lastPosY;
+        this.requestRenderAll();
+        lastPosX = e.clientX;
+        lastPosY = e.clientY;
+    }
+});
+
+canvas.on('mouse:up', function(opt) {
+    if(isPanning){
+        this.setViewportTransform(this.viewportTransform);
+        isDragging = false;
+    }
+});
+
+document.getElementById('reportDate').innerText = new Date().toLocaleDateString();
+
+const pointSettings = [
+    { key:'S',   id:'S-sella',                 x:0.40, y:0.30, c:'#BD10E0' },
+    { key:'N',   id:'Na-Nasion (skeletal)',    x:0.65, y:0.28, c:'#07EC7B' },
+    { key:'Po',  id:'Po-porion',               x:0.30, y:0.45, c:'#7ED321' },
+    { key:'Or',  id:'Or-Orbital',              x:0.55, y:0.45, c:'#FE9A03' },
+    { key:'Co',  id:'Co - Condyle',            x:0.22, y:0.38, c:'#FE9A03' },
+    { key:'Ba',  id:'Ba - Basion',             x:0.18, y:0.60, c:'#EEF0F2' },
+    { key:'ANS', id:'ANS',                     x:0.68, y:0.55, c:'#010AFE' },
+    { key:'PNS', id:'PNS',                     x:0.45, y:0.55, c:'#FF0079' },
+    { key:'A',   id:'A -point',                x:0.70, y:0.60, c:'#6200FF' },
+    { key:'B',   id:'B-point',                 x:0.68, y:0.75, c:'#8F00FE' },
+    { key:'Go',  id:'Go - Gonion',             x:0.40, y:0.70, c:'#000000' },
+    { key:'Gn',  id:'Gn -Gnathion',            x:0.67, y:0.85, c:'#FF03D6' },
+    { key:'Me',  id:'Me-Menton',               x:0.65, y:0.88, c:'#F8E71C' },
+    { key:'Pog', id:'Pog- pogonion (skeletal)',x:0.70, y:0.82, c:'#07EC7B' },
+    { key:'U1A', id:'UI- apex',                x:0.66, y:0.62, c:'#02C2FF' },
+    { key:'U1E', id:'UI - coronal',            x:0.72, y:0.66, c:'#FF2D00' },
+    { key:'L1A', id:'LI- apex',                x:0.66, y:0.79, c:'#FF2D00' },
+    { key:'L1E', id:'LI- coronal',             x:0.71, y:0.72, c:'#FFF500' },
+    { key:'UMM', id:'U.Molar - mesial point',  x:0.56, y:0.60, c:'#010AFE' },
+    { key:'UMD', id:'U.molar - distal point',  x:0.52, y:0.60, c:'#FFFFFF' },
+    { key:'LMM', id:'L.molar - mesial point',  x:0.56, y:0.70, c:'#FFC705' },
+    { key:'LMD', id:'L.molar - distal point',  x:0.52, y:0.70, c:'#02C2FF' },
+    { key:'Nsoft', id:'Soft tissue - Na',      x:0.72, y:0.29, c:'#8F00FE' },
+    { key:'Prn',   id:'Pn- pronasal',          x:0.82, y:0.52, c:'#000000' },
+    { key:'Sn',    id:'Sn- Subnasal',          x:0.78, y:0.60, c:'#FF2D00' },
+    { key:'Ls',    id:'UL-Upper lip',          x:0.83, y:0.65, c:'#DBFF00' },
+    { key:'Li',    id:'LL- Lower lip',         x:0.82, y:0.72, c:'#4A90E2' },
+    { key:'STA',   id:'Soft tissue - A point', x:0.78, y:0.62, c:'#F5A623' },
+    { key:'STB',   id:'Soft tissue - B point', x:0.76, y:0.76, c:'#FF03D6' },
+    { key:'PgS',   id:'Soft tissue - Pog',     x:0.78, y:0.85, c:'#FFF500' }
+];
+
+document.getElementById('imgLoader').onchange = function(e) {
+    const reader = new FileReader();
+    reader.onload = (f) => {
+        const img = new Image();
+        img.src = f.target.result;
+        img.onload = () => {
+            document.getElementById('main-home').style.display = 'none';
+            document.getElementById('analysis-view').style.display = 'flex';
+            const ratio = Math.min((window.innerWidth * 0.95)/img.width, (window.innerHeight - 150)/img.height);
+            canvas.setDimensions({ width: img.width * ratio, height: img.height * ratio });
+            const fabImg = new fabric.Image(img);
+            fabImg.scale(ratio);
+            canvas.setBackgroundImage(fabImg, canvas.renderAll.bind(canvas));
+            
+            pointSettings.forEach(p => {
+                const circle = new fabric.Circle({
+                    left: canvas.width * p.x, top: canvas.height * p.y,
+                    radius: pointRadius, fill: p.c, stroke: 'white', strokeWidth: 1,
+                    originX: 'center', originY: 'center', hasControls: false, hasBorders: false
+                });
+                const shortLbl = makeShortLabel(p.id, p.key);
+                const text = new fabric.Text(shortLbl, { fontSize: 12, fontWeight: 'bold', fill: 'yellow', left: canvas.width * p.x + 6, top: canvas.height * p.y - 15, selectable: false });
+                circle.on('moving', () => text.set({ left: circle.left + 6, top: circle.top - 15 }));
+                cephPoints[p.key] = circle;
+                labelObjects[p.key] = text;
+                pointMeta[p.key] = { full: p.id, short: makeShortLabel(p.id, p.key), color: p.c };
+                canvas.add(circle, text);
+            });
+            buildLandmarkSidebar();
+            document.getElementById('lmSidebar').style.display = 'block';
+        };
+    };
+    reader.readAsDataURL(e.target.files[0]);
+};
+
+function makeShortLabel(fullName, fallbackKey){
+    const s = (fullName || '').trim();
+    if(/^Soft\s*tissue\s*-\s*/i.test(s)){
+        const base = s.replace(/^Soft\s*tissue\s*-\s*/i,'').trim();
+        let abbr = base.split(/[\s\(]/)[0].replace(/[^A-Za-z0-9\.]/g,'');
+        if(!abbr) abbr = (fallbackKey || 'ST');
+        if(abbr.toLowerCase() === 'na') abbr = 'Na';
+        if(abbr.toLowerCase() === 'pog') abbr = 'Pog';
+        return abbr + 's';
+    }
+    if(s.includes('-')){
+        let left = s.split('-')[0].trim();
+        left = left.replace(/[^A-Za-z0-9\.]/g,'');
+        if(left) return left;
+    }
+    const t = s.split(/[\s\(]/)[0].trim().replace(/[^A-Za-z0-9\.]/g,'');
+    return t || (fallbackKey || '?');
+}
+
+function buildLandmarkSidebar(){
+    const box = document.getElementById('lmList');
+    if(!box) return;
+    box.innerHTML = '';
+    pointSettings.forEach(p => {
+        const shortLbl = makeShortLabel(p.id, p.key);
+        const item = document.createElement('div');
+        item.className = 'lm-item';
+        item.setAttribute('data-key', p.key);
+        item.innerHTML = `
+          <div class="lm-badge" style="border:2px solid ${p.c};">${shortLbl}</div>
+          <div class="lm-full">${p.id}</div>
+        `;
+        item.onclick = () => focusLandmark(p.key);
+        box.appendChild(item);
+    });
+}
+
+function focusLandmark(key){
+    const c = cephPoints[key];
+    const t = labelObjects[key];
+    if(!c) return;
+    const prevStroke = c.stroke;
+    const prevSW = c.strokeWidth;
+    c.set({ stroke: '#facc15', strokeWidth: 3 });
+    if(t){ t.set({ fill:'#facc15' }); }
+    canvas.renderAll();
+    setTimeout(() => {
+        c.set({ stroke: prevStroke, strokeWidth: prevSW });
+        if(t){ t.set({ fill:'yellow' }); }
+        canvas.renderAll();
+    }, 650);
+}
+
+function showReportPage(id){
+    window.RRZ_rpStack = window.RRZ_rpStack || [];
+    try{
+        const cur = document.querySelector('#analysis-board .rp-page.active');
+        if(cur && cur.id && cur.id !== id){ window.RRZ_rpStack.push(cur.id); }
+    }catch(e){}
+
+    document.querySelectorAll('#analysis-board .rp-page').forEach(p => p.classList.remove('active'));
+    const el = document.getElementById(id);
+    if(el) el.classList.add('active');
+    const map = { rp_quick:'btn_rp_quick', rp_steiner:'btn_rp_steiner', rp_downs:'btn_rp_downs', rp_eastman:'btn_rp_eastman' };
+    Object.values(map).forEach(bid => { const b=document.getElementById(bid); if(b) b.classList.remove('active'); });
+    const bid = map[id];
+    if(bid){ const b=document.getElementById(bid); if(b) b.classList.add('active'); }
+}
+
+function showFinalPage(id){
+    window.RRZ_finalStack = window.RRZ_finalStack || [];
+    try{
+        const cur = document.querySelector('#finalReport .rp-page.active');
+        if(cur && cur.id && cur.id !== id){ window.RRZ_finalStack.push(cur.id); }
+    }catch(e){}
+
+    ['fr_written','fr_final','fr_downs','fr_steiner','fr_eastman'].forEach(pid => {
+        const p = document.getElementById(pid);
+        if(p) p.classList.toggle('active', pid === id);
+    });
+    const map = { fr_written:'btn_fr_written', fr_downs:'btn_fr_downs', fr_steiner:'btn_fr_steiner', fr_eastman:'btn_fr_eastman', fr_final:'btn_fr_final' };
+    Object.values(map).forEach(bid => { const b=document.getElementById(bid); if(b) b.classList.remove('active'); });
+    const bid = map[id];
+    if(bid){ const b=document.getElementById(bid); if(b) b.classList.add('active'); }
+}
+
+function calculateAngle(p1, p2, p3, p4) {
+    const v1 = { x: p2.left - p1.left, y: p2.top - p1.top };
+    const v2 = { x: p4.left - p3.left, y: p4.top - p3.top };
+    const dot = v1.x * v2.x + v1.y * v2.y;
+    const mag1 = Math.sqrt(v1.x**2 + v1.y**2);
+    const mag2 = Math.sqrt(v2.x**2 + v2.y**2);
+    return (Math.acos(Math.max(-1, Math.min(1, dot / (mag1 * mag2)))) * 180 / Math.PI).toFixed(1);
+}
+
+function addAngleLabel(text, point, color = 'white') {
+    const label = new fabric.Text(text + "°", {
+        fontSize: 14, fontWeight: 'bold', fill: color, backgroundColor: 'rgba(0,0,0,0.6)',
+        left: point.left + 10, top: point.top + 10, selectable: false
+    });
+    angleLabels.push(label);
+    canvas.add(label);
+}
+
+function drawTracing() {
+    clearTracing();
+    const pairs = [['S','N'], ['N','A'], ['N','B'], ['Po','Or'], ['Go','Me'], ['U1A', 'U1E'], ['L1E', 'L1A']];
+    pairs.forEach(pair => {
+        const line = new fabric.Line([cephPoints[pair[0]].left, cephPoints[pair[0]].top, cephPoints[pair[1]].left, cephPoints[pair[1]].top], {
+            stroke: 'cyan', strokeWidth: 2, selectable: false, opacity: 0.6
+        });
+        tracingLines.push(line);
+        canvas.add(line);
+        line.sendToBack();
+    });
+    canvas.renderAll();
+}
+
+function clearTracing() {
+    tracingLines.forEach(l => canvas.remove(l));
+    angleLabels.forEach(a => canvas.remove(a));
+    tracingLines = [];
+    angleLabels = [];
+    canvas.renderAll();
+}
+
+function dist(p1, p2){ return Math.hypot(p2.left - p1.left, p2.top - p1.top); }
+
+function angleAt(A, B, C){
+    const v1 = { x: A.left - B.left, y: A.top - B.top };
+    const v2 = { x: C.left - B.left, y: C.top - B.top };
+    const dot = v1.x * v2.x + v1.y * v2.y;
+    const mag1 = Math.sqrt(v1.x*v1.x + v1.y*v1.y);
+    const mag2 = Math.sqrt(v2.x*v2.x + v2.y*v2.y);
+    return (Math.acos(Math.max(-1, Math.min(1, dot / (mag1 * mag2)))) * 180 / Math.PI);
+}
+
+function pointLineDistance(P, A, B){
+    const x0 = P.left, y0 = P.top;
+    const x1 = A.left, y1 = A.top;
+    const x2 = B.left, y2 = B.top;
+    const num = Math.abs((y2 - y1)*x0 - (x2 - x1)*y0 + x2*y1 - y2*x1);
+    const den = Math.hypot(y2 - y1, x2 - x1);
+    return den === 0 ? 0 : (num / den);
+}
+
+function projectPointOnLine(P, A, B){
+    const ax = A.left, ay = A.top;
+    const bx = B.left, by = B.top;
+    const px = P.left, py = P.top;
+    const vx = bx - ax, vy = by - ay;
+    const denom = vx*vx + vy*vy;
+    if(denom === 0) return { x: ax, y: ay, t: 0 };
+    const t = ((px - ax)*vx + (py - ay)*vy) / denom;
+    return { x: ax + t*vx, y: ay + t*vy, t };
+}
+
+function signedDistanceAlongLine(P1, P2, A, B){
+    const u = { x: B.left - A.left, y: B.top - A.top };
+    const mag = Math.hypot(u.x, u.y);
+    if(mag === 0) return 0;
+    const ux = u.x / mag, uy = u.y / mag;
+    const dx = P2.x - P1.x, dy = P2.y - P1.y;
+    return dx*ux + dy*uy;
+}
+
+function safeGet(key){ return cephPoints[key] || null; }
+
+function getOcclusalPlane(){
+    const a = safeGet('UMM') || safeGet('U1E');
+    const b = safeGet('LMM') || safeGet('L1E');
+    return (a && b) ? [a,b] : null;
+}
+
+function severityFromZ(z){
+    const az = Math.abs(z);
+    if(!isFinite(az)) return { sev:'-', tag:'' };
+    if(az < 1) return { sev:'Normal', tag:'' };
+    if(az < 2) return { sev:'Mild', tag:'*' };
+    if(az < 3) return { sev:'Moderate', tag:'**' };
+    return { sev:'Severe', tag:'***' };
+}
+
+function renderTable(containerId, rows){
+    const el = document.getElementById(containerId);
+    if(!el) return;
+    const style = `
+      <style>
+        .rrzTable{width:100%;border-collapse:collapse;font-size:12px}
+        .rrzTable th,.rrzTable td{border:1px solid #e2e8f0;padding:6px 8px}
+        .rrzTable th{background:#f8fafc;text-align:left}
+        .rrzMuted{color:#64748b}
+        .rrzGood{color:#16a34a;font-weight:700}
+        .rrzBad{color:#dc2626;font-weight:700}
+      </style>
+    `;
+    const header = `<table class="rrzTable"><thead><tr><th>Metric</th><th class="rrzMuted">Mean</th><th class="rrzMuted">SD</th><th>Result</th><th class="rrzMuted">Z</th><th>Severity</th><th>Meaning</th></tr></thead><tbody>`;
+    const body = rows.map(r => {
+      const mean = (r.mean ?? '-'); const sd = (r.sd ?? '-'); const res = (r.valueText ?? '-');
+      const z = (r.zText ?? '-'); const sev = (r.severity ?? '-'); const meaning = (r.meaning ?? '-');
+      const cls = (sev === 'Normal') ? 'rrzGood' : (sev === '-' ? 'rrzMuted' : 'rrzBad');
+      return `<tr><td>${r.label}</td><td class="rrzMuted">${mean}</td><td class="rrzMuted">${sd}</td><td>${res}</td><td class="rrzMuted">${z}</td><td class="${cls}">${sev}</td><td>${meaning}</td></tr>`;
+    }).join('');
+    el.innerHTML = style + header + body + `</tbody></table>`;
+}
+
+function buildRow(label, mean, sd, value, unit, meaningFn){
+    const v = (value === null || value === undefined || isNaN(value)) ? null : value;
+    const valueText = (v === null) ? '-' : (v.toFixed(1) + (unit || ''));
+    const z = (v === null || mean === null || sd === null || sd === 0) ? null : ((v - mean) / sd);
+    const zText = (z === null || !isFinite(z)) ? '-' : z.toFixed(2);
+    const sevObj = (z === null) ? {sev:'-',tag:''} : severityFromZ(z);
+    const meaning = (v === null) ? '-' : (meaningFn ? meaningFn(v, mean, sd, sevObj) : '');
+    return { label, mean, sd, valueText, zText, severity: sevObj.sev, meaning };
+}
+
+function meaningSkeletalClassANB(anb){ 
+    if(anb > 4) return 'Skeletal Class II'; 
+    if(anb < 0) return 'Skeletal Class III'; 
+    return 'Skeletal Class I'; 
+}
+
+function meaningMaxillaSNA(sna){ 
+    if(sna > 84) return 'Prognathic maxilla'; 
+    if(sna < 80) return 'Retrognathic maxilla'; 
+    return 'Normal A-P maxilla'; 
+}
+
+function meaningMandibleSNB(snb){ 
+    if(snb > 82) return 'Prognathic mandible'; 
+    if(snb < 78) return 'Retrognathic mandible'; 
+    return 'Normal A-P mandible'; 
+}
+
+function meaningInterincisal(v){ 
+    if(v < 125) return 'Reduced (proclination)'; 
+    if(v > 135) return 'Increased (uprighting)'; 
+    return 'Normal interincisal'; 
+}
+
+function generateAnalysis() {
+    window.RRZ_rpStack = [];
+
+    drawTracing();
+
+    const S=safeGet('S'), N=safeGet('N'), A=safeGet('A'), B=safeGet('B'), Po=safeGet('Po'), Or=safeGet('Or'), Go=safeGet('Go'), Me=safeGet('Me'), Gn=safeGet('Gn'), Pog=safeGet('Pog');
+    const U1A=safeGet('U1A'), U1E=safeGet('U1E'), L1A=safeGet('L1A'), L1E=safeGet('L1E'), ANS=safeGet('ANS'), PNS=safeGet('PNS');
+    const Prn=safeGet('Prn'), Sn=safeGet('Sn'), Ls=safeGet('Ls'), Li=safeGet('Li'), PgS=safeGet('PgS');
+
+    const sna = (S && N && A) ? parseFloat(calculateAngle(S, N, N, A)) : NaN;
+    const snb = (S && N && B) ? parseFloat(calculateAngle(S, N, N, B)) : NaN;
+    const anb = (isFinite(sna) && isFinite(snb)) ? parseFloat((sna - snb).toFixed(1)) : NaN;
+    const fma = (Po && Or && Go && Me) ? parseFloat(calculateAngle(Po, Or, Go, Me)) : NaN;
+    const inter = (U1A && U1E && L1E && L1A) ? parseFloat(calculateAngle(U1A, U1E, L1E, L1A)) : NaN;
+
+    const op = getOcclusalPlane();
+    const op_sn = (op && S && N) ? parseFloat(calculateAngle(op[0], op[1], S, N)) : NaN;
+    const mp_sn = (Go && Gn && S && N) ? parseFloat(calculateAngle(Go, Gn, S, N)) : NaN;
+    const u1_na_deg = (U1A && U1E && N && A) ? parseFloat(calculateAngle(U1A, U1E, N, A)) : NaN;
+    const l1_nb_deg = (L1A && L1E && N && B) ? parseFloat(calculateAngle(L1A, L1E, N, B)) : NaN;
+    const u1_na_mm = (U1E && N && A) ? pointLineDistance(U1E, N, A) : NaN;
+    const l1_nb_mm = (L1E && N && B) ? pointLineDistance(L1E, N, B) : NaN;
+
+    const facial = (Po && Or && N && Pog) ? parseFloat(calculateAngle(Po, Or, N, Pog)) : NaN;
+    const convex = (N && A && Pog) ? angleAt(N, A, Pog) : NaN;
+    const yaxis = (S && Gn && Po && Or) ? parseFloat(calculateAngle(S, Gn, Po, Or)) : NaN;
+    const cant_op = (op && Po && Or) ? parseFloat(calculateAngle(op[0], op[1], Po, Or)) : NaN;
+    const l1_occl = (L1A && L1E && op) ? parseFloat(calculateAngle(L1A, L1E, op[0], op[1])) : NaN;
+    const l1_mp   = (L1A && L1E && Go && Gn) ? parseFloat(calculateAngle(L1A, L1E, Go, Gn)) : NaN;
+    const u1_apog = (U1E && A && Pog) ? pointLineDistance(U1E, A, Pog) : NaN;
+
+    const sn_mx = (S && N && ANS && PNS) ? parseFloat(calculateAngle(S, N, ANS, PNS)) : NaN;
+    const u1_mx = (U1A && U1E && ANS && PNS) ? parseFloat(calculateAngle(U1A, U1E, ANS, PNS)) : NaN;
+    const l1_mp_e = (L1A && L1E && Go && Gn) ? parseFloat(calculateAngle(L1A, L1E, Go, Gn)) : NaN;
+    const mx_mp = (ANS && PNS && Go && Gn) ? parseFloat(calculateAngle(ANS, PNS, Go, Gn)) : NaN;
+    const uafh = (N && ANS) ? dist(N, ANS) : NaN;
+    const lafh = (ANS && Me) ? dist(ANS, Me) : NaN;
+    const lratio = (isFinite(uafh) && isFinite(lafh) && (uafh+lafh) > 0) ? (lafh / (uafh + lafh) * 100) : NaN;
+    const l1_apog = (L1E && A && Pog) ? pointLineDistance(L1E, A, Pog) : NaN;
+    const ll_eplane = (Li && Prn && PgS) ? pointLineDistance(Li, Prn, PgS) : NaN;
+    const nasolab = (Prn && Sn && Ls) ? angleAt(Prn, Sn, Ls) : NaN;
+
+    let wits = NaN;
+    if(op && A && B){
+        const Aproj = projectPointOnLine(A, op[0], op[1]);
+        const Bproj = projectPointOnLine(B, op[0], op[1]);
+        wits = signedDistanceAlongLine(Aproj, Bproj, op[0], op[1]);
+    }
+
+    if(N && isFinite(sna)) addAngleLabel(sna.toFixed(1), N, '#ffeb3b');
+    if(N && isFinite(snb)) addAngleLabel(snb.toFixed(1), N, '#03a9f4');
+    if(Go && isFinite(fma)) addAngleLabel(fma.toFixed(1), Go, '#ff9800');
+
+    document.getElementById('b_sna').innerText = isFinite(sna) ? (sna.toFixed(1) + "°") : "-";
+    document.getElementById('b_snb').innerText = isFinite(snb) ? (snb.toFixed(1) + "°") : "-";
+    document.getElementById('b_anb').innerText = isFinite(anb) ? (anb.toFixed(1) + "°") : "-";
+    document.getElementById('b_fma').innerText = isFinite(fma) ? (fma.toFixed(1) + "°") : "-";
+    document.getElementById('b_inter').innerText = isFinite(inter) ? (inter.toFixed(1) + "°") : "-";
+
+    document.getElementById('r_sna_status').innerText = isFinite(sna) ? meaningMaxillaSNA(sna) : "--";
+    document.getElementById('r_sna_status').className = (!isFinite(sna) || sna > 84 || sna < 80) ? "abnormal" : "normal";
+    document.getElementById('r_snb_status').innerText = isFinite(snb) ? meaningMandibleSNB(snb) : "--";
+    document.getElementById('r_snb_status').className = (!isFinite(snb) || snb > 82 || snb < 78) ? "abnormal" : "normal";
+    document.getElementById('r_anb_status').innerText = isFinite(anb) ? meaningSkeletalClassANB(anb) : "--";
+    document.getElementById('r_anb_status').className = (!isFinite(anb) || anb > 4 || anb < 0) ? "abnormal" : "normal";
+    document.getElementById('r_inter_val').innerText = isFinite(inter) ? (inter.toFixed(1) + "°") : "--";
+    document.getElementById('r_inter_status').innerText = isFinite(inter) ? meaningInterincisal(inter) : "--";
+    document.getElementById('r_inter_status').className = (!isFinite(inter) || inter < 125 || inter > 135) ? "abnormal" : "normal";
+
+    // Update mini-panels
+    document.getElementById('st_sna').innerText = isFinite(sna) ? (sna.toFixed(1)+"°") : "-";
+    document.getElementById('st_snb').innerText = isFinite(snb) ? (snb.toFixed(1)+"°") : "-";
+    document.getElementById('st_anb').innerText = isFinite(anb) ? (anb.toFixed(1)+"°") : "-";
+    document.getElementById('st_op_sn').innerText = isFinite(op_sn) ? (op_sn.toFixed(1)+"°") : "-";
+    document.getElementById('st_mp_sn').innerText = isFinite(mp_sn) ? (mp_sn.toFixed(1)+"°") : "-";
+    document.getElementById('st_u1na').innerText = (isFinite(u1_na_deg) && isFinite(u1_na_mm)) ? (u1_na_deg.toFixed(1)+"° / "+u1_na_mm.toFixed(1)) : "-";
+    document.getElementById('st_l1nb').innerText = (isFinite(l1_nb_deg) && isFinite(l1_nb_mm)) ? (l1_nb_deg.toFixed(1)+"° / "+l1_nb_mm.toFixed(1)) : "-";
+    document.getElementById('st_inter').innerText = isFinite(inter) ? (inter.toFixed(1)+"°") : "-";
+    
+    document.getElementById('dn_facial').innerText = isFinite(facial) ? (facial.toFixed(1)+"°") : "-";
+    document.getElementById('dn_convex').innerText = isFinite(convex) ? (convex.toFixed(1)+"°") : "-";
+    document.getElementById('dn_mp').innerText = isFinite(fma) ? (fma.toFixed(1)+"°") : "-";
+    document.getElementById('dn_yaxis').innerText = isFinite(yaxis) ? (yaxis.toFixed(1)+"°") : "-";
+    document.getElementById('dn_cant_op').innerText = isFinite(cant_op) ? (cant_op.toFixed(1)+"°") : "-";
+    document.getElementById('dn_inter').innerText = isFinite(inter) ? (inter.toFixed(1)+"°") : "-";
+    document.getElementById('dn_l1_occl').innerText = isFinite(l1_occl) ? (l1_occl.toFixed(1)+"°") : "-";
+    document.getElementById('dn_l1_mp').innerText = isFinite(l1_mp) ? (l1_mp.toFixed(1)+"°") : "-";
+    document.getElementById('dn_u1_apog').innerText = isFinite(u1_apog) ? (u1_apog.toFixed(1)) : "-";
+
+    document.getElementById('ea_sna_snb_anb').innerText = (isFinite(sna)&&isFinite(snb)&&isFinite(anb)) ? (sna.toFixed(1)+"/"+snb.toFixed(1)+"/"+anb.toFixed(1)) : "-";
+    document.getElementById('ea_sn_mx').innerText = isFinite(sn_mx) ? (sn_mx.toFixed(1)+"°") : "-";
+    document.getElementById('ea_wits').innerText = isFinite(wits) ? (wits.toFixed(1)) : "-";
+    document.getElementById('ea_u1_mx').innerText = isFinite(u1_mx) ? (u1_mx.toFixed(1)+"°") : "-";
+    document.getElementById('ea_l1_mp').innerText = isFinite(l1_mp_e) ? (l1_mp_e.toFixed(1)+"°") : "-";
+    document.getElementById('ea_inter').innerText = isFinite(inter) ? (inter.toFixed(1)+"°") : "-";
+    document.getElementById('ea_mx_mp').innerText = isFinite(mx_mp) ? (mx_mp.toFixed(1)+"°") : "-";
+
+    // Generate Tables
+    const downsRows = [
+        buildRow('Facial angle', 87.8, 3.5, facial, '°', (v)=> v>=85 && v<=90 ? 'Normal chin' : (v<85?'Retrusive':'Prominent')),
+        buildRow('Angle of convexity', 0.0, 5.1, convex, '°', (v)=> Math.abs(v)<=5 ? 'Straight' : (v>5?'Convex':'Concave')),
+        buildRow('Mandibular plane (FMA)', 21.9, 5.0, fma, '°', (v)=> v<=26 ? 'Normodivergent' : 'Hyperdivergent'),
+        buildRow('Y-axis', 59.0, 6.0, yaxis, '°', (v)=> v>=55 && v<=65 ? 'Normal growth' : 'Altered growth'),
+        buildRow('Cant of occlusal', 9.3, 3.8, cant_op, '°', (v)=> v>=5 && v<=12 ? 'Normal' : 'Altered'),
+        buildRow('Interincisal angle', 128.0, 5.3, inter, '°', (v)=> meaningInterincisal(v)),
+        buildRow('L1 to occlusal', 14.5, 3.5, l1_occl, '°', (v)=> '-'),
+        buildRow('L1 to Mand. plane', 1.4, 3.8, l1_mp, '°', (v)=> '-'),
+        buildRow('U1 to A-Pog (mm)', 2.7, 1.8, u1_apog, '', (v)=> v<=4 ? 'Normal' : 'Protrusive')
+    ];
+
+    const steinerRows = [
+        buildRow('SNA', 82.0, 2.0, sna, '°', (v)=> meaningMaxillaSNA(v)),
+        buildRow('SNB', 80.0, 2.0, snb, '°', (v)=> meaningMandibleSNB(v)),
+        buildRow('ANB', 2.0, 2.0, anb, '°', (v)=> meaningSkeletalClassANB(v)),
+        buildRow('Occlusal to SN', 14.0, 4.0, op_sn, '°', (v)=> '-'),
+        buildRow('Go-Gn to SN', 32.0, 5.0, mp_sn, '°', (v)=> v<=37 ? 'Normal' : 'High angle'),
+        buildRow('U1 to NA (deg)', 22.0, 6.0, u1_na_deg, '°', (v)=> '-'),
+        buildRow('U1 to NA (mm)', 4.0, 3.0, u1_na_mm, '', (v)=> '-'),
+        buildRow('L1 to NB (deg)', 25.0, 5.0, l1_nb_deg, '°', (v)=> '-'),
+        buildRow('L1 to NB (mm)', 4.0, 3.0, l1_nb_mm, '', (v)=> '-'),
+        buildRow('Interincisal', 131.0, 6.0, inter, '°', (v)=> meaningInterincisal(v))
+    ];
+
+    const eastmanRows = [
+        buildRow('SNA', 82.0, 3.0, sna, '°', (v)=> meaningMaxillaSNA(v)),
+        buildRow('SNB', 79.0, 3.0, snb, '°', (v)=> meaningMandibleSNB(v)),
+        buildRow('ANB', 3.0, 1.0, anb, '°', (v)=> meaningSkeletalClassANB(v)),
+        buildRow('SN to Mx Plane', 8.0, 3.0, sn_mx, '°', (v)=> '-'),
+        buildRow('Wits appraisal', -0.3, 2.7, wits, '', (v)=> Math.abs(v)<=2 ? 'Class I' : (v>2?'Class II':'Class III')),
+        buildRow('U1 to Mx Plane', 108.0, 5.0, u1_mx, '°', (v)=> '-'),
+        buildRow('L1 to Mn Plane', 92.0, 5.0, l1_mp_e, '°', (v)=> '-'),
+        buildRow('Interincisal', 133.0, 10.0, inter, '°', (v)=> meaningInterincisal(v)),
+        buildRow('Mx-Mn Planes', 27.0, 5.0, mx_mp, '°', (v)=> v<=32 ? 'Normal' : 'High'),
+        buildRow('Lower AFH Ratio', 55.0, 2.0, lratio, '%', (v)=> '-'),
+        buildRow('Nasolabial', 95.0, 5.0, nasolab, '°', (v)=> '-')
+    ];
+
+    renderTable('tbl_downs', downsRows);
+    renderTable('tbl_written_downs', downsRows);
+    renderTable('tbl_steiner', steinerRows);
+    renderTable('tbl_written_steiner', steinerRows);
+    renderTable('tbl_eastman', eastmanRows);
+    renderTable('tbl_written_eastman', eastmanRows);
+
+    const finalRows = [
+        { label:'Maxilla (SNA)', mean:'', sd:'', valueText: isFinite(sna)?sna.toFixed(1)+'°':'-', zText:'', severity: (isFinite(sna) && (sna<80||sna>84))?'Abnormal':'Normal', meaning: isFinite(sna)?meaningMaxillaSNA(sna):'-' },
+        { label:'Mandible (SNB)', mean:'', sd:'', valueText: isFinite(snb)?snb.toFixed(1)+'°':'-', zText:'', severity: (isFinite(snb) && (snb<78||snb>82))?'Abnormal':'Normal', meaning: isFinite(snb)?meaningMandibleSNB(snb):'-' },
+        { label:'Skeletal Class (ANB)', mean:'', sd:'', valueText: isFinite(anb)?anb.toFixed(1)+'°':'-', zText:'', severity: (isFinite(anb) && (anb<0||anb>4))?'Abnormal':'Normal', meaning: isFinite(anb)?meaningSkeletalClassANB(anb):'-' },
+        { label:'Vertical Pattern (FMA)', mean:'', sd:'', valueText: isFinite(fma)?fma.toFixed(1)+'°':'-', zText:'', severity:'', meaning: isFinite(fma)?(fma<=26?'Normodivergent':'Hyperdivergent'):'-' },
+        { label:'Interincisal', mean:'', sd:'', valueText: isFinite(inter)?inter.toFixed(1)+'°':'-', zText:'', severity:'', meaning: isFinite(inter)?meaningInterincisal(inter):'-' }
+    ];
+    renderTable('tbl_final', finalRows);
+    renderTable('tbl_written_final', finalRows);
+    
+    try{ const el=document.getElementById('wr_date'); if(el) el.textContent = new Date().toLocaleString('en-GB'); }catch(e){}
+
+    canvas.renderAll();
+
+    const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 });
+    document.getElementById('resultPreview').innerHTML = `<img src="${dataURL}">`;
+    document.getElementById('reportMiniImg').src = dataURL;
+
+    document.getElementById('analysis-board').style.display = 'flex';
+    try{ showReportPage('rp_quick'); }catch(e){}
+
+    window.RRZ_reportReady = true;
+}
+
+function rrzOpenBoardOrGenerate(){
+    try{
+        if(window.RRZ_reportReady){
+            document.getElementById('analysis-board').style.display = 'flex';
+        }else{
+            generateAnalysis();
+        }
+    }catch(e){
+        try{ generateAnalysis(); }catch(_e){}
+    }
+}
+
+function closeAnalysis() {
+    clearTracing();
+    document.getElementById('analysis-board').style.display = 'none';
+}
+
+function showFinalReport() {
+    window.RRZ_finalStack = [];
+
+    document.getElementById('finalReport').style.display = 'block';
+    try{
+        const d = new Date();
+        const dt = d.toLocaleString('en-GB');
+        const el = document.getElementById('wr_date');
+        if(el) el.textContent = dt;
+    }catch(e){}
+    try{ showFinalPage('fr_written'); }catch(e){ try{ showFinalPage('fr_final'); }catch(_e){} }
+}
+
+function saveDivAsImage(divId, filename) {
+    html2canvas(document.getElementById(divId), { scale: 3 }).then(c => {
+        const link = document.createElement('a');
+        link.download = filename + '.png';
+        link.href = c.toDataURL('image/png');
+        link.click();
+    });
+}
+
+function _rrzPrintWindow(title, bodyHtml){
+    const w = window.open('', '_blank');
+    if(!w) return;
+    const css = `
+      <style>
+        body{ font-family: "Segoe UI", Tahoma, Arial, sans-serif; margin:24px; color:#111; }
+        h1,h2,h3{ margin:0 0 10px 0; }
+        .rrzPrintHeader{ margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid #ddd; }
+        .rrzPrintHeader .brand{ font-weight:800; letter-spacing:1px; }
+        .rrzPrintHeader .meta{ font-size:12px; color:#444; margin-top:6px; }
+        .printPage{ page-break-after: always; }
+        .printPage:last-child{ page-break-after: auto; }
+        .report-section{ border-left:4px solid #999; padding-left:12px; margin:14px 0; }
+        .report-item{ display:flex; justify-content:space-between; gap:18px; padding:6px 0; border-bottom:1px dashed #eee; font-size:13px; }
+        .report-item:last-child{ border-bottom:none; }
+      </style>
+    `;
+    w.document.open();
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>${css}</head><body>${bodyHtml}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(()=>{ try{ w.print(); }catch(e){} }, 250);
+}
+
+function printFinalReport(mode){
+    document.getElementById('finalReport').style.display = 'block';
+    const now = new Date().toLocaleString('en-GB');
+    const header = `
+      <div class="rrzPrintHeader">
+        <div class="brand">ROYAL RAY ZONE — CEPHALOMETRIC REPORT</div>
+        <div class="meta">Date: ${now} | Case ID: #RYL-2024</div>
+      </div>
+    `;
+
+    const grab = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.innerHTML : '<div style="color:#b91c1c">No data yet. Generate Report first.</div>';
+    };
+
+    if(mode === 'written'){
+        try{ showFinalPage('fr_written'); }catch(e){}
+        _rrzPrintWindow('RRZ Written Report', header + `<div class="printPage">${grab('fr_written')}</div>`);
+        return;
+    }
+    if(mode === 'final'){
+        try{ showFinalPage('fr_final'); }catch(e){}
+        _rrzPrintWindow('RRZ Final Summary', header + `<div class="printPage">${grab('fr_final')}</div>`);
+        return;
+    }
+    if(mode === 'steiner'){
+        try{ showFinalPage('fr_steiner'); }catch(e){}
+        _rrzPrintWindow('RRZ Steiner', header + `<div class="printPage">${grab('fr_steiner')}</div>`);
+        return;
+    }
+    if(mode === 'downs'){
+        try{ showFinalPage('fr_downs'); }catch(e){}
+        _rrzPrintWindow('RRZ Downs', header + `<div class="printPage">${grab('fr_downs')}</div>`);
+        return;
+    }
+    if(mode === 'eastman'){
+        try{ showFinalPage('fr_eastman'); }catch(e){}
+        _rrzPrintWindow('RRZ Eastman', header + `<div class="printPage">${grab('fr_eastman')}</div>`);
+        return;
+    }
+
+    // all pages
+    try{ showFinalPage('fr_written'); }catch(e){}
+    const all = [
+        { id:'fr_written', title:'Written Report' },
+        { id:'fr_final', title:'Final Summary' },
+        { id:'fr_steiner', title:'Steiner' },
+        { id:'fr_downs', title:'Downs' },
+        { id:'fr_eastman', title:'Eastman' }
+    ].map(p => `<div class="printPage">${grab(p.id)}</div>`).join('');
+    _rrzPrintWindow('RRZ Full Report', header + all);
+}
+
+function hideFinalReport(){
+    const fr = document.getElementById('finalReport');
+    if(fr) fr.style.display = 'none';
+}
+
+function rrzGoBack(){
+    const fr = document.getElementById('finalReport');
+    if(fr && fr.style.display === 'block'){
+        window.RRZ_finalStack = window.RRZ_finalStack || [];
+        if(window.RRZ_finalStack.length){
+            const prev = window.RRZ_finalStack.pop();
+            try{ showFinalPage(prev); }catch(e){}
+        } else {
+            hideFinalReport();
+        }
+        return;
+    }
+
+    const ab = document.getElementById('analysis-board');
+    if(ab && ab.style.display === 'flex'){
+        window.RRZ_rpStack = window.RRZ_rpStack || [];
+        if(window.RRZ_rpStack.length){
+            const prev = window.RRZ_rpStack.pop();
+            try{ showReportPage(prev); }catch(e){}
+        } else {
+            try{ closeAnalysis(); }catch(e){}
+        }
+        return;
+    }
+
+    try{ if(window.history.length > 1) window.history.back(); }catch(e){}
+}
+</script>
+
+<script>
+// ===================== PANORAMA MODULE =====================
+const panoCanvas = new fabric.Canvas('panoCanvas', { selection: true });
+window.panoCanvas = panoCanvas;
+ensurePanoCanvasSized();
+attachPanoMagnifyHandlers();
+
+const PANO_CLASSES = [
+  "Fixed crown","fixed bridge","impaction","coronal filling","coronal caries",
+  "periapical lesion","Lesion","Endodontic treatment","MC","Maxillary sinus",
+  "Nasal septum","Large dental follicle","large root papilla","missing teeth"
+];
+
+const panoState = {
+  panoSrc: null,
+  maskSrc: null,
+  maskFabricObj: null,
+  counts: {}
+};
+
+function initFindingsUI(){
+    const host = document.getElementById('panoFindings');
+    if(!host) return;
+    host.innerHTML = "";
+    PANO_CLASSES.forEach(cls=>{
+        if(!(cls in panoState.counts)) panoState.counts[cls] = 0;
+        const row = document.createElement('div');
+        row.className = 'pano-row';
+        row.innerHTML = `
+          <label>${cls}</label>
+          <input type="number" min="0" step="1" value="${panoState.counts[cls]}" data-cls="${cls}">
+        `;
+        const inp = row.querySelector('input');
+        inp.addEventListener('input', ()=>{
+            const k = inp.getAttribute('data-cls');
+            const v = parseInt(inp.value || '0', 10);
+            panoState.counts[k] = isFinite(v) && v>=0 ? v : 0;
+        });
+        host.appendChild(row);
+    });
+}
+
+function processMask(input){
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            panoState.maskSrc = e.target.result;
+            if(panoState.maskFabricObj){
+                panoCanvas.remove(panoState.maskFabricObj);
+                panoState.maskFabricObj = null;
+            }
+            fabric.Image.fromURL(panoState.maskSrc, function(mimg){
+                mimg.selectable = false;
+                mimg.evented = false;
+                const bg = panoCanvas.backgroundImage;
+                if(bg){
+                    mimg.scaleX = bg.scaleX;
+                    mimg.scaleY = bg.scaleY;
+                }else{
+                    const ratioX = panoCanvas.width / mimg.width;
+                    const ratioY = panoCanvas.height / mimg.height;
+                    const r = Math.min(ratioX, ratioY);
+                    mimg.scaleX = r; mimg.scaleY = r;
+                }
+                mimg.left = 0;
+                mimg.top = 0;
+                mimg.opacity = 0.45;
+                panoState.maskFabricObj = mimg;
+                panoCanvas.add(mimg);
+                panoCanvas.renderAll();
+            });
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+async function composeReportImage(){
+    const panoSrc = panoState.panoSrc;
+    if(!panoSrc) return null;
+
+    const loadImg = (src)=> new Promise((res, rej)=>{
+        const im = new Image();
+        im.onload = ()=>res(im);
+        im.onerror = rej;
+        im.src = src;
+    });
+
+    try{
+        const pano = await loadImg(panoSrc);
+        const oc = document.createElement('canvas');
+        oc.width = pano.naturalWidth || pano.width;
+        oc.height = pano.naturalHeight || pano.height;
+        const ctx = oc.getContext('2d');
+        ctx.drawImage(pano, 0, 0, oc.width, oc.height);
+
+        if(panoState.maskSrc){
+            const mask = await loadImg(panoState.maskSrc);
+            ctx.globalAlpha = 0.45;
+            ctx.drawImage(mask, 0, 0, oc.width, oc.height);
+            ctx.globalAlpha = 1;
+        }
+
+        return oc.toDataURL('image/png');
+    }catch(e){
+        try{ return panoCanvas.toDataURL({format:'png', multiplier:2}); }catch(_){ return null; }
+    }
+}
+
+async function openPanoReport(){
+    const report = document.getElementById('pano-report-overlay');
+    if(!report) return;
+
+    const imgEl = document.getElementById('reportImage');
+    const listEl = document.getElementById('reportList');
+    const emptyEl = document.getElementById('reportEmpty');
+
+    const composed = await composeReportImage();
+    if(composed && imgEl) imgEl.src = composed;
+
+    const toothWord = (n)=> (n===1 ? 'tooth' : 'teeth');
+    const fmtN = (n)=> (isFinite(n) ? n : 0);
+
+    function aiNarrative(key, n){
+        const k = String(key||'').trim().toLowerCase();
+        n = fmtN(n);
+
+        if(k === 'coronal caries'){
+            return `There ${n===1?'is':'are'} ${n} ${toothWord(n)} with coronal caries.`;
+        }
+        if(k === 'periapical lesion'){
+            if(n>=2) return `Large/multiple periapical radiolucencies are suspected (${n} site${n===1?'':'s'}), consistent with periapical lesions.`;
+            return `A periapical radiolucency is suspected (1 site), consistent with a periapical lesion.`;
+        }
+        if(k === 'lesion'){
+            return `Additional radiographic lesion${n===1?'':'s'} ${n===1?'is':'are'} flagged (${n}). Please correlate clinically and consider further imaging if indicated.`;
+        }
+        if(k === 'missing teeth'){
+            return `Missing teeth with edentulous areas are noted (${n}). No obvious retained roots are appreciated radiographically, within the limits of a panoramic image.`;
+        }
+        if(k === 'impaction'){
+            return `Impacted ${toothWord(n)} ${n===1?'is':'are'} detected (${n}).`;
+        }
+        if(k === 'endodontic treatment'){
+            return `Endodontic treatment is present in ${n} ${toothWord(n)}.`;
+        }
+        if(k === 'fixed crown'){
+            return `Fixed crown${n===1?'':'s'} ${n===1?'is':'are'} present on ${n} ${toothWord(n)}.`;
+        }
+        if(k === 'fixed bridge'){
+            return `Fixed bridge${n===1?'':'s'} ${n===1?'is':'are'} present (${n}).`;
+        }
+        if(k === 'coronal filling'){
+            return `Coronal restoration${n===1?'':'s'} ${n===1?'is':'are'} noted on ${n} ${toothWord(n)}.`;
+        }
+        if(k === 'mc'){
+            return `A mandibular canal (MC) related finding is flagged (${n}). Please evaluate the relationship to adjacent roots/lesions.`;
+        }
+        if(k === 'maxillary sinus'){
+            return `Maxillary sinus finding${n===1?'':'s'} ${n===1?'is':'are'} flagged (${n}) (e.g., mucosal thickening/opacification).`;
+        }
+        if(k === 'nasal septum'){
+            return `Nasal septum finding${n===1?'':'s'} ${n===1?'is':'are'} flagged (${n}) (e.g., deviation).`;
+        }
+        if(k === 'large dental follicle'){
+            return `Enlarged pericoronal (dental follicle) space is noted (${n}), which may warrant correlation for pericoronal pathology.`;
+        }
+        if(k === 'large root papilla'){
+            return `Large root papilla/open apex pattern is flagged (${n}). Correlate with tooth development stage and clinical context.`;
+        }
+
+        return `${key}: ${n}`;
+    }
+
+    listEl.innerHTML = "";
+    const positives = PANO_CLASSES
+        .map(k => ({k, v: parseInt(panoState.counts[k]||0,10)}))
+        .filter(x => isFinite(x.v) && x.v > 0);
+
+    if(positives.length === 0){
+        emptyEl.style.display = "block";
+    }else{
+        emptyEl.style.display = "none";
+        positives.forEach(x=>{
+            const li = document.createElement('li');
+            li.textContent = aiNarrative(x.k, x.v);
+            listEl.appendChild(li);
+        });
+    }
+
+    report.style.display = 'flex';
+}
+
+function closePanoReport(){
+    const report = document.getElementById('pano-report-overlay');
+    if(report) report.style.display = 'none';
+}
+
+function printPanoReport(){
+    const report = document.getElementById('pano-report-overlay');
+    if(!report) return;
+
+    const w = window.open('', '_blank');
+    const styles = Array.from(document.querySelectorAll('style')).map(s=>s.innerHTML).join('\n');
+    const html = `
+      <html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>Panoramic Report</title>
+      <style>${styles}</style>
+      <style>
+        body{background:#fff;color:#111;margin:0;padding:0;}
+        #pano-report-overlay{display:block;position:static;inset:auto;background:#fff;}
+        .rpt-header{display:none;}
+        .rpt-card{background:#fff;border:1px solid #ddd;}
+        #reportList{color:#111;}
+      </style>
+      </head><body>
+        ${report.querySelector('.rpt-body').outerHTML}
+      </body></html>
+    `;
+    w.document.open(); w.document.write(html); w.document.close();
+    w.focus();
+    setTimeout(()=>w.print(), 250);
+}
+
+async function downloadPanoReport(){
+    try{
+        const body = document.querySelector('#panoReport .rpt-body') || document.querySelector('#panoReport');
+        if(!body || !window.html2canvas){
+            printPanoReport();
+            return;
+        }
+
+        const canvas = await html2canvas(body, {scale: 2, backgroundColor: '#0b1220', useCORS: true});
+        const dataUrl = canvas.toDataURL('image/png');
+
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        const dt = new Date();
+        const stamp = dt.toISOString().slice(0,19).replace(/[:T]/g,'-');
+        a.download = `Panoramic_Report_${stamp}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }catch(e){
+        try{ printPanoReport(); }catch(_e){}
+    }
+}
+
+function processFile(input) {
+    try{
+        const file = (input && input.files) ? input.files[0] : null;
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            panoState.panoSrc = e.target.result;
+            launchAnalysis(e.target.result);
+            try{ input.value = ''; }catch(_){}
+        };
+        reader.readAsDataURL(file);
+    }catch(err){
+        console.error(err);
+        alert('Panorama upload failed. Please try again.');
+    }
+}
+
+function launchAnalysis(imgSrc) {
+    document.getElementById('main-home').style.display = 'none';
+    const overlay = document.getElementById('analysis-overlay');
+    overlay.style.display = 'flex';
+    
+    ensurePanoCanvasSized();
+    
+    setTimeout(() => {
+        panoCanvas.clear();
+        panoCanvas.setViewportTransform([1,0,0,1,0,0]);
+        panoCanvas.setZoom(1);
+
+        initFindingsUI();
+        panoState.maskSrc = null;
+        if(panoState.maskFabricObj){ 
+            try{ panoCanvas.remove(panoState.maskFabricObj); }catch(e){} 
+            panoState.maskFabricObj = null; 
+        }
+
+        const side = document.getElementById('data-sidebar');
+        if(side) side.style.display = 'none';
+
+        fabric.Image.fromURL(imgSrc, function(img) {
+            if (!img) {
+                console.error('❌ Failed to load image');
+                return;
+            }
+            
+            window.panoBaseImage = img;
+            
+            const cw = panoCanvas.getWidth();
+            const ch = panoCanvas.getHeight();
+            const scale = Math.min(cw / img.width, ch / img.height);
+            
+            img.set({
+                originX: 'left',
+                originY: 'top',
+                left: (cw - img.width * scale) / 2,
+                top: (ch - img.height * scale) / 2,
+                selectable: false,
+                evented: false
+            });
+            img.scaleX = scale;
+            img.scaleY = scale;
+            
+            panoCanvas.setBackgroundImage(img, panoCanvas.requestRenderAll.bind(panoCanvas));
+            
+            if(side) side.style.display = 'block';
+            
+            setTimeout(() => {
+                runFullAIScan();
+                panoFit();
+            }, 300);
+        });
+    }, 150);
+}
+
+function runFullAIScan() {
+    document.getElementById('data-sidebar').style.display = 'block';
+    const W = panoCanvas.width;
+    const H = panoCanvas.height;
+
+    // 1. Skeletal Alignment Points
+    const refPoints = [
+        {x: 0.5, y: 0.15, label: 'ANS (Anterior Nasal Spine)'},
+        {x: 0.15, y: 0.25, label: 'R-Condyle'},
+        {x: 0.85, y: 0.25, label: 'L-Condyle'},
+        {x: 0.5, y: 0.9, label: 'Menton (Point D)'}
+    ];
+
+    const midLine = new fabric.Line([W*0.5, H*0.1, W*0.5, H*0.95], { stroke: 'lime', strokeDashArray: [5, 5], strokeWidth: 1, selectable: false });
+    const jawBase = new fabric.Line([W*0.2, H*0.8, W*0.8, H*0.8], { stroke: 'rgba(0,255,0,0.5)', strokeWidth: 2, selectable: false });
+    panoCanvas.add(midLine, jawBase);
+
+    refPoints.forEach(p => {
+        const dot = new fabric.Circle({ left: W*p.x, top: H*p.y, radius: 5, fill: 'white', stroke: 'lime', strokeWidth: 2, originX: 'center', originY: 'center' });
+        const text = new fabric.Text(p.label, { left: W*p.x + 10, top: H*p.y - 10, fontSize: 10, fill: 'lime' });
+        panoCanvas.add(dot, text);
+    });
+
+    // 2. Root Segmentation
+    const rootPaths = [
+        [{x:0.35,y:0.55}, {x:0.37,y:0.75}, {x:0.41,y:0.75}, {x:0.43,y:0.55}],
+        [{x:0.57,y:0.55}, {x:0.59,y:0.75}, {x:0.63,y:0.75}, {x:0.65,y:0.55}]
+    ];
+
+    rootPaths.forEach(pts => {
+        const poly = new fabric.Polygon(pts.map(p => ({x: p.x*W, y: p.y*H})), {
+            fill: 'rgba(56, 189, 248, 0.3)', stroke: '#38bdf8', strokeWidth: 1, rx: 10, ry: 10
+        });
+        panoCanvas.add(poly);
+    });
+
+    // 3. Nerve Tracing
+    const nerveLeft = new fabric.Path(`M ${W*0.15} ${H*0.7} Q ${W*0.3} ${H*0.85} ${W*0.48} ${H*0.85}`, {
+        fill: '', stroke: 'yellow', strokeWidth: 3, shadow: new fabric.Shadow({color: 'yellow', blur: 8})
+    });
+    panoCanvas.add(nerveLeft);
+
+    // 4. Caries
+    const caries = new fabric.Circle({
+        left: W*0.25, top: H*0.52, radius: W*0.015, fill: 'rgba(239, 68, 68, 0.5)', stroke: 'red', strokeWidth: 1
+    });
+    panoCanvas.add(caries);
+
+    panoCanvas.renderAll();
+    console.log('🎯 AI Scan completed');
+}
+
+function exitAnalysis() {
+    document.getElementById('analysis-overlay').style.display = 'none';
+    document.getElementById('main-home').style.display = 'flex';
+}
+
+// ===================== PANORAMA: Fit-to-screen + Magnify =====================
+let panoMagnifyOn = false;
+let panoMoveOn = false;
+let panoIsPanning = false;
+let panoLastPosX = 0;
+let panoLastPosY = 0;
+
+function ensurePanoCanvasSized(){
+    try{
+        const el = document.getElementById('panoCanvas');
+        if(!el || !window.panoCanvas) return;
+
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        
+        const width = rect.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        const height = rect.height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+        
+        const w = Math.max(400, Math.floor(width));
+        const h = Math.max(300, Math.floor(height));
+
+        if(Math.abs(window.panoCanvas.getWidth() - w) > 5 || 
+           Math.abs(window.panoCanvas.getHeight() - h) > 5) {
+            window.panoCanvas.setWidth(w);
+            window.panoCanvas.setHeight(h);
+            window.panoCanvas.requestRenderAll();
+        }
+    } catch(e) {
+        console.warn('Canvas sizing warning:', e);
+    }
+}
+
+function togglePanoMagnify(){
+    panoMagnifyOn = !panoMagnifyOn;
+    const b = document.getElementById('panoMagnifyBtn');
+    if(b){ b.classList.toggle('active', panoMagnifyOn); b.textContent = panoMagnifyOn ? 'Magnify: ON' : 'Magnify'; }
+    if(window.panoCanvas){
+        window.panoCanvas.defaultCursor = (panoMagnifyOn || panoMoveOn) ? 'grab' : 'default';
+    }
+}
+
+function togglePanoMove(){
+    panoMoveOn = !panoMoveOn;
+    const b = document.getElementById('panoMoveBtn');
+    if(b){
+        b.classList.toggle('active', panoMoveOn);
+        b.textContent = panoMoveOn ? 'Move: ON' : 'Move';
+    }
+    if(window.panoCanvas){
+        window.panoCanvas.defaultCursor = panoMoveOn ? 'grab' : (panoMagnifyOn ? 'grab' : 'default');
+    }
+}
+
+function panoZoom(dir){
+    if(!window.panoCanvas) return;
+    const zoom = window.panoCanvas.getZoom() || 1;
+    const step = 0.12;
+    let next = zoom + (dir>0 ? step : -step);
+    next = Math.min(6, Math.max(0.25, next));
+    window.panoCanvas.zoomToPoint(new fabric.Point(window.panoCanvas.getWidth()/2, window.panoCanvas.getHeight()/2), next);
+    window.panoCanvas.requestRenderAll();
+}
+
+function panoFit(){
+    if(!window.panoCanvas) return;
+    const c = window.panoCanvas;
+    const img = c.backgroundImage || window.panoBaseImage;
+    if(!img){
+        c.setViewportTransform([1,0,0,1,0,0]);
+        c.setZoom(1);
+        c.requestRenderAll();
+        return;
+    }
+
+    const cw = c.getWidth(), ch = c.getHeight();
+    const scale = Math.min(cw / img.width, ch / img.height);
+
+    img.set({
+        originX: 'left',
+        originY: 'top',
+        left: (cw - img.width * scale) / 2,
+        top: (ch - img.height * scale) / 2
+    });
+    img.scaleX = scale;
+    img.scaleY = scale;
+
+    window.panoBaseImage = img;
+
+    c.setViewportTransform([1,0,0,1,0,0]);
+    c.setZoom(1);
+    c.requestRenderAll();
+}
+
+function attachPanoMagnifyHandlers(){
+    if(!window.panoCanvas || window.panoCanvas.__magnifyAttached) return;
+    window.panoCanvas.__magnifyAttached = true;
+
+    window.panoCanvas.on('mouse:wheel', function(opt){
+        if(!panoMagnifyOn) return;
+        const delta = opt.e.deltaY;
+        let zoom = window.panoCanvas.getZoom();
+        zoom *= 0.999 ** delta;
+        zoom = Math.min(6, Math.max(0.25, zoom));
+        const p = new fabric.Point(opt.e.offsetX, opt.e.offsetY);
+        window.panoCanvas.zoomToPoint(p, zoom);
+        opt.e.preventDefault();
+        opt.e.stopPropagation();
+    });
+
+    window.panoCanvas.on('mouse:down', function(opt){
+        if(!(panoMagnifyOn || panoMoveOn)) return;
+        panoIsPanning = true;
+        window.panoCanvas.defaultCursor = 'grabbing';
+        panoLastPosX = opt.e.clientX;
+        panoLastPosY = opt.e.clientY;
+    });
+
+    window.panoCanvas.on('mouse:move', function(opt){
+        if(!(panoMagnifyOn || panoMoveOn) || !panoIsPanning) return;
+        const e = opt.e;
+        const vpt = window.panoCanvas.viewportTransform;
+        vpt[4] += e.clientX - panoLastPosX;
+        vpt[5] += e.clientY - panoLastPosY;
+        window.panoCanvas.requestRenderAll();
+        panoLastPosX = e.clientX;
+        panoLastPosY = e.clientY;
+    });
+
+    window.panoCanvas.on('mouse:up', function(){
+        if(!(panoMagnifyOn || panoMoveOn)) return;
+        panoIsPanning = false;
+        window.panoCanvas.defaultCursor = (panoMagnifyOn || panoMoveOn) ? 'grab' : 'default';
+    });
+}
+
+window.addEventListener('resize', () => {
+    ensurePanoCanvasSized();
+});
+</script>
+
+</body>
+</html>

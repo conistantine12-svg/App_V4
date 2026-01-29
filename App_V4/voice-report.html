@@ -1,0 +1,2721 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Royal Ray Zone + AccuRay Annotator (Unified)</title>
+
+  <!-- Royal Ray Zone deps -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&display=swap');
+
+    /* ========= Global Base (keep Royal UI) ========= */
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+      min-height: 100vh;
+      color: white;
+    }
+
+    .glass-dark { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(59, 130, 246, 0.3); }
+    .glass-card { background: rgba(255, 255, 255, 0.98); color: #1e293b; }
+    .rrz-btn-primary { background: linear-gradient(135deg, #3b82f6, #06b6d4); transition: 0.3s; }
+    .rrz-btn-primary:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); }
+
+    /* --- Templates styles (as-is) --- */
+    .tpl-cardio { border: 20px solid #fee2e2; border-image: linear-gradient(#ef4444, #fee2e2) 1; border-top: 40px solid #ef4444; }
+    .tpl-dental { border: 20px solid #e0f2fe; border-image: linear-gradient(#0ea5e9, #e0f2fe) 1; border-top: 40px solid #0ea5e9; }
+    .tpl-ortho { border: 20px solid #f1f5f9; border-image: linear-gradient(#64748b, #f1f5f9) 1; border-top: 40px solid #64748b; }
+    .tpl-chest { border: 20px solid #f0fdf4; border-image: linear-gradient(#22c55e, #f0fdf4) 1; border-top: 40px solid #22c55e; }
+
+    .tpl-neuro { border: 20px solid #f3e8ff; border-image: linear-gradient(#a855f7, #f3e8ff) 1; border-top: 40px solid #a855f7; }
+    .tpl-hand { border: 20px solid #ffedd5; border-image: linear-gradient(#f97316, #ffedd5) 1; border-top: 40px solid #f97316; }
+    .tpl-abdominal { border: 20px solid #ecfdf5; border-image: linear-gradient(#10b981, #ecfdf5) 1; border-top: 40px solid #10b981; }
+    .tpl-mammography { border: 20px solid #fce7f3; border-image: linear-gradient(#ec4899, #fce7f3) 1; border-top: 40px solid #ec4899; }
+    .tpl-ultrasound { border: 20px solid #e0f2fe; border-image: linear-gradient(#3b82f6, #e0f2fe) 1; border-top: 40px solid #3b82f6; }
+
+    #report-capture-area {
+      width: 800px; min-height: 1050px; padding: 60px; position: relative;
+      background-size: 100% 100%; background-repeat: no-repeat; background-color: white;
+    }
+
+    .overlay-assets { position: absolute; bottom: 60px; right: 60px; display: flex; flex-direction: column; align-items: center; }
+    .signature-img { max-width: 190px; z-index: 10; position: relative; }
+    .seal-img { max-width: 155px; margin-top: -70px; z-index: 5; opacity: 0.85; position: relative; }
+
+    .floating { animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .main-logo-img { width: 85px; height: 85px; object-fit: cover; border-radius: 1rem; border: 2px solid #3b82f6; }
+
+    /* ========= Unified Sections ========= */
+    .u-section { display:none; }
+    .u-section.active { display:block; }
+
+    /* Floating switcher */
+    #uSwitcher{
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      z-index: 999999;
+      display:flex;
+      gap:10px;
+      padding:10px;
+      border-radius: 16px;
+      background: rgba(0,0,0,.45);
+      border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(10px);
+    }
+    .uBtn{
+      border:none; cursor:pointer;
+      padding:10px 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      background: rgba(255,255,255,.10);
+      color: white;
+      transition: .2s;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .uBtn:hover{ background: rgba(255,255,255,.16); transform: translateY(-1px); }
+    .uBtn.active{ background: rgba(59,130,246,.25); border:1px solid rgba(59,130,246,.40); }
+
+    /* ========= Annotator (scoped) ========= */
+    .annotatorRoot{
+      --bg:#0f1115;
+      --panel:#151923;
+      --panel2:#10141c;
+      --text:#e9eef7;
+      --muted:#aab3c2;
+      --border:rgba(255,255,255,.10);
+      --accent:#f7c948;
+      --accent2:#667eea;
+      --danger:#ff5d5d;
+      --ok:#4dd4ac;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius:14px;
+      color: var(--text);
+    }
+    .annotatorRoot *{ box-sizing:border-box; }
+
+    .annotatorRoot .a-app{
+      height: calc(100vh - 32px);
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:16px;
+      padding:16px;
+    }
+    .annotatorRoot .a-sidebar{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      padding:14px;
+      box-shadow: var(--shadow);
+      overflow:auto;
+      position:sticky;
+      top:16px;
+      height: calc(100vh - 32px);
+    }
+    .annotatorRoot .a-brand{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border);
+    }
+    .annotatorRoot .a-title{ font-size:18px; font-weight:800; letter-spacing:.2px; }
+    .annotatorRoot .a-brand small{ color:var(--muted); }
+
+    .annotatorRoot .a-badge{
+      padding:6px 10px; border-radius:999px; font-size:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .annotatorRoot .a-badge.ok{ border-color: rgba(77,212,172,.35); background: rgba(77,212,172,.12); color: var(--ok); }
+    .annotatorRoot .a-badge.warn{ border-color: rgba(247,201,72,.35); background: rgba(247,201,72,.10); color: var(--accent); }
+
+    .annotatorRoot .a-uploadSection,
+    .annotatorRoot .a-toolsSection,
+    .annotatorRoot .a-settingsSection{
+      margin-bottom:16px; padding:12px;
+      border:1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(0,0,0,.18);
+    }
+    .annotatorRoot .a-sectionTitle{ font-weight:800; margin-bottom:10px; color: var(--text); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .annotatorRoot .a-controls{ display:flex; flex-direction:column; gap:10px; }
+    .annotatorRoot .a-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+    .annotatorRoot .a-bigBtn{
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      padding:12px 14px; width:100%;
+      border-radius: 12px; border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--text); cursor:pointer; user-select:none;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+      font-weight:800;
+    }
+    .annotatorRoot .a-bigBtn:hover{ transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.25); background: rgba(255,255,255,.06); }
+    .annotatorRoot .a-bigBtn.primary{ border-color: rgba(102,126,234,.45); background: rgba(102,126,234,.16); }
+    .annotatorRoot .a-bigBtn.secondary{ border-color: rgba(247,201,72,.35); background: rgba(247,201,72,.10); }
+    .annotatorRoot .a-bigBtn.tertiary{ border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.03); }
+    .annotatorRoot input[type="file"]{ display:none; }
+
+    .annotatorRoot #a_toolGrid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+    }
+    .annotatorRoot .a-toolBtn{
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:6px;
+      padding:10px 8px;
+      border-radius: 12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      cursor:pointer; user-select:none;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+      min-height:64px;
+      position:relative;
+    }
+    .annotatorRoot .a-toolBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.06); }
+    .annotatorRoot .a-toolBtn.active{ border-color: rgba(247,201,72,.45); background: rgba(247,201,72,.12); }
+    .annotatorRoot .a-toolBtn .ico{ font-size:18px; }
+    .annotatorRoot .a-toolBtn .lbl{ font-size:12px; font-weight:800; color: var(--text); }
+    .annotatorRoot .a-toolBtn .hint{ font-size:11px; color: var(--muted); text-align:center; line-height:1.2; }
+
+    .annotatorRoot .a-settingItem{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+    .annotatorRoot .a-settingItem label{ font-size:12px; color: var(--muted); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .annotatorRoot .a-settingItem input[type="range"]{ width:100%; }
+    .annotatorRoot .a-settingItem input[type="number"]{
+      width:120px; padding:8px 10px; border-radius:10px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      color: var(--text);
+      outline:none;
+    }
+
+    .annotatorRoot .a-actions{ display:flex; flex-direction:column; gap:10px; margin-top:8px; }
+
+    .annotatorRoot .a-btn{
+      border:none; border-radius:10px;
+      padding:10px 12px; cursor:pointer;
+      font-size:14px; transition: all 0.3s;
+      font-weight: 800;
+      color: white;
+      background: rgba(255,255,255,.10);
+    }
+    .annotatorRoot .a-btn:hover{ transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .annotatorRoot .a-btn.primary{ background: #667eea; }
+    .annotatorRoot .a-btn.secondary{ background: #6c757d; }
+    .annotatorRoot .a-btn.success{ background: #28a745; }
+
+    .annotatorRoot .a-stageWrap{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      height: min(62vh, calc(100vh - 240px));
+      position:relative;
+    }
+    .annotatorRoot .a-stage{
+      position:relative;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      touch-action: none;
+    }
+    .annotatorRoot canvas#a_canvas{
+      display:block;
+      width:100%;
+      height:100%;
+      background: transparent;
+      cursor: crosshair;
+    }
+
+    .annotatorRoot .measurement-label {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 100;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    }
+    .annotatorRoot .edit-point {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #667eea;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      cursor: move;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+      pointer-events: auto;
+      touch-action: none;
+    }
+    .annotatorRoot .edit-point:hover { transform: scale(1.1); }
+
+    .annotatorRoot #a_contextMenu{
+      position:absolute; z-index:2000;
+      background: rgba(20,24,34,.95);
+      border:1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding:6px;
+      min-width:160px;
+      display:none;
+    }
+    .annotatorRoot .ctxItem{
+      padding:10px 10px; border-radius:10px;
+      cursor:pointer; color:var(--text);
+      font-weight:800; font-size:13px;
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+    }
+    .annotatorRoot .ctxItem:hover{ background: rgba(255,255,255,.06); }
+    .annotatorRoot .ctxItem.danger{ color: var(--danger); }
+
+    .annotatorRoot #a_calHint{
+      position:absolute; top:14px; left:14px;
+      z-index:1500; max-width: 520px;
+      background: rgba(0,0,0,.65);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius: 12px;
+      padding:10px 12px;
+      color: var(--text);
+      display:none;
+      backdrop-filter: blur(6px);
+    }
+    .annotatorRoot #a_calHint strong{ color: var(--accent); }
+    .annotatorRoot #a_calHint .small{ color: var(--muted); font-size:12px; margin-top:4px; }
+    .annotatorRoot #a_calHint .calActions{ display:flex; gap:10px; margin-top:8px; flex-wrap:wrap; }
+    .annotatorRoot #a_calHint button{
+      border:none; border-radius:10px; padding:8px 10px; cursor:pointer; font-weight:800;
+      background: rgba(255,255,255,.08); color: var(--text);
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .annotatorRoot #a_calHint button.primary{
+      background: rgba(247,201,72,.15);
+      border-color: rgba(247,201,72,.35);
+      color: var(--accent);
+    }
+
+    /* Grid scoped */
+    .annotatorRoot .gridContainer{
+      height:100%;
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:16px;
+      padding:16px;
+    }
+    .annotatorRoot .gridSidebar{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      padding:14px;
+      box-shadow: var(--shadow);
+      overflow:auto;
+      height: calc(100vh - 32px);
+    }
+    .annotatorRoot .gridStage{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:auto;
+      height: min(62vh, calc(100vh - 240px));
+      padding:16px;
+      position:relative;
+    }
+    .annotatorRoot .gridOptions{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:10px;
+    }
+    .annotatorRoot .grid-option{
+      padding:12px;
+      border-radius: 12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      cursor:pointer;
+      text-align:center;
+      font-weight:900;
+    }
+    .annotatorRoot .grid-option.selected{
+      border-color: rgba(247,201,72,.45);
+      background: rgba(247,201,72,.12);
+      color: var(--accent);
+    }
+    .annotatorRoot .image-counter{
+      background: rgba(247,201,72,.10);
+      border:1px solid rgba(247,201,72,.35);
+      color: var(--accent);
+      padding: 10px;
+      border-radius: 12px;
+      margin: 10px 0;
+      text-align: center;
+      font-weight: bold;
+    }
+    .annotatorRoot #a_gridCanvas{
+      display:grid;
+      gap:12px;
+      align-items:stretch;
+    }
+    .annotatorRoot .gridCell{
+      border:1px dashed rgba(255,255,255,.22);
+      border-radius: 12px;
+      background: rgba(0,0,0,.18);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height: 160px;
+      overflow:hidden;
+      position:relative;
+    }
+    .annotatorRoot .gridCell span{ color: var(--muted); font-weight:900; }
+    .annotatorRoot .gridCell img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    .annotatorRoot .gridRemoveBtn{
+      position:absolute;
+      top:8px;
+      right:8px;
+      width:30px;
+      height:30px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.35);
+      background: rgba(0,0,0,.55);
+      color:#fff;
+      font-weight:900;
+      line-height:28px;
+      text-align:center;
+      cursor:pointer;
+      user-select:none;
+      z-index:5;
+      box-shadow: 0 8px 18px rgba(0,0,0,.35);
+    }
+    .annotatorRoot .gridRemoveBtn:hover{ background: rgba(0,0,0,.75); }
+    @media (max-width: 980px) {
+      .annotatorRoot .a-app, .annotatorRoot .gridContainer{ grid-template-columns: 1fr; }
+      .annotatorRoot .a-sidebar, .annotatorRoot .gridSidebar{ position: relative; height: auto; }
+      .annotatorRoot .a-stageWrap, .annotatorRoot .gridStage{ height: 46vh; }
+    }
+    @media (max-width: 480px) {
+      .annotatorRoot .a-stageWrap, .annotatorRoot .gridStage{ height: 40vh; }
+      .annotatorRoot .a-app{ padding: 12px; gap: 12px; }
+    }
+  </style>
+  <script src="shared/aiClient.js" defer></script>
+</head>
+
+<body class="p-4">
+  <!-- Switcher -->
+  <div id="uSwitcher" aria-label="App Switcher">
+    <button class="uBtn active" id="btnRRZ">Royal Report</button>
+    <button class="uBtn" id="btnANN">Annotator</button>
+    <button class="uBtn" id="btnGRID">Photo Grid</button>
+  </div>
+
+  <!-- ========= Section 1: Royal Ray Zone ========= -->
+  <div id="rrzSection" class="u-section active">
+    <div id="rrzApp" class="max-w-5xl mx-auto"></div>
+  </div>
+  <!-- ========= Section 2: Annotator ========= -->
+  <div id="annotatorSection" class="u-section">
+    <div class="annotatorRoot">
+      <div class="a-app">
+        <aside class="a-sidebar">
+          <div class="a-brand">
+            <div>
+              <div class="a-title">AccuRay AI</div>
+              <small>Annotator + Measurements</small>
+            </div>
+            <div class="a-badge" id="a_calBadge">Ready</div>
+          </div>
+
+          <div class="a-uploadSection">
+            <div class="a-sectionTitle">Upload / Camera</div>
+            <div class="a-controls">
+              <div class="a-row">
+                <label class="a-bigBtn primary" for="a_imgInput">
+                  <span style="width:20px;text-align:center;">📁</span>
+                  <span>Choose File</span>
+                </label>
+                <input type="file" id="a_imgInput" accept="image/*" />
+              </div>
+
+              <div class="a-row">
+                <label class="a-bigBtn secondary" for="a_camInput">
+                  <span style="width:20px;text-align:center;">📷</span>
+                  <span>Take Photo</span>
+                </label>
+                <input type="file" id="a_camInput" accept="image/*" capture="environment" />
+              </div>
+            </div>
+          </div>
+
+          <div class="a-toolsSection">
+            <div class="a-sectionTitle">
+              Tools
+              <span style="font-size:12px;color:rgba(255,255,255,.65);font-weight:900;">(Undo داخل الـ Toolbar)</span>
+            </div>
+            <div id="a_toolGrid"></div>
+          </div>
+
+          <div class="a-settingsSection">
+            <div class="a-sectionTitle">Measurement Settings</div>
+
+            <div class="a-settingItem">
+              <label>Stroke Width <span id="a_strokeWVal"></span></label>
+              <input type="range" id="a_strokeW" min="1" max="12" value="3" />
+            </div>
+
+            <div class="a-settingItem">
+              <label>Font Size <span id="a_fontSzVal"></span></label>
+              <input type="range" id="a_fontSz" min="10" max="40" value="16" />
+            </div>
+
+            <div class="a-settingItem">
+              <label>Scale (px/mm)</label>
+              <input type="number" id="a_scaleFactor" value="1" step="0.001" />
+            </div>
+
+            <div class="a-actions">
+              <button class="a-btn secondary" id="a_fitBtn">Fit</button>
+
+              <div class="a-row">
+                <button class="a-btn secondary" id="a_zoomInBtn">Zoom +</button>
+                <button class="a-btn secondary" id="a_zoomOutBtn">Zoom -</button>
+              </div>
+
+              <div class="a-row">
+                <button class="a-btn secondary" id="a_undoBtn">Undo</button>
+                <button class="a-btn secondary" id="a_clearBtn">Clear All</button>
+              </div>
+
+              <button class="a-btn success" id="a_exportBtn">Export PNG</button>
+              <button class="a-btn primary" id="a_exportReportBtn">Add to photo Grid</button>
+            </div>
+          </div>
+        </aside>
+
+        <div class="a-stageWrap">
+          <section class="a-stage" id="a_stage">
+            <div id="a_calHint">
+              <div><strong>Auto Calibration</strong> — ارسم خط "RULER" على مسافة معلومة ثم أدخل طولها بالـ mm.</div>
+              <div class="small">سيتم حفظ المعايرة تلقائيًا وتطبيقها على الصور القادمة.</div>
+              <div class="calActions">
+                <button class="primary" id="a_startCalBtn">Start Calibration</button>
+                <button id="a_hideCalBtn">Hide</button>
+              </div>
+            </div>
+
+            <canvas id="a_canvas"></canvas>
+
+            <!-- Context Menu -->
+            <div id="a_contextMenu">
+              <div class="ctxItem" id="a_ctxEdit">Edit</div>
+              <div class="ctxItem danger" id="a_ctxDelete">Delete</div>
+            </div>
+
+            <!-- Edit points overlay -->
+            <div id="a_editPointsContainer" style="position:absolute; inset:0; pointer-events:none;"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========= Section 3: Grid ========= -->
+  <div id="gridSection" class="u-section">
+    <div class="annotatorRoot">
+      <div class="gridContainer">
+        <aside class="gridSidebar">
+          <div class="a-brand">
+            <div>
+              <div class="a-title">Photo Grid</div>
+              <small>Build a multi-image layout</small>
+            </div>
+            <div class="a-badge" id="a_gridBadge">Grid</div>
+          </div>
+
+          <div class="a-uploadSection">
+            <div class="a-sectionTitle">Choose Grid</div>
+            <div class="gridOptions" id="a_gridOptions">
+              <div class="grid-option" data-rows="1" data-cols="1">1 × 1</div>
+              <div class="grid-option" data-rows="1" data-cols="2">2 × 1</div>
+              <div class="grid-option" data-rows="2" data-cols="2">2 × 2</div>
+              <div class="grid-option" data-rows="3" data-cols="2">3 × 2</div>
+              <div class="grid-option" data-rows="3" data-cols="3">3 × 3</div>
+              <div class="grid-option" data-rows="4" data-cols="2">4 × 2</div>
+            </div>
+
+            <div class="image-counter" id="a_imageCounter" style="display:none;">
+              Images: <span id="a_imgCount">0</span> / <span id="a_cellCount">0</span>
+            </div>
+
+            <div class="a-actions">
+              <button class="a-btn secondary" id="a_backToAnnotator">Back to Annotator</button>
+              <button class="a-btn secondary" id="a_addMoreBtn">Add Image to Report</button>
+              <button class="a-btn success" id="a_downloadGridBtn">Download Grid</button>
+              <button class="a-btn secondary" id="a_backToRRZ">Go to voice record</button>
+            </div>
+          </div>
+        </aside>
+
+        <div class="gridStage">
+          <div id="a_gridCanvas"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    /* =========================================================
+       Shared Navigation (3 apps in one file)
+       FIX: When showing annotator, force resize/fit after display
+    ========================================================== */
+    (function(){
+      const btnRRZ  = document.getElementById('btnRRZ');
+      const btnANN  = document.getElementById('btnANN');
+      const btnGRID = document.getElementById('btnGRID');
+
+      function setActiveButton(which){
+        [btnRRZ, btnANN, btnGRID].forEach(b => b.classList.remove('active'));
+        if(which==='rrz') btnRRZ.classList.add('active');
+        if(which==='ann') btnANN.classList.add('active');
+        if(which==='grid') btnGRID.classList.add('active');
+      }
+
+      window.U_SHOW = function(name){
+        document.querySelectorAll('.u-section').forEach(s => s.classList.remove('active'));
+        if(name==='rrz')  document.getElementById('rrzSection').classList.add('active');
+        if(name==='ann')  document.getElementById('annotatorSection').classList.add('active');
+        if(name==='grid') document.getElementById('gridSection').classList.add('active');
+        setActiveButton(name);
+
+        // Cleanup annotator floating labels when leaving annotator/grid
+        if(name==='rrz' && window.ANN_CLEAR_LABELS) window.ANN_CLEAR_LABELS();
+
+        // IMPORTANT: after the section becomes visible, force canvas/layout recalculation
+        if(name==='ann' && window.ANN_ON_SHOW){
+          requestAnimationFrame(() => requestAnimationFrame(() => window.ANN_ON_SHOW()));
+        }
+        if(name==='grid' && window.GRID_ON_SHOW){
+          requestAnimationFrame(() => requestAnimationFrame(() => window.GRID_ON_SHOW()));
+        }
+      };
+
+      btnRRZ.onclick  = () => window.U_SHOW('rrz');
+      btnANN.onclick  = () => window.U_SHOW('ann');
+      btnGRID.onclick = () => window.U_SHOW('grid');
+    })();
+
+    /* =========================================================
+       1) Royal Ray Zone App (as-is + renamed IDs to avoid conflict)
+    ========================================================== */
+    (function(){
+      const storage = {
+        db: null,
+        async init() {
+          return new Promise((resolve) => {
+            const req = indexedDB.open('RoyalRayDB', 1);
+            req.onsuccess = () => { this.db = req.result; resolve(); };
+            req.onupgradeneeded = (e) => {
+              const db = e.target.result;
+              if (!db.objectStoreNames.contains('reports')) db.createObjectStore('reports', { keyPath: 'id', autoIncrement: true });
+            };
+          });
+        },
+        async save(data) {
+          const tx = this.db.transaction(['reports'], 'readwrite');
+          tx.objectStore('reports').add(data);
+        }
+      };
+
+      const app = {
+        step: 2,
+        patient: { name: '', id: '', date: new Date().toISOString().split('T')[0] },
+        report: { findings: '', impression: '' },
+        recording: false,
+        processing: false,
+        aiNotice: '',
+        rawTranscript: '',
+        accumulatedTranscript: '', // Store sequential sentences here
+        reportFindingsHtml: '',
+        reportImpressionHtml: '',
+        speech: { rec: null, active: false, finalText: '', interimText: '', stopRequested: false },
+        selectedTemplate: 'custom',
+        templateImageDataUrl: null,
+        workLogoDataUrl: 'logo.png',
+        signatureDataUrl: null,
+        sealDataUrl: null,
+        imageDataUrl: null, // reference image (can be set from annotator)
+
+        reportImages: [], // images collected from Photo Grid for final written report
+        async init() {
+          await storage.init();
+
+          // Pre-fill patient fields from Dashboard (if available) and skip patient-data step.
+          try {
+            const name = localStorage.getItem('rrz_patient_name') || localStorage.getItem('patientName') || '';
+            let pid = localStorage.getItem('rrz_patient_id') || '';
+            try {
+              const cp = JSON.parse(localStorage.getItem('currentPatient') || 'null');
+              if (cp && cp.id) pid = cp.id;
+            } catch(e) {}
+            const dt = localStorage.getItem('rrz_patient_date');
+
+            if (name) this.patient.name = name;
+            if (pid)  this.patient.id = pid;
+            if (dt)   this.patient.date = dt;
+          } catch(e) {}
+
+          this.step = 2;
+          this.render();
+        },
+        gotoStep(n){ this.step = Math.max(2, n); this.render(); },
+
+        // ===== Voice-to-Report (Best possible using Web Speech API) =====
+        getSpeechCtor(){
+          return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+        },
+        ensureSpeech(){
+          const Ctor = this.getSpeechCtor();
+          if(!Ctor) return null;
+          if(this.speech.rec) return this.speech.rec;
+
+          const r = new Ctor();
+          // Force English for dictation (user speaks English)
+          r.lang = "en-US";
+          // Use interim for live feedback, but we only COMMIT final results to avoid duplication
+          r.interimResults = true;
+          // Single-session dictation reduces repeated segments on mobile
+          r.continuous = false;
+
+          r.onresult = (event) => {
+            let interim = "";
+            for(let i = event.resultIndex; i < event.results.length; i++){
+              const res = event.results[i];
+              const t = (res && res[0] && res[0].transcript) ? res[0].transcript : "";
+              if(res.isFinal){
+                // Append final only
+                this.speech.finalText += (t ? (t.trim() + " ") : "");
+              } else {
+                interim += t;
+              }
+            }
+            this.speech.interimText = interim.trim();
+
+            // Optional: show a minimal live indicator (doesn't affect workflow)
+            const badge = document.getElementById("rrz_liveBadge");
+            if(badge && this.recording){
+              const show = (this.speech.interimText || "").trim();
+              badge.textContent = show ? ("Listening: " + show.slice(0, 60) + (show.length > 60 ? "…" : "")) : "Listening…";
+            }
+          };
+
+          r.onerror = () => {
+            // Do not show technical errors to user (fallback will handle)
+          };
+
+          r.onend = () => {
+            // Many mobile browsers auto-end after a short pause.
+            // If user didn't manually stop, treat this as "Stop" and finalize segment.
+            if(this.recording && !this.speech.stopRequested){
+              this.speech.stopRequested = true;
+              // Just commit current segment, do not finish report
+              this.commitCurrentSegment({ fromEnd: true, skipStopCall: true });
+            }
+          };
+
+          this.speech.rec = r;
+          return r;
+        },
+        collapseRepeatedWords(text){
+          return (text || "").replace(/\b(\w+)(\s+\1\b)+/gi, "$1");
+        },
+        dedupeNgrams(text, n = 6){
+          const words = (text || "").split(/\s+/).filter(Boolean);
+          const out = [];
+          const seen = new Set();
+          for(let i = 0; i < words.length; i++){
+            if(i <= words.length - n){
+              const gram = words.slice(i, i + n).join(" ").toLowerCase();
+              if(seen.has(gram)) continue;
+              seen.add(gram);
+            }
+            out.push(words[i]);
+          }
+          return out.join(" ");
+        },
+        cleanTranscript(text){
+          let t = (text || "").trim();
+          t = t.replace(/\s+/g, " ");
+          t = this.collapseRepeatedWords(t);
+          t = this.dedupeNgrams(t, 6);
+          return t.trim();
+        },
+        escapeHtml(s){
+          return (s || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        },
+        formatFindingsHtml(cleanText){
+          const t = (cleanText || "").trim();
+          if(!t) return "";
+          // Split into short sentences/bullets for readability
+          const parts = t
+            .replace(/\s*(?:\band then\b|\bthen\b)\s*/gi, ". ")
+            .split(/[.?!]\s+/)
+            .map(x => x.trim())
+            .filter(Boolean);
+
+          // If we don't have enough sentence boundaries, keep as a paragraph
+          if(parts.length <= 1){
+            return `<p style="margin-top: 8px; line-height: 1.7;">${this.escapeHtml(t)}</p>`;
+          }
+
+          const bullets = parts.slice(0, 12); // keep concise
+          const rest = parts.slice(12).join(". ");
+          return `
+            <ul style="margin-top: 10px; padding-left: 18px; line-height: 1.7;">
+              ${bullets.map(x => `<li>${this.escapeHtml(x)}.</li>`).join("")}
+            </ul>
+            ${rest ? `<p style="margin-top: 10px; line-height: 1.7;">${this.escapeHtml(rest)}.</p>` : ``}
+          `;
+        },
+        makeImpressionFromFindings(cleanText){
+          const t = (cleanText || "").trim();
+          if(!t) return "";
+          const s = t.split(/[.?!]\s+/).map(x => x.trim()).filter(Boolean);
+          return (s.slice(0, 2).join(". ") + (s.length ? "." : "")).trim();
+        },
+        async polishViaDeepSeek(cleanText){
+          // Unified AI Gateway (Netlify Function / Worker) — key never in the browser
+          if(!window.RRZ_AI || typeof window.RRZ_AI.call !== 'function'){
+            throw new Error('AI client not available');
+          }
+          const tpl = (this.selectedTemplate || this.template || "").toString();
+          const res = await window.RRZ_AI.call('voice_to_report', {
+            transcript: cleanText,
+            template: tpl,
+            temperature: 0.2
+          }, { lang: 'ar' });
+
+          if(!res || !res.ok){
+            throw new Error(res?.error || 'AI call failed');
+          }
+          const data = res.result || {};
+          // Accept both {raw:..} and structured JSON
+          if(data && typeof data === 'object' && typeof data.raw === 'string' && Object.keys(data).length === 1){
+            return { findings: data.raw, impression: "", recommendations: "" };
+          }
+          return {
+            findings: (data && data.findings) ? String(data.findings) : cleanText,
+            impression: (data && data.impression) ? String(data.impression) : (this.makeImpressionFromFindings(cleanText) || ""),
+            recommendations: (data && data.recommendations) ? String(data.recommendations) : ""
+          };
+        },
+
+        // Called when user releases the record button: Saves text but stays on Step 3
+        commitCurrentSegment(opts = {}) {
+            this.recording = false;
+            
+            // Capture any pending text
+            const finalOnly = ((this.speech.finalText || "").trim() || (this.speech.interimText || "").trim());
+            const cleaned = this.cleanTranscript(finalOnly);
+
+            if (cleaned) {
+                // Add to accumulated text with a separator
+                if (this.accumulatedTranscript) {
+                    this.accumulatedTranscript += ". " + cleaned;
+                } else {
+                    this.accumulatedTranscript = cleaned;
+                }
+            }
+
+            // Reset speech buffers for next segment
+            this.speech.finalText = "";
+            this.speech.interimText = "";
+            this.speech.stopRequested = false;
+            this.speech.active = false;
+            
+            // Reset live badge
+            const badge = document.getElementById("rrz_liveBadge");
+            if(badge) badge.textContent = "";
+
+            // Re-render Step 3 to show updated Log
+            this.render();
+        },
+
+        // Called when user clicks "End and Report"
+        async finishAndGenerateReport() {
+            if (!this.accumulatedTranscript.trim()) {
+                alert("Please record some text first.");
+                return;
+            }
+
+            this.processing = true;
+            this.render(); // Show "Processing..." UI
+
+            const fullText = this.accumulatedTranscript.trim();
+            this.rawTranscript = fullText;
+
+            // Try AI polish; fallback silently if any error (including insufficient_balance)
+            let out;
+            try{
+              out = await this.polishViaDeepSeek(fullText);
+              this.aiNotice = "";
+            }catch(_e){
+              out = {
+                findings: fullText,
+                impression: this.makeImpressionFromFindings(fullText)
+              };
+              this.aiNotice = "AI polishing unavailable — showing raw transcript.";
+            }
+
+            // Store for preview rendering (HTML formatting for findings)
+            this.report = {
+              findings: out.findings || "",
+              impression: out.impression || ""
+            };
+            this.reportFindingsHtml = this.formatFindingsHtml(this.report.findings);
+            this.reportImpressionHtml = `<p style="margin-top: 8px; font-weight: 700;">${this.escapeHtml(this.report.impression || "")}</p>`;
+
+            this.processing = false;
+            this.gotoStep(4);
+        },
+
+        async startDictation(){
+          const r = this.ensureSpeech();
+          if(!r){
+            alert("Speech recognition is not supported on this browser/device. (Try Chrome on Android / Desktop.)");
+            return;
+          }
+          // Reset state for this segment
+          this.speech.stopRequested = false;
+          this.speech.finalText = "";
+          this.speech.interimText = "";
+          this.speech.active = true;
+
+          this.recording = true;
+          this.render();
+
+          try{
+            r.start();
+          }catch(_e){
+            // Some browsers require a user gesture; we are in onClick so should work
+          }
+        },
+
+        async stopDictation(){
+          // Manual stop — commit this segment
+          this.speech.stopRequested = true;
+          const r = this.ensureSpeech();
+          if(r){
+            try{ r.stop(); }catch(_e){}
+          }
+          this.commitCurrentSegment({ fromEnd: false, skipStopCall: false });
+        },
+
+
+        render(){
+          const container = document.getElementById('rrzApp');
+          container.innerHTML = `
+            <div class="glass-dark rounded-3xl p-8 mb-6 shadow-2xl">
+              <div class="flex items-center justify-between flex-wrap gap-4">
+                <div class="flex items-center gap-4 text-white">
+                  <img id="rrzMainLogo" src="logo.png" onerror="this.style.display='none'" class="main-logo-img floating" alt="Royal Logo">
+                  <div>
+                    <h1 class="text-3xl font-black leading-tight">Royal</h1>
+                    <p class="text-cyan-400 font-bold text-xl tracking-widest">Ray Zone</p>
+                  </div>
+                </div>
+                ${this.step === 2 ? `<button id="rrz_dashboardBtn" class="bg-white/10 px-4 py-2 rounded-xl text-sm font-bold hover:bg-white/20 transition text-yellow-300">Back to Dashboard</button>` : ''}
+                ${this.step > 2 ? `<button id="rrz_backBtn" class="bg-white/10 px-4 py-2 rounded-xl text-sm font-bold hover:bg-white/20 transition ${this.step===4?'text-yellow-300':''}">${this.step===4?'Go to Record Voice':'← عودة'}</button>` : ''}
+              </div>
+            </div>
+
+            ${this.step === 1 ? this.renderStep1() : ''}
+            ${this.step === 2 ? this.renderStep2Settings() : ''}
+            ${this.step === 3 ? this.renderStep3Voice() : ''}
+            ${this.step === 4 ? this.renderStep4Preview() : ''}
+          `;
+          // UI: On Step 1 (Patient Data) hide global navigation buttons, keep only patient window
+          const sw = document.getElementById('uSwitcher');
+          if (sw) sw.style.display = 'flex';
+
+          // On Final Preview (Step 4) hide Annotator/Grid quick-switch buttons
+          const bAnn = document.getElementById('btnANN');
+          const bGrid = document.getElementById('btnGRID');
+          if (bAnn) bAnn.style.display = (this.step === 4 ? 'none' : 'inline-flex');
+          if (bGrid) bGrid.style.display = (this.step === 4 ? 'none' : 'inline-flex');
+
+
+          this.attachEvents();
+        },
+
+        renderStep1(){
+          return `
+            <div class="glass-card rounded-3xl p-8 shadow-xl">
+              <h2 class="text-2xl font-bold mb-6 text-blue-900 border-r-4 border-blue-500 pr-4">بيانات المريض</h2>
+              <div class="space-y-4">
+                <input type="text" id="rrz_name" placeholder="اسم المريض" value="${this.patient.name}" class="w-full p-4 border rounded-xl bg-gray-50 text-right focus:border-blue-500 outline-none transition">
+                <input type="text" id="rrz_pid" placeholder="رقم الملف" value="${this.patient.id}" class="w-full p-4 border rounded-xl bg-gray-50 text-right focus:border-blue-500 outline-none transition">
+                <input type="date" id="rrz_date" value="${this.patient.date}" class="w-full p-4 border rounded-xl bg-gray-50 text-right focus:border-blue-500 outline-none transition">
+                <button id="rrz_nextToSettings" class="rrz-btn-primary w-full text-white py-4 rounded-xl font-bold text-lg mt-4">التالي: إعدادات الهوية</button>
+              </div>
+            </div>
+          `;
+        },
+
+        renderStep2Settings(){
+          const templates = [
+            { id: 'custom', name: 'قالب يدوي (رفع صورة)' },
+            { id: 'cardio', name: 'أشعة القلب (Cardiology)' },
+            { id: 'dental', name: 'أشعة الأسنان (Dental)' },
+            { id: 'ortho', name: 'العظام (Orthopedic)' },
+            { id: 'chest', name: 'الصدر (Chest/Lung)' },
+            { id: 'neuro', name: 'الأعصاب (Neuro/Brain)' },
+            { id: 'hand', name: 'اليد والمعصم (Hand & Wrist)' },
+            { id: 'abdominal', name: 'البطن والحوض (Abdominal)' },
+            { id: 'mammography', name: 'الثدي (Mammography)' },
+            { id: 'ultrasound', name: 'السونار (Ultrasound)' }
+          ];
+          return `
+            <div class="glass-card rounded-3xl p-8 shadow-xl">
+              <h2 class="text-2xl font-bold mb-6 text-blue-900 border-r-4 border-blue-500 pr-4">تجهيز قالب التقرير</h2>
+              <div class="mb-8">
+                <label class="block font-bold mb-2 text-gray-700">اختر نوع الأشعة (قوالب جاهزة):</label>
+                <select id="rrz_templateSelector" class="w-full p-3 border-2 border-blue-100 rounded-xl bg-blue-50 font-bold outline-none focus:border-blue-400">
+                  ${templates.map(t => `<option value="${t.id}" ${this.selectedTemplate === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+                </select>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="p-4 border-2 border-dashed rounded-2xl text-center relative hover:bg-blue-50 transition ${this.selectedTemplate !== 'custom' ? 'opacity-50 pointer-events-none' : ''}">
+                  <p class="font-bold text-xs text-blue-800 mb-2">1. رفع صورة إطار</p>
+                  <input type="file" id="rrz_tplInput" class="hidden" accept="image/*">
+                  <button onclick="document.getElementById('rrz_tplInput').click()" class="bg-blue-100 text-blue-700 px-2 py-2 rounded-lg text-xs w-full mb-2 hover:bg-blue-200">رفع الإطار</button>
+                  ${this.templateImageDataUrl ? `<img src="${this.templateImageDataUrl}" class="h-12 mx-auto rounded shadow-sm">` : ''}
+                </div>
+
+                <div class="p-4 border-2 border-dashed rounded-2xl text-center hover:bg-cyan-50 transition">
+                  <p class="font-bold mb-2 text-xs text-cyan-800">2. لوجو العمل</p>
+                  <input type="file" id="rrz_logoInput" class="hidden" accept="image/*">
+                  <button onclick="document.getElementById('rrz_logoInput').click()" class="bg-cyan-100 text-cyan-700 px-2 py-2 rounded-lg text-xs w-full mb-2 hover:bg-cyan-200">رفع اللوجو</button>
+                  ${this.workLogoDataUrl ? `<img src="${this.workLogoDataUrl}" class="h-12 mx-auto rounded shadow-sm">` : ''}
+                </div>
+
+                <div class="p-4 border-2 border-dashed rounded-2xl text-center hover:bg-purple-50 transition">
+                  <p class="font-bold mb-2 text-xs text-purple-800">3. إمضاء الطبيب</p>
+                  <input type="file" id="rrz_sigInput" class="hidden" accept="image/*">
+                  <button onclick="document.getElementById('rrz_sigInput').click()" class="bg-purple-100 text-purple-700 px-2 py-2 rounded-lg text-xs w-full mb-2 hover:bg-purple-200">رفع الإمضاء</button>
+                  ${this.signatureDataUrl ? `<img src="${this.signatureDataUrl}" class="h-12 mx-auto rounded shadow-sm">` : ''}
+                </div>
+
+                <div class="p-4 border-2 border-dashed rounded-2xl text-center hover:bg-amber-50 transition">
+                  <p class="font-bold mb-2 text-xs text-amber-800">4. الختم الرسمي</p>
+                  <input type="file" id="rrz_sealInput" class="hidden" accept="image/*">
+                  <button onclick="document.getElementById('rrz_sealInput').click()" class="bg-amber-100 text-amber-700 px-2 py-2 rounded-lg text-xs w-full mb-2 hover:bg-amber-200">رفع الختم</button>
+                  ${this.sealDataUrl ? `<img src="${this.sealDataUrl}" class="h-12 mx-auto rounded shadow-sm">` : ''}
+                </div>
+
+                <div class="p-4 border-2 border-dashed rounded-2xl text-center hover:bg-emerald-50 transition">
+                  <p class="font-bold mb-2 text-xs text-emerald-800">5. الذهاب لتسجيل التقرير</p>
+                  <button id="rrz_toVoice" class="bg-emerald-100 text-emerald-700 px-2 py-2 rounded-lg text-xs w-full mb-2 hover:bg-emerald-200 font-bold">الذهاب لتسجيل التقرير ←</button>
+                  <p class="text-[11px] text-gray-500">ابدأ التسجيل بعد تجهيز الهوية.</p>
+                </div>
+
+              </div>
+            </div>
+          `;
+        },
+
+        renderStep3Voice(){
+          return `
+            <div class="glass-card rounded-3xl p-10 text-center flex flex-col items-center justify-center min-h-[500px]">
+              
+              <!-- Transcript Log Area -->
+              <div class="w-full max-w-lg mb-6">
+                <label class="block text-gray-500 text-xs font-bold mb-2 text-left">Live Transcript Log:</label>
+                <div class="w-full h-32 p-4 bg-gray-100 rounded-xl border border-gray-200 text-left overflow-y-auto text-sm text-gray-700 shadow-inner">
+                   ${this.accumulatedTranscript ? this.accumulatedTranscript : '<span class="text-gray-400 italic">No text recorded yet. Press button to add sentences.</span>'}
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <div class="inline-flex items-center justify-center w-24 h-24 rounded-full ${this.recording ? 'bg-red-500 animate-pulse' : 'bg-blue-500'} text-white shadow-xl transition-all duration-300">
+                  <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                </div>
+              </div>
+
+              <button id="rrz_rec" class="rrz-btn-primary text-white px-8 py-3 rounded-xl font-bold text-lg mb-2 shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 w-64">
+                ${this.processing ? 'Processing…' : (this.recording ? 'Recording… (release)' : 'Hold to Record')}
+              </button>
+              <div id="rrz_liveBadge" class="mt-1 text-gray-500 text-xs font-semibold" style="min-height:18px;"></div>
+              
+              <!-- Finish Button -->
+              <button id="rrz_finishBtn" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-bold text-lg mt-6 shadow-lg w-64 transition-all">
+                End and Report ✅
+              </button>
+
+              <div class="mt-8 pt-6 border-t w-full max-w-lg">
+                <input type="file" id="rrz_refImgInput" class="hidden" accept="image/*">
+                <button onclick="document.getElementById('rrz_refImgInput').click()" class="text-blue-600 hover:text-blue-800 font-bold text-md transition-colors duration-200">
+                  Reference Photos optional
+                </button>
+                ${this.imageDataUrl ? '<div class="mt-2 text-green-600 text-sm font-bold">✓ تم إرفاق الصورة</div>' : ''}
+                <div class="mt-2 text-gray-600 text-xs font-bold">
+                  يمكنك إرسال صورة من محرر Annotator مباشرة (زر Send to Royal Report).
+                </div>
+              </div>
+            </div>
+          `;
+        },
+
+        renderStep4Preview(){
+          let templateClass = "";
+          const t = this.selectedTemplate;
+          if (t === 'cardio') templateClass = "tpl-cardio"; else if (t === 'dental') templateClass = "tpl-dental";
+          else if (t === 'ortho') templateClass = "tpl-ortho"; else if (t === 'chest') templateClass = "tpl-chest";
+          else if (t === 'neuro') templateClass = "tpl-neuro"; else if (t === 'hand') templateClass = "tpl-hand";
+          else if (t === 'abdominal') templateClass = "tpl-abdominal"; else if (t === 'mammography') templateClass = "tpl-mammography";
+          else if (t === 'ultrasound') templateClass = "tpl-ultrasound";
+
+          return `
+            <div class="glass-card rounded-3xl p-6 mb-6">
+              <h2 class="text-2xl font-bold mb-4 text-center">المعاينة النهائية</h2>
+
+              <div id="report-capture-area" class="mx-auto shadow-2xl ${templateClass}" style="background-image: url('${this.selectedTemplate === 'custom' ? (this.templateImageDataUrl || '') : ''}');">
+                ${this.workLogoDataUrl ? `<div style="position: absolute; top: 40px; right: 40px;"><img src="${this.workLogoDataUrl}" style="max-width: 145px; max-height: 145px; object-fit: contain;"></div>` : ''}
+
+                <div class="relative z-10 text-left" dir="ltr" style="margin-top: 80px;">
+                  <h1 style="font-size: 2.2rem; font-weight: 800; border-bottom: 3px solid #1e3a5f; margin-bottom: 25px; color: #1e3a5f;">${this.selectedTemplate.toUpperCase()} REPORT</h1>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; font-weight: 600;">
+                    <p>Patient Name: <span style="font-weight: 400;">${this.patient.name}</span></p>
+                    <p>Date: <span style="font-weight: 400;">${this.patient.date}</span></p>
+                    <p>Case ID: <span style="font-weight: 400;">${this.patient.id}</span></p>
+                  </div>
+
+                  ${this.aiNotice ? `<div style="margin: 14px 0; padding: 10px 12px; border-radius: 12px; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; font-weight: 700;">${this.aiNotice}</div>` : ``}
+
+                  <div style="margin-bottom: 25px;">
+                    <h3 style="font-weight: 800; border-left: 5px solid #3b82f6; padding-left: 10px; color: #1e3a5f;">FINDINGS</h3>
+                    ${this.reportFindingsHtml ? this.reportFindingsHtml : `<p style="margin-top: 8px; line-height: 1.6;">${this.escapeHtml(this.report.findings)}</p>`}
+                  </div>
+
+                  <div style="margin-bottom: 25px;">
+                    <h3 style="font-weight: 800; border-left: 5px solid #3b82f6; padding-left: 10px; color: #1e3a5f;">IMPRESSION</h3>
+                    ${this.reportImpressionHtml ? this.reportImpressionHtml : `<p style="margin-top: 8px; font-weight: 700;">${this.escapeHtml(this.report.impression)}</p>`}
+                  </div>
+
+                  ${this.imageDataUrl ? `<div style="text-align: center; margin-top: 30px;"><img src="${this.imageDataUrl}" style="max-height: 280px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: inline-block;"></div>` : ''}
+                  ${this.reportImages && this.reportImages.length ? `
+                    <div style="margin-top: 18px;">
+                      <h3 style="font-weight: 800; border-left: 5px solid #d4af37; padding-left: 10px; color: #1e3a5f;">IMAGES</h3>
+                      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px;">
+                        ${this.reportImages.map((src)=>`
+                          <div style="border: 2px solid #d4af37; border-radius: 14px; padding: 6px; background: rgba(255,255,255,0.92);">
+                            <img src="${src}" style="width: 100%; height: auto; max-height: 380px; object-fit: contain; border-radius: 10px; display:block;">
+                          </div>
+                        `).join('')}
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <div class="overlay-assets">
+                  ${this.signatureDataUrl ? `<img src="${this.signatureDataUrl}" class="signature-img">` : ''}
+                  ${this.sealDataUrl ? `<img src="${this.sealDataUrl}" class="seal-img">` : ''}
+                </div>
+              </div>
+
+              <div class="flex gap-4 mt-8">
+                <button id="rrz_expImage" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold shadow-lg transition">تصدير وحفظ الصورة النهائية 📥</button>
+                <button id="rrz_new" class="flex-1 bg-gray-200 text-gray-800 py-4 rounded-xl font-bold hover:bg-gray-300 transition-all">بدء تقرير جديد 🔄</button>
+              </div>
+            </div>
+          `;
+        },
+
+        attachEvents(){
+          const backBtn = document.getElementById('rrz_backBtn');
+          if (backBtn) backBtn.onclick = () => this.gotoStep(this.step - 1);
+
+          const dashBtn = document.getElementById('rrz_dashboardBtn');
+          if (dashBtn) dashBtn.onclick = () => { window.location.href = 'dashboard.html'; };
+
+          const openAnn = document.getElementById('rrz_openAnnotator');
+          if(openAnn) openAnn.onclick = () => window.U_SHOW('ann');
+
+          const openGrid = document.getElementById('rrz_openGrid');
+          if(openGrid) openGrid.onclick = () => window.U_SHOW('grid');
+
+          const nextToSettings = document.getElementById('rrz_nextToSettings');
+          if (nextToSettings) {
+            nextToSettings.onclick = () => {
+              this.patient.name = document.getElementById('rrz_name').value;
+              this.patient.id = document.getElementById('rrz_pid').value;
+              this.patient.date = document.getElementById('rrz_date').value;
+              if (this.patient.name) this.gotoStep(2); else alert('يرجى إدخال اسم المريض');
+            };
+          }
+
+          const templateSelector = document.getElementById('rrz_templateSelector');
+          if (templateSelector) {
+            templateSelector.onchange = (e) => { this.selectedTemplate = e.target.value; this.render(); };
+          }
+
+          const setupUpload = (id, targetVar) => {
+            const input = document.getElementById(id);
+            if (input) input.onchange = async (e) => {
+              if (e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = () => { this[targetVar] = reader.result; this.render(); };
+                reader.readAsDataURL(e.target.files[0]);
+              }
+            };
+          };
+
+          setupUpload('rrz_tplInput', 'templateImageDataUrl');
+          setupUpload('rrz_logoInput', 'workLogoDataUrl');
+          setupUpload('rrz_sigInput', 'signatureDataUrl');
+          setupUpload('rrz_sealInput', 'sealDataUrl');
+          setupUpload('rrz_refImgInput', 'imageDataUrl');
+
+          const toVoice = document.getElementById('rrz_toVoice');
+          if (toVoice) toVoice.onclick = () => this.gotoStep(3);
+            
+            // New Finish Button
+            const finishBtn = document.getElementById('rrz_finishBtn');
+            if (finishBtn) {
+                finishBtn.onclick = () => this.finishAndGenerateReport();
+            }
+
+            const rec = document.getElementById('rrz_rec');
+          if (rec) {
+            // Press-and-hold recording: hold to record, release to commit segment
+            const startHold = (e) => {
+              try { e.preventDefault(); } catch(_) {}
+              if (this.processing) return;
+              if (!this.recording) this.startDictation();
+              // Capture pointer so releasing outside still stops
+              if (e && e.pointerId != null && rec.setPointerCapture) {
+                try { rec.setPointerCapture(e.pointerId); } catch(_) {}
+              }
+            };
+            const stopHold = (e) => {
+              try { e.preventDefault(); } catch(_) {}
+              if (this.recording) this.stopDictation();
+            };
+
+            // Pointer events (modern)
+            rec.onpointerdown = startHold;
+            rec.onpointerup = stopHold;
+            rec.onpointercancel = stopHold;
+            rec.onpointerleave = stopHold;
+
+            // Touch fallback
+            rec.ontouchstart = startHold;
+            rec.ontouchend = stopHold;
+            rec.ontouchcancel = stopHold;
+
+            // Prevent normal click toggle
+            rec.onclick = (e) => { try { e.preventDefault(); } catch(_) {} };
+          }
+const expImage = document.getElementById('rrz_expImage');
+          if (expImage) {
+            expImage.onclick = async () => {
+              const area = document.getElementById('report-capture-area');
+              const canvas = await html2canvas(area, { scale: 2, useCORS: true });
+              const link = document.createElement('a');
+              link.download = `${this.selectedTemplate}_Report_${this.patient.id}.png`;
+              link.href = canvas.toDataURL("image/png");
+              link.click();
+              await storage.save({ ...this.patient, timestamp: new Date() });
+              alert("تم حفظ التقرير بنجاح!");
+            };
+          }
+
+          const btnNew = document.getElementById('rrz_new');
+          if(btnNew) btnNew.onclick = () => {
+            // Start a fresh report and return to the Template Setup screen (Step 1)
+            this.patient = { name: '', id: '', date: new Date().toISOString().split('T')[0] };
+            this.report = { findings: '', impression: '' };
+            this.recording = false;
+            this.accumulatedTranscript = ""; // Clear buffer
+
+            this.selectedTemplate = 'custom';
+            this.templateImageDataUrl = null;
+            this.workLogoDataUrl = 'logo.png';
+            this.signatureDataUrl = null;
+            this.sealDataUrl = null;
+
+            this.imageDataUrl = null;
+            this.reportImages = [];
+
+            // Reset Photo Grid images (do not carry images to the next report)
+            try {
+              gridImages = [];
+              selectedGrid = null;
+              totalCells = 0;
+            } catch(e) {}
+
+            // Reset Annotator canvas objects (if available)
+            try {
+              if (typeof resetHistory === 'function') resetHistory([]);
+              if (typeof draw === 'function') draw();
+            } catch(e) {}
+
+            window.scrollTo(0, 0);
+            this.gotoStep(2);
+          };
+        }
+      };
+
+      // Expose a safe setter for annotator
+      window.RRZ_SET_REFERENCE_IMAGE = function(dataUrl){
+        app.imageDataUrl = dataUrl;
+        app.render();
+      };
+
+      window.RRZ_APP = app;
+      app.init();
+    })();
+
+    /* =========================================================
+       2) Annotator + Grid
+       - FIX: show/hide section resize issue
+       - ADD: Undo in toolbar
+       - IMPROVE: History-based Undo (works with move/edit/delete)
+    ========================================================== */
+    (function(){
+      const $ = (id) => document.getElementById(id);
+
+      const canvas = $("a_canvas");
+      const stage  = $("a_stage");
+      const ctx    = canvas.getContext("2d");
+
+      let W = 0, H = 0;
+      let img = null;
+      let imgLoaded = false;
+
+      let view = { x: 0, y: 0, scale: 1 };
+      let objects = [];
+      let currentTool = null;
+
+      // History (Undo)
+      let history = [];
+      let historyIndex = -1;
+      let dragCommitArmed = false; // to commit after move/edit drag ends
+
+      function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+      function commitHistory(){
+        // cut forward history
+        history = history.slice(0, historyIndex + 1);
+        history.push(deepClone(objects));
+        historyIndex = history.length - 1;
+      }
+      function resetHistory(initialObjects){
+        objects = initialObjects ? deepClone(initialObjects) : [];
+        history = [ deepClone(objects) ];
+        historyIndex = 0;
+      }
+      function undoHistory(){
+        if(historyIndex <= 0) return;
+        historyIndex--;
+        objects = deepClone(history[historyIndex]);
+
+        // clear selection/edit handles
+        selectedObject = null;
+        selectedObjectIndex = -1;
+        editMode = false;
+        hideEditPoints();
+        draw();
+      }
+
+      // Auto Calibration
+      const LS_SCALE_KEY = "AccuRay_scaleFactor_pxPerMm_v1";
+      let calibrationMode = false;
+      let calibrated = false;
+
+      function getSavedScaleFactor() {
+        const v = parseFloat(localStorage.getItem(LS_SCALE_KEY));
+        return (Number.isFinite(v) && v > 0) ? v : null;
+      }
+      function saveScaleFactor(v) {
+        if (!Number.isFinite(v) || v <= 0) return;
+        localStorage.setItem(LS_SCALE_KEY, String(v));
+      }
+      function setScaleFactor(v, { save = true } = {}) {
+        if (!Number.isFinite(v) || v <= 0) return;
+        $("a_scaleFactor").value = (Math.round(v * 1000) / 1000).toString();
+        if (save) saveScaleFactor(v);
+        calibrated = true;
+        updateCalBadge();
+        draw();
+      }
+      function updateCalBadge() {
+        const badge = $("a_calBadge");
+        if (!badge) return;
+        const sf = parseFloat($("a_scaleFactor").value);
+        if (Number.isFinite(sf) && sf > 0 && calibrated) {
+          badge.textContent = "Calibrated";
+          badge.classList.remove("warn");
+          badge.classList.add("ok");
+        } else {
+          badge.textContent = "Needs Calibration";
+          badge.classList.remove("ok");
+          badge.classList.add("warn");
+        }
+      }
+      function showCalHint(show) {
+        const hint = $("a_calHint");
+        if (!hint) return;
+        hint.style.display = show ? "block" : "none";
+      }
+      function startCalibration() {
+        calibrationMode = true;
+        calibrated = false;
+        updateCalBadge();
+        setTool("RULER");
+        showCalHint(true);
+      }
+
+      function getMousePos(e){
+        const rect = canvas.getBoundingClientRect();
+        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      }
+      function screenToWorld(p){ return { x: (p.x - view.x) / view.scale, y: (p.y - view.y) / view.scale }; }
+      function worldToScreen(p){ return { x: p.x * view.scale + view.x, y: p.y * view.scale + view.y }; }
+
+      function distance(a,b){
+        const dx = b.x - a.x, dy = b.y - a.y;
+        return Math.sqrt(dx*dx + dy*dy);
+      }
+
+      function completeCalibrationFromLine(lineObj) {
+        if (!lineObj || lineObj.type !== "line") return;
+        const px = distance(lineObj.a, lineObj.b);
+        if (!Number.isFinite(px) || px <= 0) return;
+
+        const mmStr = prompt("أدخل طول المسافة الحقيقية بالـ mm (للمعايرة):");
+        const mm = parseFloat(mmStr);
+        if (!Number.isFinite(mm) || mm <= 0) { showCalHint(true); return; }
+        const pxPerMm = px / mm;
+        setScaleFactor(pxPerMm, { save: true });
+        calibrationMode = false;
+        showCalHint(false);
+      }
+
+      // Interaction state
+      let isDown = false;
+      let startPt = null;
+      let tempPts = [];
+
+      let anglePoints = [];
+      let polygonPoints = [];
+      let drawingPolygon = false;
+
+      let areaPoints = [];
+      let drawingArea = false;
+
+      let selectedObject = null;
+      let selectedObjectIndex = -1;
+      let editMode = false;
+      let draggingPoint = false;
+      let draggedPointIndex = -1;
+
+      let draggingObject = false;
+      let dragStartWorld = null;
+      let dragObjectSnapshot = null;
+
+      // Grid state
+      let gridImages = [];
+      let selectedGrid = null;
+      let totalCells = 0;
+
+
+      /* ===== Voice (Speech-to-Text) =====
+         - Click Start Voice: begin dictation
+         - Click Stop Voice: add the dictated text as a TEXT object (editable like any other tool)
+      */
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const annVoice = { rec: null, active: false, finalText: "", pendingText: "" };
+
+      function setVoiceBtnLabel(listening){
+        const vb = $("a_voiceBtn");
+        if(!vb) return;
+        const spans = vb.querySelectorAll("span");
+        if(spans && spans.length >= 2){
+          spans[1].textContent = listening ? "Stop voice record" : "Start voic record";
+        } else {
+          vb.textContent = listening ? "Stop voice record" : "Start voic record";
+        }
+      }
+
+      function ensureRecognizer(){
+        if(!SpeechRecognition) return null;
+        if(annVoice.rec) return annVoice.rec;
+
+        const r = new SpeechRecognition();
+        r.lang = "en-US";
+        r.interimResults = true;
+        r.continuous = true;
+
+        r.onresult = (event) => {
+          for(let i = event.resultIndex; i < event.results.length; i++){
+            const res = event.results[i];
+            const t = res[0].transcript || "";
+            if(res.isFinal) annVoice.finalText += t + " ";
+          }
+          // show listening state in badge without breaking calibration logic
+          const badge = $("a_calBadge");
+          if(badge && annVoice.active){
+            badge.textContent = "Listening…";
+            badge.classList.remove("ok","warn");
+          }
+        };
+
+        r.onerror = (e) => {
+          console.warn("SpeechRecognition error:", e);
+        };
+
+        r.onend = () => {
+          // Some browsers auto-stop; restart while user still in active mode
+          if(annVoice.active){
+            try { r.start(); } catch(_){}
+          }
+        };
+
+        annVoice.rec = r;
+        return r;
+      }
+
+      function commitVoiceText(text){
+        const t = (text || "").trim();
+        if(!t) return;
+
+        if(!imgLoaded || !img){
+          annVoice.pendingText = t;
+          alert("تم التقاط النص الصوتي. قم بتحميل صورة لإضافته كـ Text على الصورة.");
+          return;
+        }
+
+        // Add at view center (editable/movable like any object)
+        const centerWorld = screenToWorld({ x: W/2, y: H/2 });
+        objects.push({ type: "text", p: centerWorld, text: t });
+        commitHistory();
+        draw();
+      }
+
+
+      /* ===== Tools (ADD UNDO IN TOOLBAR) ===== */
+      const TOOLS = [
+        { id: "LINE", label: "Line", ico: "／", hint: "خط" },
+        { id: "RECT", label: "Rect", ico: "▭", hint: "مستطيل" },
+        { id: "CIRCLE", label: "Circle", ico: "◯", hint: "دائرة" },
+        { id: "ARROW", label: "Arrow", ico: "➜", hint: "سهم" },
+        { id: "TEXT", label: "Text", ico: "T", hint: "نص" },
+        { id: "ANGLE", label: "Angle", ico: "∠", hint: "زاوية" },
+        { id: "RULER", label: "Ruler", ico: "📏", hint: "قياس" },
+        { id: "AREA", label: "Area", ico: "⬚", hint: "مساحة" },
+        { id: "UNDO", label: "Undo", ico: "↶", hint: "رجوع" }
+      ];
+
+      function buildTools() {
+        const grid = $("a_toolGrid");
+        grid.innerHTML = "";
+        TOOLS.forEach(t => {
+          const b = document.createElement("div");
+          b.className = "a-toolBtn";
+          b.dataset.tool = t.id;
+          b.innerHTML = `
+            <div class="ico">${t.ico}</div>
+            <div class="lbl">${t.label}</div>
+            <div class="hint">${t.hint}</div>
+          `;
+          b.addEventListener("click", () => {
+            if(t.id === "UNDO"){
+              undoHistory();
+              return;
+            }
+            setTool(t.id);
+          });
+          grid.appendChild(b);
+        });
+      }
+
+      function setTool(id) {
+        currentTool = id;
+        isDown = false; startPt = null; tempPts = [];
+        anglePoints = [];
+        drawingPolygon = false; polygonPoints = [];
+        drawingArea = false; areaPoints = [];
+
+        [...document.querySelectorAll(".a-toolBtn")].forEach(el => {
+          el.classList.toggle("active", el.dataset.tool === id);
+        });
+        canvas.style.cursor = (id === "TEXT") ? "text" : "crosshair";
+      }
+
+      function resize() {
+        const rect = stage.getBoundingClientRect();
+        // IMPORTANT: if hidden => rect can be 0, so keep old size until visible
+        const newW = Math.max(1, Math.floor(rect.width));
+        const newH = Math.max(1, Math.floor(rect.height));
+        if(newW === 1 && newH === 1 && !document.getElementById("annotatorSection").classList.contains("active")){
+          return;
+        }
+        W = newW;
+        H = newH;
+        canvas.width = W;
+        canvas.height = H;
+        draw();
+      }
+
+      function fitImage() {
+        if (!imgLoaded || !img) return;
+        const imgAspect = img.width / img.height;
+        const stageAspect = W / H;
+        let scale;
+        if (imgAspect > stageAspect) scale = W / img.width;
+        else scale = H / img.height;
+
+        view.scale = scale;
+        view.x = (W - img.width * scale) / 2;
+        view.y = (H - img.height * scale) / 2;
+
+        updateEditPoints();
+        draw();
+      }
+
+      function zoomAt(factor, centerScreen = { x: W / 2, y: H / 2 }) {
+        const before = screenToWorld(centerScreen);
+        view.scale *= factor;
+        view.scale = Math.max(0.05, Math.min(12, view.scale));
+        const after = screenToWorld(centerScreen);
+        view.x += (after.x - before.x) * view.scale;
+        view.y += (after.y - before.y) * view.scale;
+        updateEditPoints();
+        draw();
+      }
+
+      function isPointNearLine(p, a, b, tolerance){
+        const A = p.x - a.x, B = p.y - a.y;
+        const C = b.x - a.x, D = b.y - a.y;
+        const dot = A*C + B*D;
+        const len_sq = C*C + D*D;
+        let param = -1;
+        if(len_sq !== 0) param = dot / len_sq;
+
+        let xx, yy;
+        if(param < 0){ xx = a.x; yy = a.y; }
+        else if(param > 1){ xx = b.x; yy = b.y; }
+        else { xx = a.x + param*C; yy = a.y + param*D; }
+
+        const dx = p.x - xx, dy = p.y - yy;
+        return (dx*dx + dy*dy) <= tolerance*tolerance;
+      }
+
+      function calculateAngle(p1,p2,p3){
+        const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
+        const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+        const dot = v1.x*v2.x + v1.y*v2.y;
+        const mag1 = Math.sqrt(v1.x*v1.x + v1.y*v1.y);
+        const mag2 = Math.sqrt(v2.x*v2.x + v2.y*v2.y);
+        const cosAngle = dot / (mag1*mag2);
+        const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle)));
+        return angle * (180/Math.PI);
+      }
+
+      function calculatePolygonArea(points){
+        let area = 0;
+        for(let i=0;i<points.length;i++){
+          const j = (i+1) % points.length;
+          area += points[i].x * points[j].y;
+          area -= points[j].x * points[i].y;
+        }
+        return Math.abs(area/2);
+      }
+
+      function draw(){
+        ctx.clearRect(0,0,W,H);
+        drawBackground();
+        if(imgLoaded && img) drawImage();
+        drawObjects();
+        drawMeasurementLabels();
+      }
+
+      function drawBackground(){
+        const step = 50;
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,255,255,0.05)";
+        ctx.lineWidth = 1;
+        for(let x=0;x<W;x+=step){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+        for(let y=0;y<H;y+=step){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+        ctx.restore();
+      }
+
+      function drawImage(){
+        ctx.save();
+        ctx.translate(view.x, view.y);
+        ctx.scale(view.scale, view.scale);
+        ctx.drawImage(img, 0, 0);
+        ctx.restore();
+      }
+
+      function buildTempObject(){
+        // Preview for ANGLE / POLYGON / AREA does NOT depend on startPt drag
+        const p = tempPts[0] || null;
+
+        if(currentTool === "ANGLE"){
+          if(anglePoints.length === 1 && p){
+            return { type:"angle", points:[anglePoints[0], p, p] };
+          }
+          if(anglePoints.length === 2 && p){
+            return { type:"angle", points:[anglePoints[0], anglePoints[1], p] };
+          }
+          return null;
+        }
+
+        if(currentTool === "AREA"){
+          if(drawingArea && areaPoints.length > 0){
+            const last = areaPoints[areaPoints.length-1];
+            return { type:"area", points:[...areaPoints, (p || last)], measurement:'area' };
+          }
+          return null;
+        }
+
+        if(currentTool === "POLYGON"){
+          if(drawingPolygon && polygonPoints.length > 0){
+            const last = polygonPoints[polygonPoints.length-1];
+            return { type:"polygon", points:[...polygonPoints, (p || last)], measurement:'area' };
+          }
+          return null;
+        }
+
+        // Drag-based tools
+        if(!startPt) return null;
+        const a = startPt;
+        const b = p || a;
+
+        switch(currentTool){
+          case "LINE": return { type:"line", a, b };
+          case "RECT": return { type:"rect", a, b };
+          case "CIRCLE": return { type:"circle", c:a, p:b };
+          case "ARROW": return { type:"arrow", a, b };
+          case "RULER": return (startPt && p) ? { type:"line", a, b, measurement:'distance' } : null;
+        }
+        return null;
+      }
+
+
+      function drawObjects(){
+        ctx.save();
+        ctx.translate(view.x, view.y);
+        ctx.scale(view.scale, view.scale);
+
+        const strokeW = parseInt($("a_strokeW").value) || 3;
+        const fontSz  = parseInt($("a_fontSz").value) || 16;
+
+        ctx.lineWidth = strokeW / view.scale;
+        ctx.font = `${fontSz / view.scale}px Arial`;
+
+        objects.forEach((o, idx) => {
+          const isSelected = (editMode && idx === selectedObjectIndex);
+          const stroke = isSelected ? "#00ffff" : "#ff3";
+          ctx.strokeStyle = stroke;
+          ctx.fillStyle = stroke;
+
+          switch(o.type){
+            case "line":
+              ctx.beginPath(); ctx.moveTo(o.a.x,o.a.y); ctx.lineTo(o.b.x,o.b.y); ctx.stroke();
+              break;
+
+            case "rect":
+              ctx.strokeRect(
+                Math.min(o.a.x,o.b.x), Math.min(o.a.y,o.b.y),
+                Math.abs(o.b.x-o.a.x), Math.abs(o.b.y-o.a.y)
+              );
+              break;
+
+            case "circle": {
+              const r = distance(o.c, o.p);
+              ctx.beginPath(); ctx.arc(o.c.x,o.c.y,r,0,Math.PI*2); ctx.stroke();
+              break;
+            }
+
+            case "arrow": {
+              ctx.beginPath(); ctx.moveTo(o.a.x,o.a.y); ctx.lineTo(o.b.x,o.b.y); ctx.stroke();
+              const ang = Math.atan2(o.b.y - o.a.y, o.b.x - o.a.x);
+              const headLen = 14 / view.scale;
+              const a1 = ang + Math.PI * 0.8;
+              const a2 = ang - Math.PI * 0.8;
+              ctx.beginPath();
+              ctx.moveTo(o.b.x, o.b.y);
+              ctx.lineTo(o.b.x + Math.cos(a1)*headLen, o.b.y + Math.sin(a1)*headLen);
+              ctx.lineTo(o.b.x + Math.cos(a2)*headLen, o.b.y + Math.sin(a2)*headLen);
+              ctx.closePath();
+              ctx.fill();
+              break;
+            }
+
+            case "text":
+              ctx.fillText(o.text, o.p.x, o.p.y);
+              break;
+
+            case "angle":
+              ctx.beginPath();
+              ctx.moveTo(o.points[0].x, o.points[0].y);
+              ctx.lineTo(o.points[1].x, o.points[1].y);
+              ctx.lineTo(o.points[2].x, o.points[2].y);
+              ctx.stroke();
+              o.points.forEach(p => { ctx.beginPath(); ctx.arc(p.x,p.y,6/view.scale,0,Math.PI*2); ctx.fill(); });
+              break;
+
+            case "area":
+            case "polygon":
+              if(o.points.length < 2) break;
+              ctx.beginPath();
+              ctx.moveTo(o.points[0].x,o.points[0].y);
+              for(let i=1;i<o.points.length;i++) ctx.lineTo(o.points[i].x,o.points[i].y);
+              ctx.closePath();
+              ctx.stroke();
+              ctx.fillStyle = "rgba(255,255,0,0.15)";
+              ctx.fill();
+              break;
+          }
+        });
+
+        // Preview
+        const tmp = buildTempObject();
+        if(tmp){
+          ctx.strokeStyle = "rgba(255,255,255,0.8)";
+          ctx.fillStyle   = "rgba(255,255,255,0.8)";
+          ctx.setLineDash([8/view.scale, 6/view.scale]);
+          switch(tmp.type){
+            case "line":
+              ctx.beginPath(); ctx.moveTo(tmp.a.x,tmp.a.y); ctx.lineTo(tmp.b.x,tmp.b.y); ctx.stroke();
+              break;
+            case "rect":
+              ctx.strokeRect(
+                Math.min(tmp.a.x,tmp.b.x), Math.min(tmp.a.y,tmp.b.y),
+                Math.abs(tmp.b.x-tmp.a.x), Math.abs(tmp.b.y-tmp.a.y)
+              );
+              break;
+            case "circle": {
+              const r = distance(tmp.c, tmp.p);
+              ctx.beginPath(); ctx.arc(tmp.c.x,tmp.c.y,r,0,Math.PI*2); ctx.stroke();
+              break;
+            }
+            case "arrow":
+              ctx.beginPath(); ctx.moveTo(tmp.a.x,tmp.a.y); ctx.lineTo(tmp.b.x,tmp.b.y); ctx.stroke();
+              break;
+            case "angle":
+              ctx.beginPath();
+              ctx.moveTo(tmp.points[0].x,tmp.points[0].y);
+              ctx.lineTo(tmp.points[1].x,tmp.points[1].y);
+              ctx.lineTo(tmp.points[2].x,tmp.points[2].y);
+              ctx.stroke();
+              break;
+            case "area":
+            case "polygon":
+              ctx.beginPath();
+              ctx.moveTo(tmp.points[0].x,tmp.points[0].y);
+              for(let i=1;i<tmp.points.length;i++) ctx.lineTo(tmp.points[i].x,tmp.points[i].y);
+              ctx.stroke();
+              break;
+          }
+          ctx.setLineDash([]);
+        }
+
+
+        // --- Helper points so clicks/vertices are always visible أثناء وضع النقط ---
+        const drawHelperPoint = (pt)=>{
+          if(!pt) return;
+          const r = 5 / view.scale;
+          // solid for points (do not inherit dashed preview)
+          const prevDash = ctx.getLineDash();
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, r, 0, Math.PI*2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.setLineDash(prevDash);
+        };
+
+        // Drag-based tools (line/rect/circle/arrow/ruler)
+        if(isDown && startPt){
+          drawHelperPoint(startPt);
+          if(tempPts[0]) drawHelperPoint(tempPts[0]);
+        }
+
+        // Angle points + live cursor
+        if(currentTool === "ANGLE" && anglePoints && anglePoints.length){
+          anglePoints.forEach(drawHelperPoint);
+          if(tempPts[0]) drawHelperPoint(tempPts[0]);
+        }
+
+        // Polygon/Area vertices + live cursor
+        if(drawingPolygon && polygonPoints && polygonPoints.length){
+          polygonPoints.forEach(drawHelperPoint);
+          if(tempPts[0]) drawHelperPoint(tempPts[0]);
+        }
+        if(drawingArea && areaPoints && areaPoints.length){
+          areaPoints.forEach(drawHelperPoint);
+          if(tempPts[0]) drawHelperPoint(tempPts[0]);
+        }
+
+
+        ctx.restore();
+      }
+
+      // Labels
+      function clearMeasurementLabels(){
+        document.querySelectorAll(".annotatorRoot .measurement-label").forEach(el => el.remove());
+      }
+      function createMeasurementLabel(text, x, y){
+        const el = document.createElement("div");
+        el.className = "measurement-label";
+        el.textContent = text;
+        el.style.left = `${x}px`;
+        el.style.top  = `${y}px`;
+        return el;
+      }
+      function drawMeasurementLabels(){
+        clearMeasurementLabels();
+        const scaleFactor = parseFloat($("a_scaleFactor").value) || 1;
+        const root = document.querySelector("#annotatorSection .annotatorRoot");
+        if(!root) return;
+
+        objects.forEach(o => {
+          if(o.type === "line" && o.measurement === "distance"){
+            const px = distance(o.a, o.b);
+            const mm = px / scaleFactor;
+            const mid = { x:(o.a.x+o.b.x)/2, y:(o.a.y+o.b.y)/2 };
+            const sp = worldToScreen(mid);
+            const label = createMeasurementLabel(`${mm.toFixed(2)} mm`, sp.x, sp.y);
+            root.appendChild(label);
+          }
+          if(o.type === "angle"){
+            const ang = calculateAngle(o.points[0], o.points[1], o.points[2]);
+            const sp = worldToScreen(o.points[1]);
+            const label = createMeasurementLabel(`${ang.toFixed(1)}°`, sp.x, sp.y);
+            root.appendChild(label);
+          }
+          if((o.type === "area" || o.type === "polygon")){
+            const scaleFactor2 = scaleFactor*scaleFactor;
+            const areaPx = calculatePolygonArea(o.points);
+            const areaMm2 = areaPx / (scaleFactor2 || 1);
+            const centroid = o.points.reduce((acc,p)=>({x:acc.x+p.x,y:acc.y+p.y}),{x:0,y:0});
+            centroid.x /= o.points.length; centroid.y /= o.points.length;
+            const sp = worldToScreen(centroid);
+            const label = createMeasurementLabel(`${areaMm2.toFixed(2)} mm²`, sp.x, sp.y);
+            root.appendChild(label);
+          }
+        });
+      }
+
+      // Hit testing
+      function isPointInPolygon(point, polygon){
+        let inside = false;
+        for(let i=0, j=polygon.length-1; i<polygon.length; j=i++){
+          const xi=polygon[i].x, yi=polygon[i].y;
+          const xj=polygon[j].x, yj=polygon[j].y;
+          const intersect = ((yi > point.y) !== (yj > point.y)) && (point.x < (xj-xi)*(point.y-yi)/(yj-yi)+xi);
+          if(intersect) inside = !inside;
+        }
+        return inside;
+      }
+
+      function hitTestObject(point){
+        const tolerance = 10 / view.scale;
+
+        const getArrowHeadPoints = (a,b) => {
+          const ang = Math.atan2(b.y-a.y, b.x-a.x);
+          const headLen = 14 / view.scale;
+          const a1 = ang + Math.PI*0.8;
+          const a2 = ang - Math.PI*0.8;
+          return {
+            left: { x: b.x + Math.cos(a1)*headLen, y: b.y + Math.sin(a1)*headLen },
+            right:{ x: b.x + Math.cos(a2)*headLen, y: b.y + Math.sin(a2)*headLen }
+          };
+        };
+
+        for(let i=objects.length-1;i>=0;i--){
+          const obj = objects[i];
+          switch(obj.type){
+            case "line":
+              if(isPointNearLine(point, obj.a, obj.b, tolerance)) return { object: obj, index:i };
+              break;
+
+            case "arrow": {
+              if(isPointNearLine(point, obj.a, obj.b, tolerance)) return { object: obj, index:i };
+              const head = getArrowHeadPoints(obj.a, obj.b);
+              if(isPointNearLine(point, obj.b, head.left, tolerance) || isPointNearLine(point, obj.b, head.right, tolerance))
+                return { object: obj, index:i };
+              break;
+            }
+
+            case "angle": {
+              const p0 = obj.points?.[0], p1=obj.points?.[1], p2=obj.points?.[2];
+              if(!p0 || !p1 || !p2) break;
+              if(isPointNearLine(point,p0,p1,tolerance) || isPointNearLine(point,p1,p2,tolerance)) return { object: obj, index:i };
+              const nearPoint = (p)=>Math.hypot(point.x-p.x, point.y-p.y) <= (tolerance*1.2);
+              if(nearPoint(p0) || nearPoint(p1) || nearPoint(p2)) return { object: obj, index:i };
+              break;
+            }
+
+            case "rect": {
+              const x = Math.min(obj.a.x,obj.b.x);
+              const y = Math.min(obj.a.y,obj.b.y);
+              const w = Math.abs(obj.b.x-obj.a.x);
+              const h = Math.abs(obj.b.y-obj.a.y);
+              const onEdge =
+                isPointNearLine(point,{x,y},{x:x+w,y},tolerance) ||
+                isPointNearLine(point,{x:x+w,y},{x:x+w,y:y+h},tolerance) ||
+                isPointNearLine(point,{x:x+w,y:y+h},{x,y:y+h},tolerance) ||
+                isPointNearLine(point,{x,y:y+h},{x,y},tolerance);
+              if(onEdge) return { object: obj, index:i };
+              if(point.x>=x && point.x<=x+w && point.y>=y && point.y<=y+h) return { object: obj, index:i };
+              break;
+            }
+
+            case "circle": {
+              const r = distance(obj.c, obj.p);
+              const d = distance(point, obj.c);
+              if(Math.abs(d-r)<=tolerance || d<=r) return { object: obj, index:i };
+              break;
+            }
+
+            case "text": {
+              const fontSize = parseInt($("a_fontSz").value) || 16;
+              const textWidth = ctx.measureText(obj.text || "").width;
+              const textHeight = fontSize;
+              if(point.x>=obj.p.x && point.x<=obj.p.x+textWidth && point.y>=obj.p.y-textHeight && point.y<=obj.p.y)
+                return { object: obj, index:i };
+              break;
+            }
+
+            case "area":
+            case "polygon": {
+              if(isPointInPolygon(point, obj.points)) return { object: obj, index:i };
+              const pts = obj.points || [];
+              for(let k=0;k<pts.length;k++){
+                const a=pts[k], b=pts[(k+1)%pts.length];
+                if(isPointNearLine(point,a,b,tolerance)) return { object: obj, index:i };
+              }
+              break;
+            }
+          }
+        }
+        return { object:null, index:-1 };
+      }
+
+      // Edit points
+      function showEditPoints(obj){
+        const container = $("a_editPointsContainer");
+        container.innerHTML = "";
+        container.style.pointerEvents = "auto";
+        if(!obj) return;
+
+        let points = [];
+        switch(obj.type){
+          case "line":
+          case "rect":
+          case "arrow":
+            points = [obj.a, obj.b]; break;
+          case "circle":
+            points = [obj.c, obj.p]; break;
+          case "area":
+          case "polygon":
+            points = obj.points; break;
+          case "angle":
+            points = obj.points; break;
+          case "text":
+            points = [obj.p]; break;
+        }
+        points.forEach((p, idx) => createEditPoint(p, idx));
+      }
+
+      function createEditPoint(worldPoint, index){
+        const el = document.createElement("div");
+        el.className = "edit-point";
+        el.dataset.index = index;
+        const sp = worldToScreen(worldPoint);
+        el.style.left = (sp.x - 6) + "px";
+        el.style.top  = (sp.y - 6) + "px";
+        $("a_editPointsContainer").appendChild(el);
+      }
+
+      function getObjectPoint(obj, idx){
+        switch(obj.type){
+          case "line": return idx===0 ? obj.a : obj.b;
+          case "rect": return idx===0 ? obj.a : obj.b;
+          case "circle": return idx===0 ? obj.c : obj.p;
+          case "arrow": return idx===0 ? obj.a : obj.b;
+          case "text": return obj.p;
+          case "angle": return obj.points[idx];
+          case "area":
+          case "polygon": return obj.points[idx];
+        }
+        return null;
+      }
+
+      function updateEditPoints(){
+        if(!editMode || !selectedObject) return;
+        const pts = document.querySelectorAll("#a_editPointsContainer .edit-point");
+        pts.forEach(pt=>{
+          const idx = parseInt(pt.dataset.index);
+          const wp = getObjectPoint(selectedObject, idx);
+          if(!wp) return;
+          const sp = worldToScreen(wp);
+          pt.style.left = (sp.x - 6) + "px";
+          pt.style.top  = (sp.y - 6) + "px";
+        });
+      }
+
+      function hideEditPoints(){
+        const container = $("a_editPointsContainer");
+        container.innerHTML = "";
+        container.style.pointerEvents = "none";
+      }
+
+      function updateObjectPoint(obj, idx, newWorldPoint){
+        switch(obj.type){
+          case "line": if(idx===0) obj.a=newWorldPoint; else obj.b=newWorldPoint; break;
+          case "rect": if(idx===0) obj.a=newWorldPoint; else obj.b=newWorldPoint; break;
+          case "circle": if(idx===0) obj.c=newWorldPoint; else obj.p=newWorldPoint; break;
+          case "arrow": if(idx===0) obj.a=newWorldPoint; else obj.b=newWorldPoint; break;
+          case "text": obj.p=newWorldPoint; break;
+          case "angle": obj.points[idx]=newWorldPoint; break;
+          case "area":
+          case "polygon": obj.points[idx]=newWorldPoint; break;
+        }
+      }
+
+      function translateObject(obj, dx, dy){
+        const movePoint = (p)=>({x:p.x+dx, y:p.y+dy});
+        switch(obj.type){
+          case "line":
+          case "rect":
+          case "arrow":
+            obj.a = movePoint(obj.a);
+            obj.b = movePoint(obj.b);
+            break;
+          case "circle":
+            obj.c = movePoint(obj.c);
+            obj.p = movePoint(obj.p);
+            break;
+          case "text":
+            obj.p = movePoint(obj.p);
+            break;
+          case "angle":
+            obj.points = obj.points.map(movePoint);
+            break;
+          case "area":
+          case "polygon":
+            obj.points = obj.points.map(movePoint);
+            break;
+        }
+        return obj;
+      }
+
+      function hitTestEditPoint(screenPoint){
+        const pts = document.querySelectorAll("#a_editPointsContainer .edit-point");
+        const cRect = canvas.getBoundingClientRect();
+        const absX = screenPoint.x + cRect.left;
+        const absY = screenPoint.y + cRect.top;
+        for(let i=0;i<pts.length;i++){
+          const r = pts[i].getBoundingClientRect();
+          if(absX>=r.left && absX<=r.right && absY>=r.top && absY<=r.bottom) return parseInt(pts[i].dataset.index);
+        }
+        return -1;
+      }
+
+      function deleteSelectedObject(){
+        if(!editMode || selectedObjectIndex < 0) return;
+        objects.splice(selectedObjectIndex, 1);
+        selectedObject = null;
+        selectedObjectIndex = -1;
+        editMode = false;
+        hideEditPoints();
+        commitHistory(); // <-- history
+        draw();
+      }
+
+      // Context menu
+      function showContextMenu(x,y){
+        const cm = $("a_contextMenu");
+        cm.style.left = `${x}px`;
+        cm.style.top  = `${y}px`;
+        cm.style.display = "block";
+      }
+      function hideContextMenu(){ $("a_contextMenu").style.display = "none"; }
+
+      function exportPNG(){
+        const link = document.createElement("a");
+        link.download = `annotated-${Date.now()}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      }
+
+      function loadFile(file){
+        if(!file) return;
+        const url = URL.createObjectURL(file);
+        img = new Image();
+        img.onload = () => {
+          imgLoaded = true;
+          view = { x:0, y:0, scale:1 };
+          objects = [];
+          resetHistory([]); // <-- reset history on new image
+
+          // If voice text was captured before loading an image, add it now
+          if (annVoice && annVoice.pendingText) {
+            const t = annVoice.pendingText;
+            annVoice.pendingText = "";
+            objects.push({ type: "text", p: { x: img.width/2, y: img.height/2 }, text: t });
+            commitHistory();
+          }
+
+          // if annotator is visible -> ensure correct size before fit
+          resize();
+          fitImage();
+
+          const savedSF = getSavedScaleFactor();
+          if(savedSF){
+            $("a_scaleFactor").value = String(savedSF);
+            calibrated = true;
+            calibrationMode = false;
+            showCalHint(false);
+          }else{
+            calibrated = false;
+            calibrationMode = true;
+            showCalHint(true);
+            setTool("RULER");
+          }
+          updateCalBadge();
+          draw();
+          URL.revokeObjectURL(url);
+        };
+        img.onerror = () => alert("فشل تحميل الصورة");
+        img.src = url;
+      }
+
+      // Buttons
+      $("a_imgInput").addEventListener("change", (e)=> loadFile(e.target.files?.[0]));
+      $("a_camInput").addEventListener("change", (e)=> loadFile(e.target.files?.[0]));
+
+      $("a_fitBtn").addEventListener("click", ()=>{ resize(); fitImage(); });
+      $("a_zoomInBtn").addEventListener("click", ()=> zoomAt(1.2));
+      $("a_zoomOutBtn").addEventListener("click", ()=> zoomAt(1/1.2));
+
+      // Undo (panel button)
+      $("a_undoBtn").addEventListener("click", undoHistory);
+
+      $("a_clearBtn").addEventListener("click", ()=>{
+        objects=[];
+        resetHistory([]); // <-- history
+        selectedObject=null; selectedObjectIndex=-1; editMode=false; hideEditPoints();
+        draw();
+      });
+
+      $("a_exportBtn").addEventListener("click", exportPNG);
+
+      // Voice record -> Speech-to-Text -> send to Royal Report
+      const _voiceBtn = $("a_voiceBtn");
+      if(_voiceBtn) _voiceBtn.addEventListener("click", ()=>{
+        const r = ensureRecognizer();
+        if(!r){
+          alert("Voice recording غير مدعوم على هذا المتصفح. جرّب Chrome على Android/Windows.");
+          return;
+        }
+
+        // Toggle
+        annVoice.active = !annVoice.active;
+
+        if(annVoice.active){
+          annVoice.finalText = "";
+          annVoice.pendingText = "";
+          setVoiceBtnLabel(true);
+          try { r.start(); } catch(_){}
+        } else {
+          setVoiceBtnLabel(false);
+          try { r.stop(); } catch(_){}
+
+          // After stopping, push transcript to Royal Report automatically
+          setTimeout(()=>{
+            const t = (annVoice.finalText || "").trim();
+            if(!t) { updateCalBadge(); return; }
+
+            // Send to Royal Report (FINDINGS by default)
+            if(window.RRZ_APP && window.RRZ_APP.report){
+              const prev = (window.RRZ_APP.report.findings || "").trim();
+              window.RRZ_APP.report.findings = prev ? (prev + "\n" + t) : t;
+              try { window.RRZ_APP.render(); } catch(_){}
+              alert("تم إرسال النص الصوتي إلى التقرير تلقائيًا.");
+            } else {
+              // Fallback: keep it to be used later
+              annVoice.pendingText = t;
+              alert("تم التقاط النص الصوتي. افتح Royal Report لإضافته للتقرير.");
+            }
+            // restore calibration badge state
+            updateCalBadge();
+          }, 150);
+        }
+      });
+
+$("a_exportReportBtn").addEventListener("click", ()=>{
+        const png = canvas.toDataURL("image/png");
+        
+        // Put the image into the first empty slot (so removed slots are reused)
+        if(Array.isArray(gridImages)){
+          const maxSlots = (selectedGrid ? (selectedGrid.rows * selectedGrid.cols) : 9999);
+          let placed = false;
+          for(let i=0; i<Math.min(maxSlots, Math.max(gridImages.length, maxSlots)); i++){
+            if(!gridImages[i]){
+              gridImages[i] = png;
+              placed = true;
+              break;
+            }
+          }
+          if(!placed) gridImages.push(png);
+        } else {
+          gridImages = [png];
+        }
+
+        window.U_SHOW('grid');
+        updateGrid();
+});
+
+      /* a_sendToRRZBtn removed */
+// Pointer events
+      canvas.addEventListener("pointerdown", (e)=>{
+        canvas.setPointerCapture(e.pointerId);
+        hideContextMenu();
+
+        const m = getMousePos(e);
+        const wpt = screenToWorld(m);
+
+        if(editMode && selectedObject){
+          const pointIndex = hitTestEditPoint(m);
+          if(pointIndex !== -1){
+            draggingPoint = true;
+            draggedPointIndex = pointIndex;
+            dragCommitArmed = true; // commit on pointerup
+            return;
+          }
+        }
+
+        if(editMode && selectedObject){
+          const hitSel = hitTestObject(wpt);
+          if(hitSel.object && hitSel.index === selectedObjectIndex){
+            draggingObject = true;
+            dragStartWorld = wpt;
+            dragObjectSnapshot = deepClone(selectedObject);
+            dragCommitArmed = true; // commit on pointerup
+            return;
+          }
+        }
+
+        if(!editMode && !isDown && !drawingPolygon && !drawingArea){
+          const hit = hitTestObject(wpt);
+          if(hit.object){
+            selectedObject = hit.object;
+            selectedObjectIndex = hit.index;
+            editMode = true;
+            showEditPoints(selectedObject);
+            draw();
+            return;
+          }else{
+            selectedObject=null; selectedObjectIndex=-1; editMode=false; hideEditPoints();
+          }
+        }
+
+        if(currentTool === "TEXT"){
+          const t = prompt("اكتب النص:");
+          if(t && t.trim()){
+            objects.push({ type:"text", p:wpt, text:t.trim() });
+            commitHistory(); // <-- history
+            draw();
+          }
+          return;
+        }
+
+        if(currentTool === "ANGLE"){
+          anglePoints.push(wpt);
+
+          // Redraw immediately so placed points/preview are visible while building the angle
+          if(anglePoints.length === 3){
+            objects.push({ type:"angle", points:[...anglePoints] });
+            anglePoints = [];
+            commitHistory(); // <-- history
+          }
+          draw();
+          return;
+        }
+
+        if(currentTool === "POLYGON"){
+          if(!drawingPolygon){ drawingPolygon = true; polygonPoints = [wpt]; }
+          else polygonPoints.push(wpt);
+          draw();
+          return;
+        }
+
+        if(currentTool === "AREA"){
+          if(!drawingArea){ drawingArea = true; areaPoints = [wpt]; }
+          else areaPoints.push(wpt);
+          draw();
+          return;
+        }
+
+        isDown = true;
+        startPt = wpt;
+        tempPts = [];
+      });
+
+      canvas.addEventListener("pointermove", (e)=>{
+        const m = getMousePos(e);
+        const wpt = screenToWorld(m);
+
+        if(draggingPoint && editMode && selectedObject){
+          updateObjectPoint(selectedObject, draggedPointIndex, wpt);
+          objects[selectedObjectIndex] = selectedObject;
+          updateEditPoints();
+          draw();
+          return;
+        }
+
+        if(draggingObject && editMode && selectedObject && dragStartWorld && dragObjectSnapshot){
+          const dx = wpt.x - dragStartWorld.x;
+          const dy = wpt.y - dragStartWorld.y;
+          const moved = deepClone(dragObjectSnapshot);
+          translateObject(moved, dx, dy);
+          selectedObject = moved;
+          objects[selectedObjectIndex] = moved;
+          updateEditPoints();
+          draw();
+          return;
+        }
+
+        // Live preview for ANGLE / POLYGON / AREA even when not in drag-mode
+        if(currentTool === "ANGLE" && anglePoints.length > 0){
+          tempPts[0] = wpt;
+          draw();
+          return;
+        }
+        if((currentTool === "POLYGON" && drawingPolygon) || (currentTool === "AREA" && drawingArea)){
+          tempPts[0] = wpt;
+          draw();
+          return;
+        }
+
+        if(!isDown) return;
+        tempPts[0] = wpt;
+        draw();
+      });
+
+      canvas.addEventListener("pointerup", ()=>{
+        if(draggingObject){
+          draggingObject = false;
+          dragStartWorld = null;
+          dragObjectSnapshot = null;
+          if(dragCommitArmed){
+            dragCommitArmed = false;
+            commitHistory(); // <-- history after drag ends
+          }
+          return;
+        }
+
+        if(draggingPoint){
+          draggingPoint = false;
+          draggedPointIndex = -1;
+          if(dragCommitArmed){
+            dragCommitArmed = false;
+            commitHistory(); // <-- history after edit ends
+          }
+          return;
+        }
+
+        if(currentTool === "POLYGON") return;
+        if(currentTool === "AREA") return;
+
+        isDown = false;
+
+        if(!startPt) return;
+        const a = startPt, b = tempPts[0] || startPt;
+
+        switch(currentTool){
+          case "LINE": objects.push({ type:"line", a, b }); commitHistory(); break;
+          case "RECT": objects.push({ type:"rect", a, b }); commitHistory(); break;
+          case "CIRCLE": objects.push({ type:"circle", c:a, p:b }); commitHistory(); break;
+          case "ARROW": objects.push({ type:"arrow", a, b }); commitHistory(); break;
+          case "RULER": {
+            const obj = { type:"line", a, b, measurement:"distance" };
+            objects.push(obj);
+            commitHistory();
+            if(calibrationMode) completeCalibrationFromLine(obj);
+            break;
+          }
+        }
+
+        startPt = null;
+        tempPts = [];
+        draw();
+      });
+
+      canvas.addEventListener("dblclick", ()=>{
+        if(currentTool === "AREA" && drawingArea && areaPoints.length >= 3){
+          objects.push({ type:"area", points:[...areaPoints], measurement:"area" });
+          drawingArea = false; areaPoints = [];
+          commitHistory(); // <-- history
+          draw();
+        }
+        if(currentTool === "POLYGON" && drawingPolygon && polygonPoints.length >= 3){
+          objects.push({ type:"polygon", points:[...polygonPoints], measurement:"area" });
+          drawingPolygon = false; polygonPoints = [];
+          commitHistory(); // <-- history
+          draw();
+        }
+      });
+
+      document.addEventListener("keydown", (e)=>{
+        if(e.key === "Delete" || e.key === "Backspace") deleteSelectedObject();
+        if(e.ctrlKey && (e.key === "z" || e.key === "Z")) { e.preventDefault(); undoHistory(); }
+        if(e.key === "Escape"){
+          editMode=false; selectedObject=null; selectedObjectIndex=-1;
+          hideEditPoints(); draw();
+        }
+      });
+
+      canvas.addEventListener("contextmenu", (e)=>{
+        e.preventDefault();
+        if(!editMode || !selectedObject) return;
+        const rect = canvas.getBoundingClientRect();
+        showContextMenu(e.clientX - rect.left, e.clientY - rect.top);
+      });
+
+      $("a_ctxEdit").addEventListener("click", ()=>{
+        hideContextMenu();
+        if(selectedObject){ editMode = true; showEditPoints(selectedObject); draw(); }
+      });
+
+      $("a_ctxDelete").addEventListener("click", ()=>{
+        hideContextMenu();
+        deleteSelectedObject();
+      });
+
+      // Calibration buttons
+      $("a_startCalBtn").addEventListener("click", startCalibration);
+      $("a_hideCalBtn").addEventListener("click", ()=> showCalHint(false));
+
+      // Persist manual scale edits
+      const onSFChange = () => {
+        const sf = parseFloat($("a_scaleFactor").value);
+        if(Number.isFinite(sf) && sf > 0){
+          saveScaleFactor(sf);
+          calibrated = true;
+          updateCalBadge();
+          draw();
+        }
+      };
+      $("a_scaleFactor").addEventListener("change", onSFChange);
+      $("a_scaleFactor").addEventListener("input", ()=>{
+        const sf = parseFloat($("a_scaleFactor").value);
+        calibrated = Number.isFinite(sf) && sf > 0;
+        updateCalBadge();
+        draw();
+      });
+
+      // Grid
+      document.querySelectorAll("#a_gridOptions .grid-option").forEach(opt=>{
+        opt.addEventListener("click", ()=>{
+          document.querySelectorAll("#a_gridOptions .grid-option").forEach(o=>o.classList.remove("selected"));
+          opt.classList.add("selected");
+          selectedGrid = { rows: parseInt(opt.dataset.rows), cols: parseInt(opt.dataset.cols) };
+          createGrid();
+          updateGrid();
+        });
+      });
+
+      function createGrid(){
+        if(!selectedGrid) return;
+        totalCells = selectedGrid.rows * selectedGrid.cols;
+        $("a_gridCanvas").style.gridTemplateColumns = `repeat(${selectedGrid.cols}, 1fr)`;
+        $("a_gridCanvas").innerHTML = "";
+        for(let i=0;i<totalCells;i++){
+          const cell = document.createElement("div");
+          cell.className = "gridCell";
+          cell.innerHTML = `<span>${i+1}</span>`;
+          $("a_gridCanvas").appendChild(cell);
+        }
+        $("a_imageCounter").style.display = "block";
+        $("a_cellCount").textContent = totalCells;
+      }
+
+      
+      function updateGrid(){
+        if(!selectedGrid) return;
+
+        // count only actual images
+        const imgCount = (Array.isArray(gridImages) ? gridImages.filter(Boolean).length : 0);
+        $("a_imgCount").textContent = imgCount;
+
+        const cells = document.querySelectorAll("#a_gridCanvas .gridCell");
+        cells.forEach((cell, idx)=>{
+          cell.innerHTML = "";
+          const src = gridImages[idx];
+
+          if(src){
+            const im = document.createElement("img");
+            im.src = src;
+            cell.appendChild(im);
+
+            // remove (X) button
+            const rm = document.createElement("button");
+            rm.type = "button";
+            rm.className = "gridRemoveBtn";
+            rm.title = "Remove image";
+            rm.setAttribute("aria-label", "Remove image");
+            rm.textContent = "×";
+            rm.addEventListener("click", (ev)=>{
+              ev.preventDefault();
+              ev.stopPropagation();
+              // remove this image slot
+              gridImages[idx] = null;
+
+              // trim trailing empty slots to keep array clean
+              while(gridImages.length && !gridImages[gridImages.length-1]) gridImages.pop();
+
+              updateGrid();
+            });
+            cell.appendChild(rm);
+          }else{
+            const sp = document.createElement("span");
+            sp.textContent = (idx+1);
+            cell.appendChild(sp);
+          }
+        });
+      }
+
+      $("a_backToAnnotator").addEventListener("click", ()=> window.U_SHOW('ann'));
+      $("a_addMoreBtn").addEventListener("click", ()=>{
+        // Send ALL images currently in the grid to the final written report
+        if(window.RRZ_APP){
+          window.RRZ_APP.reportImages = (Array.isArray(gridImages) ? gridImages.filter(Boolean) : []);
+          // Navigate directly to the final preview (written report)
+          if(typeof window.RRZ_APP.gotoStep === 'function') window.RRZ_APP.gotoStep(4);
+        }
+        if(window.U_SHOW) window.U_SHOW('rrz');
+      });
+      $("a_backToRRZ").addEventListener("click", ()=>{
+        // Go to Royal Report -> Voice Record step
+        if(window.U_SHOW) window.U_SHOW('rrz');
+        if(window.RRZ_APP && typeof window.RRZ_APP.gotoStep === 'function'){
+          window.RRZ_APP.gotoStep(3);
+        }
+      });
+
+$("a_downloadGridBtn").addEventListener("click", ()=>{
+        if(!selectedGrid){ alert("اختر Grid أولاً"); return; }
+        const cellSize = 800;
+        const outW = selectedGrid.cols * cellSize;
+        const outH = selectedGrid.rows * cellSize;
+
+        const outCanvas = document.createElement("canvas");
+        outCanvas.width = outW;
+        outCanvas.height = outH;
+        const outCtx = outCanvas.getContext("2d");
+
+        outCtx.fillStyle = "#000";
+        outCtx.fillRect(0,0,outW,outH);
+
+        let loadedImages = 0;
+        const totalImages = Math.min(gridImages.length, selectedGrid.rows * selectedGrid.cols);
+        if(totalImages === 0){ alert("لا توجد صور"); return; }
+
+        gridImages.slice(0,totalImages).forEach((src, idx)=>{
+          const im = new Image();
+          im.onload = function(){
+            const row = Math.floor(idx / selectedGrid.cols);
+            const col = idx % selectedGrid.cols;
+            const x = col * cellSize;
+            const y = row * cellSize;
+            outCtx.drawImage(im, x, y, cellSize, cellSize);
+            loadedImages++;
+            if(loadedImages === totalImages){
+              outCanvas.toBlob((blob)=>{
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.download = 'medical-report-grid-' + selectedGrid.cols + 'x' + selectedGrid.rows + '-' + Date.now() + '.png';
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+              }, "image/png");
+            }
+          };
+          im.onerror = function(){ loadedImages++; };
+          im.src = src;
+        });
+      });
+
+      // Public helper for shared nav cleanup
+      window.ANN_CLEAR_LABELS = clearMeasurementLabels;
+
+      // Called when annotator section becomes visible (FIX: hidden canvas initial size)
+      window.ANN_ON_SHOW = function(){
+        try{
+          resize();
+          if(imgLoaded) fitImage();
+          else draw();
+          updateEditPoints();
+        }catch(err){
+          console.error("ANN_ON_SHOW error:", err);
+        }
+      };
+
+      // Called when grid becomes visible
+      window.GRID_ON_SHOW = function(){
+        try{
+          updateGrid();
+        }catch(err){
+          console.error("GRID_ON_SHOW error:", err);
+        }
+      };
+
+      // Init
+      buildTools();
+      resetHistory([]); // <-- history init
+
+      const savedSF = getSavedScaleFactor();
+      if(savedSF){
+        $("a_scaleFactor").value = String(savedSF);
+        calibrated = true;
+        calibrationMode = false;
+        showCalHint(false);
+      }else{
+        calibrated = false;
+        showCalHint(false);
+      }
+      updateCalBadge();
+
+      setTool("LINE");
+      resize();
+      window.addEventListener("resize", resize);
+    })();
+  </script>
+</body>
+</html>
+```

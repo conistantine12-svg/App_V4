@@ -1,0 +1,3119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+(function(){
+  try{
+    var qs = new URLSearchParams(location.search);
+    var from = qs.get('from') || '';
+    var slot = qs.get('slot') || '';
+    if (from === 'photo' || slot){
+      document.documentElement.classList.add('from-photo');
+      document.addEventListener('DOMContentLoaded', function(){
+        var ov = document.getElementById('auto-load-overlay');
+        if (ov) ov.style.display = 'flex';
+      });
+    }
+  }catch(e){}
+})();
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1220">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    
+    <title>Facial Analysis Pro - Profile View</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: 320px;
+            background: linear-gradient(180deg, #2c3e50 0%, #1a2530 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 5px 0 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .sidebar-header {
+            padding: 25px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .sidebar-header h2 i {
+            color: #3498db;
+        }
+        
+        .sidebar-subtitle {
+            color: #bdc3c7;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .points-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ecf0f1;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .points-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        
+        
+/* Points list as a scroll wheel */
+.points-wheel{
+    width: 100%;
+    min-height: 320px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #ecf0f1;
+    border-radius: 14px;
+    padding: 10px;
+    outline: none;
+}
+.points-wheel:focus{
+    box-shadow: 0 0 0 3px rgba(52,152,219,0.35);
+}
+.points-wheel option{
+    padding: 10px 8px;
+    background: rgba(26,37,48,0.98);
+    color: #ecf0f1;
+}
+.point-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .point-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(5px);
+        }
+        
+        .point-card.active {
+            background: rgba(52, 152, 219, 0.2);
+            border-color: #3498db;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
+        }
+        
+        .point-card.placed {
+            background: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid #2ecc71;
+        }
+        
+        .point-number {
+            width: 32px;
+            height: 32px;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .point-card.active .point-number {
+            background: #fff;
+            color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+        }
+        
+        .point-card.placed .point-number {
+            background: #2ecc71;
+        }
+        
+        .point-info {
+            flex: 1;
+        }
+        
+        .point-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        
+        .point-desc {
+            font-size: 12px;
+            color: #bdc3c7;
+            line-height: 1.4;
+        }
+        
+        .point-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e74c3c;
+            flex-shrink: 0;
+        }
+        
+        .point-card.placed .point-status {
+            background: #2ecc71;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+        
+        .sidebar-controls {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-reference {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            margin-top: 10px;
+        }
+        
+        .btn-reference:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(155, 89, 182, 0.3);
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .main-header {
+            padding: 25px 30px;
+            background: white;
+            border-bottom: 1px solid #eaeaea;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .main-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .main-header-subtitle {
+            color: #7f8c8d;
+            margin-top: 8px;
+            font-size: 16px;
+        }
+        
+        .analysis-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .image-section {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            position: relative;
+        }
+        
+        /* Enhanced Upload Area */
+        .upload-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            z-index: 10;
+            display: none;
+        }
+        
+        .upload-area.active {
+            display: block;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+        
+        .upload-card {
+            background: white;
+            border-radius: 20px;
+            padding: 50px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            border: 2px dashed #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-card:hover {
+            border-color: #3498db;
+            box-shadow: 0 25px 70px rgba(52, 152, 219, 0.2);
+        }
+        
+        .upload-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            color: white;
+            font-size: 40px;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
+        }
+        
+        .upload-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .upload-subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(46, 204, 113, 0.3);
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(46, 204, 113, 0.4);
+        }
+        
+        .upload-note {
+            margin-top: 25px;
+            color: #95a5a6;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+                .canvas-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+
+            /* Size tuning: keep the image area compact (better on desktop & mobile/PWA) */
+            flex: 0 0 auto;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            min-height: 260px;
+            max-height: 520px;
+            padding: 12px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .canvas-container.active {
+            opacity: 1;
+        }
+
+        #face-canvas {
+            max-width: 100%;
+            max-height: 496px;
+            width: auto;
+            height: auto;
+            display: block;
+        }
+
+.image-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .image-controls.active {
+            opacity: 1;
+        }
+        
+        .btn-upload {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+        
+        .btn-reset {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .btn-upload:hover, .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .analysis-section {
+            width: 500px;
+            padding: 30px;
+            overflow-y: auto;
+            background: white;
+            border-left: 1px solid #eaeaea;
+        }
+        
+        .analysis-tabs {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 25px;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .metric-card.good {
+            border-left-color: #2ecc71;
+        }
+        
+        .metric-card.warning {
+            border-left-color: #f39c12;
+        }
+        
+        .metric-card.alert {
+            border-left-color: #e74c3c;
+        }
+        
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .metric-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .metric-value {
+            font-weight: 700;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .metric-value.good {
+            color: #2ecc71;
+        }
+        
+        .metric-value.warning {
+            color: #f39c12;
+        }
+        
+        .metric-value.alert {
+            color: #e74c3c;
+        }
+        
+        .metric-description {
+            color: #7f8c8d;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .progress-container {
+            margin-top: 10px;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #3498db);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            animation: modalSlideIn 0.4s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        
+        .close-modal {
+            font-size: 28px;
+            font-weight: bold;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .close-modal:hover {
+            color: #e74c3c;
+        }
+        
+        .reference-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .reference-image-container {
+            text-align: center;
+        }
+        
+        .reference-image {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .reference-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .reference-list ol {
+            padding-left: 20px;
+        }
+        
+        .reference-list li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: white;
+            border-top: 1px solid #eaeaea;
+            font-size: 14px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e74c3c;
+        }
+        
+        .status-dot.active {
+            background: #2ecc71;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+        
+        .points-progress {
+            width: 200px;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .points-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Results Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .results-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .results-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .results-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .results-table .ideal {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        
+        .results-table .actual {
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .results-table .deviation {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        /* Calibration Modal */
+        .calibration-options {
+            display: flex;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .calibration-option {
+            flex: 1;
+            text-align: center;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .calibration-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .calibration-option.selected {
+            border-color: #3498db;
+            background: #e8f4fc;
+        }
+        
+        .calibration-icon {
+            font-size: 40px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        
+        
+        .calibration-icon svg{
+            width: 44px;
+            height: 44px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .calibration-icon svg *{
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .calibration-icon svg .fill{
+            fill: currentColor;
+            stroke: none;
+        }
+.calibration-input {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .calibration-input.active {
+            display: block;
+        }
+        
+        .calibration-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .calibration-input input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        /* Export Button */
+        .btn-export {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            margin-top: 15px;
+        }
+        
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(243, 156, 18, 0.3);
+        }
+        
+        /* Measurement Lines on Canvas */
+        .measurement-line {
+            pointer-events: none;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .analysis-container {
+                flex-direction: column;
+            }
+            
+            .analysis-section {
+                width: 100%;
+                height: 400px;
+            }
+            
+            .sidebar {
+                width: 280px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .points-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .upload-area {
+                width: 95%;
+            }
+            
+            .upload-card {
+                padding: 30px 20px;
+            }
+            
+            .calibration-options {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .points-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .reference-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .upload-title {
+                font-size: 24px;
+            }
+            
+            .upload-btn {
+                padding: 15px 30px;
+                font-size: 16px;
+            }
+        }
+    
+        .image-section{ position: relative; }
+
+        /* Auto-load overlay (when arriving from photo.html) */
+        html.from-photo #upload-area{ display:none !important; }
+        .image-section{ position: relative; }
+        .auto-load-overlay{
+            position:absolute;
+            inset:0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            z-index:50;
+            background:rgba(0,0,0,0.35);
+            backdrop-filter: blur(2px);
+        }
+        .auto-load-card{
+            background:rgba(15,23,42,0.92);
+            border:1px solid rgba(255,255,255,0.10);
+            border-radius:18px;
+            padding:22px 26px;
+            text-align:center;
+            color:#fff;
+            min-width:240px;
+            box-shadow:0 18px 50px rgba(0,0,0,0.35);
+        }
+        .spinner{
+            width:34px; height:34px;
+            border-radius:50%;
+            border:4px solid rgba(255,255,255,0.25);
+            border-top-color: rgba(255,255,255,0.95);
+            margin:0 auto;
+            animation:spin 0.85s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* === Modern Sidebar Skin (RRZ) - START === */
+:root{
+  --rrz-sb-bg1:#0b1220;
+  --rrz-sb-bg2:#0f1a2a;
+  --rrz-sb-card:rgba(255,255,255,0.06);
+  --rrz-sb-card2:rgba(255,255,255,0.08);
+  --rrz-sb-border:rgba(255,255,255,0.10);
+  --rrz-sb-border2:rgba(255,255,255,0.14);
+  --rrz-sb-text:rgba(255,255,255,0.92);
+  --rrz-sb-muted:rgba(255,255,255,0.62);
+  --rrz-sb-accent:#6ea8ff;
+  --rrz-sb-accent2:#2ecc71;
+}
+
+.sidebar{
+  width: 292px;
+  background: radial-gradient(1200px 500px at 20% 0%, rgba(110,168,255,0.18), transparent 55%),
+              linear-gradient(180deg, var(--rrz-sb-bg1) 0%, var(--rrz-sb-bg2) 100%);
+  color: var(--rrz-sb-text);
+  box-shadow: 8px 0 24px rgba(0,0,0,0.18);
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+.sidebar-header{
+  padding: 18px 18px 14px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.sidebar-header h2{
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin: 0;
+  color: var(--rrz-sb-text);
+}
+
+.sidebar-header h2 i{
+  color: var(--rrz-sb-accent);
+  filter: drop-shadow(0 6px 10px rgba(110,168,255,0.22));
+}
+
+.sidebar-subtitle{
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--rrz-sb-muted);
+  line-height: 1.35;
+}
+
+.points-section{
+  padding: 14px 14px 10px;
+}
+
+.section-title{
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.86);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+#points-count{
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.points-wheel{
+  background: linear-gradient(180deg, var(--rrz-sb-card2), var(--rrz-sb-card));
+  border: 1px solid var(--rrz-sb-border);
+  border-radius: 16px;
+  padding: 10px 10px;
+  min-height: 340px;
+  color: rgba(255,255,255,0.92);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+.points-wheel:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(110,168,255,0.28), inset 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+.points-wheel option{
+  padding: 10px 10px;
+  margin: 2px 0;
+  border-radius: 10px;
+  background: rgba(8, 13, 23, 0.98);
+  color: rgba(255,255,255,0.92);
+}
+
+.points-wheel option:checked{
+  background: rgba(110,168,255,0.22);
+}
+
+.points-wheel::-webkit-scrollbar{
+  width: 10px;
+}
+.points-wheel::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,0.14);
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,0.35);
+}
+.points-wheel::-webkit-scrollbar-track{
+  background: rgba(0,0,0,0.12);
+  border-radius: 999px;
+}
+
+.sidebar-controls{
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.10);
+  gap: 10px;
+}
+
+.btn{
+  border-radius: 14px;
+  padding: 12px 12px;
+  font-size: 14px;
+  letter-spacing: 0.1px;
+}
+
+.btn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(110,168,255,0.26);
+}
+
+.btn-secondary{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+}
+
+.btn-secondary:hover{
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.18);
+}
+
+.btn-primary{
+  background: linear-gradient(135deg, rgba(110,168,255,1) 0%, rgba(52,152,219,1) 55%, rgba(41,128,185,1) 100%);
+  box-shadow: 0 14px 26px rgba(52,152,219,0.22);
+}
+
+.btn-primary:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(52,152,219,0.28);
+}
+
+.btn-reference{
+  background: linear-gradient(135deg, rgba(170,120,255,1) 0%, rgba(142,68,173,1) 100%);
+  box-shadow: 0 14px 26px rgba(142,68,173,0.20);
+  margin-top: 2px;
+}
+
+.btn-reference:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(142,68,173,0.26);
+}
+
+.btn-export{
+  background: linear-gradient(135deg, rgba(255,187,92,1) 0%, rgba(230,126,34,1) 100%);
+  box-shadow: 0 14px 26px rgba(230,126,34,0.20);
+  margin-top: 4px;
+}
+
+.btn-export:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(230,126,34,0.26);
+}
+
+@media (max-width: 1200px){
+  .sidebar{ width: 270px; }
+}
+@media (max-width: 900px){
+  .sidebar{
+    width: 100%;
+    box-shadow: none;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+  }
+  .points-wheel{ min-height: 240px; }
+}
+/* === Modern Sidebar Skin (RRZ) - END === */
+
+
+
+/* Unified Calibration Modal Theme */
+#calibration-modal.modal, #calib-settings-modal.modal{
+  display:none;
+  position:fixed;
+  z-index:1000;
+  left:0; top:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.80);
+  backdrop-filter: blur(5px);
+  overflow:auto;
+}
+#calibration-modal .calib-unified, #calib-settings-modal .calib-unified{
+  background:#ffffff !important;
+  margin:50px auto !important;
+  padding:0 !important;
+  border-radius:20px !important;
+  width:90% !important;
+  max-width:600px !important;
+  box-shadow:0 20px 40px rgba(0,0,0,0.20) !important;
+  overflow:hidden !important;
+  position:relative !important;
+}
+.calib-unified .modal-header{
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d) !important;
+  color:#ffffff !important;
+  padding:20px 30px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:16px !important;
+}
+.calib-unified .modal-header h2,
+.calib-unified .modal-header h3{
+  margin:0 !important;
+  font-size:20px !important;
+  font-weight:700 !important;
+  color:#ffffff !important;
+}
+.calib-unified .close-modal,
+.calib-unified .close-calib{
+  color:#ffffff !important;
+  font-size:28px !important;
+  font-weight:700 !important;
+  cursor:pointer !important;
+  background:transparent !important;
+  border:0 !important;
+  line-height:1 !important;
+}
+.calib-unified .modal-body{
+  padding:25px 30px !important;
+}
+.calib-unified .modal-subtitle{
+  margin:0 0 10px 0 !important;
+  color:#475569 !important;
+  font-size:13px !important;
+}
+.calib-unified .calibration-options,
+.calib-unified .calib-grid{
+  display:flex !important;
+  gap:20px !important;
+  margin:18px 0 0 0 !important;
+  flex-wrap:wrap !important;
+}
+.calib-unified .calibration-option,
+.calib-unified .calib-card{
+  flex:1 1 240px !important;
+  background:#f8f9fa !important;
+  border-radius:15px !important;
+  padding:20px !important;
+  cursor:pointer !important;
+  border:2px solid transparent !important;
+  transition: all 0.25s ease !important;
+  box-shadow:0 10px 20px rgba(0,0,0,0.06) !important;
+}
+.calib-unified .calibration-option:hover,
+.calib-unified .calib-card:hover{
+  transform: translateY(-3px) !important;
+  box-shadow:0 15px 30px rgba(0,0,0,0.10) !important;
+}
+.calib-unified .calibration-option.selected,
+.calib-unified .calib-card.selected{
+  border-color:#b21f1f !important;
+  background:#fff4f4 !important;
+}
+.calib-unified .calibration-icon,
+.calib-unified .calib-icon{
+  width:60px !important;
+  height:60px !important;
+  border-radius:50% !important;
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f) !important;
+  color:#ffffff !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin:0 auto 15px auto !important;
+  font-size:24px !important;
+}
+.calib-unified h3, .calib-unified .calib-card-title{
+  margin:0 0 8px 0 !important;
+  text-align:center !important;
+  font-size:16px !important;
+  color:#0f172a !important;
+}
+.calib-unified p, .calib-unified .calib-card-desc{
+  margin:0 !important;
+  text-align:center !important;
+  color:#475569 !important;
+  font-size:13px !important;
+}
+.calib-unified .calibration-input,
+.calib-unified .calib-manual-input,
+.calib-unified .calib-fields{
+  margin-top:14px !important;
+  background:#ffffff !important;
+  border-radius:12px !important;
+  padding:14px !important;
+  border:1px solid #e2e8f0 !important;
+}
+.calib-unified label{
+  display:block !important;
+  font-size:13px !important;
+  color:#334155 !important;
+  margin-bottom:6px !important;
+}
+.calib-unified input[type="number"],
+.calib-unified input[type="text"]{
+  width:100% !important;
+  padding:12px !important;
+  border:2px solid #e2e8f0 !important;
+  border-radius:10px !important;
+  font-size:14px !important;
+}
+.calib-unified .calib-inline{
+  display:flex !important;
+  gap:10px !important;
+  align-items:center !important;
+}
+.calib-unified .calib-help{
+  margin-top:8px !important;
+  font-size:12px !important;
+  color:#64748b !important;
+}
+.calib-unified .modal-footer,
+.calib-unified .modal-actions,
+.calib-unified .calib-actions{
+  display:flex !important;
+  justify-content:flex-end !important;
+  gap:12px !important;
+  padding:0 30px 25px 30px !important;
+}
+.calib-unified .btn{
+  border-radius:12px !important;
+}
+.calib-unified .calib-radio-row{
+  display:flex !important;
+  gap:8px !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin-top:12px !important;
+  font-size:13px !important;
+  color:#334155 !important;
+}
+
+</style>
+    <!-- Font Awesome removed for offline-first PWA; optional: bundle locally if you need icons -->
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-landmark"></i> Profile Landmarks</h2>
+                <div class="sidebar-subtitle">Select and place key points for profile analysis</div>
+            </div>
+            
+            <div class="points-section">
+                <div class="section-title">
+                    <span>Profile Points</span>
+                    <span id="points-count">0/11</span>
+                </div>
+                <select class="points-wheel" id="points-list" size="12" aria-label="Points List"></select>
+            </div>
+            
+            <div class="sidebar-controls">
+                
+
+                <button class="btn btn-secondary" id="undo-point-btn" disabled>
+                    <span style="font-size:18px; line-height:0;">↩</span> Undo Point Placement
+                </button>
+            <button class="btn btn-primary" id="start-analysis-btn">
+                    <i class="fas fa-play-circle"></i> Analyze Face
+                </button>
+                <button class="btn btn-secondary" id="calibration-btn">
+                    <i class="fas fa-ruler"></i> Calibration
+                </button>
+                <button class="btn btn-reference" id="reference-btn">
+                    <i class="fas fa-question-circle"></i> Reference Guide
+                </button>
+                <button class="btn btn-export" id="export-btn">
+                    <i class="fas fa-download"></i> Export Analysis
+                </button></div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <h1><i class="fas fa-user-md"></i> Facial Analysis Pro - Profile View</h1>
+                <div class="main-header-subtitle">Comprehensive facial profile analysis using geometric algorithms</div>
+            </div>
+            
+            <div class="analysis-container">
+                <div class="image-section">
+                    <div id="auto-load-overlay" class="auto-load-overlay" style="display:none;">
+                        <div class="auto-load-card">
+                            <div class="spinner"></div>
+                            <div style="font-weight:800; margin-top:10px;">Loading image…</div>
+                            <div style="opacity:.75; font-size:13px; margin-top:6px;">Preparing workflow</div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Area (Centered when no image loaded) -->
+                    <div class="upload-area active" id="upload-area">
+                        <div class="upload-card">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h2 class="upload-title">Upload Profile Image</h2>
+                            <p class="upload-subtitle">Upload a clear, true lateral profile photo to begin facial analysis. For best results, use a well-lit image with face in Natural Head Position.</p>
+                            
+                            <button class="upload-btn" id="main-upload-btn">
+                                <i class="fas fa-camera"></i> Select Image
+                            </button>
+                            
+                            <div class="upload-note">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Supported formats: JPG, PNG, WebP. Max file size: 5MB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Canvas Area (Hidden until image is uploaded) -->
+                    <div class="canvas-container" id="canvas-container">
+                        <canvas id="face-canvas" width="800" height="600"></canvas>
+                    </div>
+                    
+                    <!-- Image Controls (Hidden until image is uploaded) -->
+                    <div class="image-controls" id="image-controls">
+                        <button class="btn btn-upload" onclick="document.getElementById('image-upload').click()">
+                            <i class="fas fa-sync-alt"></i> Change Image
+                        </button>
+                        <button class="btn btn-reset" onclick="resetAll()">
+                            <i class="fas fa-redo"></i> Reset All Points
+                        </button>
+                        <div style="margin-left: auto; color: #7f8c8d; font-size: 14px;">
+                            <i class="fas fa-mouse-pointer"></i> Click to place, drag to move points
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analysis-section">
+                    <div class="analysis-tabs">
+                        <div class="tab active" data-tab="angles">Angles</div>
+                        <div class="tab" data-tab="lines">Reference Lines</div>
+                        <div class="tab" data-tab="measurements">Measurements</div>
+                    </div>
+                    
+                    <div id="angles-tab" class="tab-content active">
+                        <h3 style="margin-top: 0; color: #2c3e50;">Profile Angles</h3>
+                        <table class="results-table" id="angles-table">
+                            <thead>
+                                <tr>
+                                    <th>Angle</th>
+                                    <th>Value</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Angles will be populated here -->
+                            </tbody>
+                        </table>
+                        
+                        <div class="metric-card" style="margin-top: 20px;">
+                            <div class="metric-header">
+                                <div class="metric-title">Frankfort Horizontal</div>
+                                <div class="metric-value" id="frankfort-status">Not Set</div>
+                            </div>
+                            <div class="metric-description" id="frankfort-info">
+                                Place Porion (Po) and Orbitale (Or) points to establish Natural Head Position
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="lines-tab" class="tab-content">
+                        <h3 style="margin-top: 0; color: #2c3e50;">Reference Lines Analysis</h3>
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Ricketts E-Line</div>
+                                <div class="metric-value" id="e-line-status">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Distance from lips to E-Line (Prn-Pog')
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Upper Lip</span>
+                                    <span id="e-line-upper">--</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="e-line-upper-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Lower Lip</span>
+                                    <span id="e-line-lower">--</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="e-line-lower-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Facial Plane</div>
+                                <div class="metric-value" id="facial-plane-status">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Vertical line from Glabella to Pogonion
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="measurements-tab" class="tab-content">
+                        <h3 style="margin-top: 0; color: #2c3e50;">Linear Measurements</h3>
+                        <table class="results-table" id="measurements-table">
+                            <thead>
+                                <tr>
+                                    <th>Measurement</th>
+                                    <th>Distance</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Measurements will be populated here -->
+                            </tbody>
+                        </table>
+                        
+                        <div class="metric-card" style="margin-top: 20px;">
+                            <div class="metric-header">
+                                <div class="metric-title">Calibration Status</div>
+                                <div class="metric-value" id="calibration-status">Pixels</div>
+                            </div>
+                            <div class="metric-description" id="calibration-info">
+                                Currently using pixel measurements. Click "Calibration" to set millimeter conversion.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-dot" id="image-status-dot"></div>
+                    <span id="image-status">No image loaded</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="points-status-dot"></div>
+                    <span id="points-status">0 points placed</span>
+                </div>
+                <div class="status-item">
+                    <div class="points-progress">
+                        <div class="points-progress-fill" id="points-progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Calibration Modal -->
+    <div id="calibration-modal" class="modal">
+        <div class="modal-content calib-unified">
+            <div class="modal-header">
+                <h2><i class="fas fa-ruler"></i> Calibration Settings</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <p>Choose calibration method to convert pixels to real-world measurements.</p>
+            
+            <div class="calibration-options">
+                <div class="calibration-option" id="manual-calibration">
+                    <div class="calibration-icon">
+                        <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+                            <rect x="8" y="18" width="48" height="28" rx="6"></rect>
+                            <line x1="18" y1="24" x2="18" y2="34"></line>
+                            <line x1="26" y1="24" x2="26" y2="30"></line>
+                            <line x1="34" y1="24" x2="34" y2="34"></line>
+                            <line x1="42" y1="24" x2="42" y2="30"></line>
+                            <line x1="50" y1="24" x2="50" y2="34"></line>
+                        </svg>
+                    </div>
+                    <h3>Manual (mm)</h3>
+                    <p>Enter a known measurement in millimeters for accurate conversion</p>
+                </div>
+                
+                <div class="calibration-option" id="pixel-calibration">
+                    <div class="calibration-icon">
+                        <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+                            <rect class="fill" x="14" y="14" width="10" height="10" rx="2"></rect>
+                            <rect class="fill" x="27" y="14" width="10" height="10" rx="2"></rect>
+                            <rect class="fill" x="40" y="14" width="10" height="10" rx="2"></rect>
+                            <rect class="fill" x="14" y="27" width="10" height="10" rx="2"></rect>
+                            <rect class="fill" x="27" y="27" width="10" height="10" rx="2"></rect>
+                            <rect class="fill" x="40" y="27" width="10" height="10" rx="2"></rect>
+                            <rect class="fill" x="14" y="40" width="10" height="10" rx="2"></rect>
+                            <rect class="fill" x="27" y="40" width="10" height="10" rx="2"></rect>
+                            <rect class="fill" x="40" y="40" width="10" height="10" rx="2"></rect>
+                        </svg>
+                    </div>
+                    <h3>Continue with Pixels</h3>
+                    <p>Use pixel measurements without conversion to real units</p>
+                </div>
+            </div>
+            
+            <div class="calibration-input" id="manual-input">
+                <label for="known-distance">Enter known distance in mm (e.g., distance between Subnasal to Menton):</label>
+                <input type="number" id="known-distance" step="0.1" min="1" placeholder="e.g., 65.0">
+                <p style="margin-top: 10px; font-size: 13px; color: #7f8c8d;">
+                    <i class="fas fa-info-circle"></i> Measure a known distance on the face in mm and enter it above
+                </p>
+            </div>
+            
+            <div style="text-align: right; margin-top: 25px;">
+                <button class="btn btn-secondary" id="cancel-calibration">Cancel</button>
+                <button class="btn btn-primary" id="apply-calibration">Apply Calibration</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reference Modal -->
+    <div id="reference-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-map-marker-alt"></i> Profile Landmarks Reference Guide</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <p>Place these 11 landmarks accurately for precise profile analysis. Click and drag to adjust point positions.</p>
+            
+            <div class="reference-grid">
+                <div class="reference-image-container">
+                    <img src="referance image2.png" alt="Profile landmarks reference" class="reference-image" 
+                         onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"600\" viewBox=\"0 0 800 600\"><rect width=\"800\" height=\"600\" fill=\"%23f0f0f0\"/><text x=\"400\" y=\"300\" font-family=\"Arial\" font-size=\"24\" text-anchor=\"middle\" fill=\"%23333\">Profile Landmarks Reference</text></svg>';">
+                </div>
+                
+                <div class="reference-list">
+                    <ol>
+                        <li><strong>Glabella (G):</strong> The most prominent forward point in the midline of the forehead</li>
+                        <li><strong>Soft Tissue Nasion (N'):</strong> Deepest point of nasal bridge depression</li>
+                        <li><strong>Pronasale (Prn):</strong> Most anterior point of nasal tip</li>
+                        <li><strong>Subnasale (Sn):</strong> Point where nasal base merges with upper lip</li>
+                        <li><strong>Labrale Superius (Ls):</strong> Most prominent point on upper lip</li>
+                        <li><strong>Labrale Inferius (Li):</strong> Most prominent point on lower lip</li>
+                        <li><strong>Soft Tissue Pogonion (Pog'):</strong> Most anterior point of chin</li>
+                        <li><strong>Soft Tissue Menton (Me'):</strong> Lowest point of chin</li>
+                        <li><strong>Porion (Po):</strong> Top of ear canal (for Frankfort Plane)</li>
+                        <li><strong>Orbitale (Or):</strong> Lowest point of eye socket (for Frankfort Plane)</li>
+                        <li><strong>Sulcus (Su):</strong> Deepest point between lower lip and chin</li>
+                    </ol>
+                </div>
+            </div>
+            </div>
+    </div>
+    
+    <input type="file" id="image-upload" accept="image/*" style="display: none;">
+
+    <script>
+        // Application state
+        let state = {
+            imageLoaded: false,
+            points: [],
+            placementHistory: [],
+            analysisPerformed: false,
+            currentPointIndex: null,
+            image: null,
+            ctx: null,
+            canvas: null,
+            isDragging: false,
+            dragPointIndex: null,
+            calibration: {
+                method: 'pixels', // 'pixels' or 'mm'
+                pixelsPerMM: 1,
+                knownDistanceMM: null
+            },
+            measurements: {},
+            angles: {},
+            pointLabels: [
+                "Glabella (G)",
+                "Soft Tissue Nasion (N')",
+                "Pronasale (Prn)",
+                "Subnasale (Sn)",
+                "Labrale Superius (Ls)",
+                "Labrale Inferius (Li)",
+                "Soft Tissue Pogonion (Pog')",
+                "Soft Tissue Menton (Me')",
+                "Porion (Po)",
+                "Orbitale (Or)",
+                "Sulcus (Su)"
+            ],
+            angleLabels: {
+                'nasofrontal': 'Nasofrontal Angle (G-N\'-Prn)',
+                'nasolabial': 'Nasolabial Angle (Prn-Sn-Ls)',
+                'mentolabial': 'Mentolabial Angle (Li-Su-Pog\')',
+                'facial': 'Facial Angle (G-Pog\' to vertical)',
+                'frankfort': 'Frankfort Horizontal Plane',
+                'chinProjection': 'Chin Projection (N\'-Pog\' to Frankfort)'
+            }
+        };
+
+        // Canvas globals (used by image upload + auto-load)
+        let canvas = null;
+        let ctx = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            canvas = document.getElementById('face-canvas');
+            ctx = canvas.getContext('2d');
+            state.canvas = canvas;
+            state.ctx = ctx;
+            
+            // Set up event listeners
+            document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+            
+            // Canvas mouse events for dragging
+            canvas.addEventListener('mousedown', handleCanvasMouseDown);
+            canvas.addEventListener('mousemove', handleCanvasMouseMove);
+            canvas.addEventListener('mouseup', handleCanvasMouseUp);
+            canvas.addEventListener('mouseleave', handleCanvasMouseUp);
+            
+            // Set up main upload button
+            document.getElementById('main-upload-btn').addEventListener('click', function() {
+                document.getElementById('image-upload').click();
+            });
+            
+            // Set up calibration modal
+            const calibrationBtn = document.getElementById('calibration-btn');
+            const calibrationModal = document.getElementById('calibration-modal');
+            const closeCalibration = document.querySelector('#calibration-modal .close-modal');
+            const cancelCalibration = document.getElementById('cancel-calibration');
+            const applyCalibration = document.getElementById('apply-calibration');
+            const manualCalibration = document.getElementById('manual-calibration');
+            const pixelCalibration = document.getElementById('pixel-calibration');
+            
+            calibrationBtn.addEventListener('click', function() {
+                if (!state.imageLoaded) {
+                    alert("Please upload an image first");
+                    return;
+                }
+                calibrationModal.style.display = 'block';
+            });
+            
+            closeCalibration.addEventListener('click', function() {
+                calibrationModal.style.display = 'none';
+            });
+            
+            cancelCalibration.addEventListener('click', function() {
+                calibrationModal.style.display = 'none';
+            });
+            
+            manualCalibration.addEventListener('click', function() {
+                manualCalibration.classList.add('selected');
+                pixelCalibration.classList.remove('selected');
+                document.getElementById('manual-input').classList.add('active');
+            });
+            
+            pixelCalibration.addEventListener('click', function() {
+                pixelCalibration.classList.add('selected');
+                manualCalibration.classList.remove('selected');
+                document.getElementById('manual-input').classList.remove('active');
+            });
+            
+            applyCalibration.addEventListener('click', function() {
+                if (manualCalibration.classList.contains('selected')) {
+                    const knownDistance = parseFloat(document.getElementById('known-distance').value);
+                    if (!knownDistance || knownDistance <= 0) {
+                        alert("Please enter a valid distance in mm");
+                        return;
+                    }
+                    
+                    state.calibration.method = 'mm';
+                    state.calibration.knownDistanceMM = knownDistance;
+                    state.calibration.pixelsPerMM = 5; // Example conversion
+                    
+                    document.getElementById('calibration-status').textContent = 'Millimeters';
+                    document.getElementById('calibration-info').textContent = 
+                        `Calibrated: ${state.calibration.pixelsPerMM.toFixed(2)} pixels/mm (based on ${knownDistance}mm reference)`;
+                } else {
+                    state.calibration.method = 'pixels';
+                    state.calibration.pixelsPerMM = 1;
+                    document.getElementById('calibration-status').textContent = 'Pixels';
+                    document.getElementById('calibration-info').textContent = 
+                        'Using pixel measurements without conversion';
+                }
+                
+                calibrationModal.style.display = 'none';
+                
+                // Recalculate only if analysis has been triggered
+                if (state.analysisPerformed && state.points.filter(p => p).length >= 11) {
+                    performAnalysis();
+                }
+});
+            
+            // Set up reference modal
+            const referenceBtn = document.getElementById('reference-btn');
+            const closeModal = document.querySelector('#reference-modal .close-modal');
+            const modal = document.getElementById('reference-modal');
+            
+            referenceBtn.addEventListener('click', function() {
+                modal.style.display = 'block';
+            });
+            
+            closeModal.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+                if (event.target === calibrationModal) {
+                    calibrationModal.style.display = 'none';
+                }
+            });
+            
+            // Set up tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            // Set up analysis button
+            document.getElementById('start-analysis-btn').addEventListener('click', function() {
+                if (!state.imageLoaded) {
+                    alert("Please upload an image first");
+                    return;
+                }
+                
+                if (state.points.filter(p => p).length < state.pointLabels.length) {
+                    alert(`Please place all ${state.pointLabels.length} points before analysis`);
+                    return;
+                }
+                
+                state.analysisPerformed = true;
+                performAnalysis();
+            });
+// Set up export button
+            document.getElementById('export-btn').addEventListener('click', function() {
+                exportAnalysis();
+            });
+            
+            
+
+
+            // Set up undo point placement button
+            const undoBtn = document.getElementById('undo-point-btn');
+            if (undoBtn) {
+                undoBtn.addEventListener('click', function() {
+                    if (!state.imageLoaded) return;
+                    if (!state.placementHistory || state.placementHistory.length === 0) return;
+
+                    // Remove last placed point (by placement order)
+                    const lastIndex = state.placementHistory.pop();
+                    if (lastIndex === null || lastIndex === undefined) return;
+
+                    state.points[lastIndex] = null;
+
+                    // Any change invalidates prior analysis until re-run
+                    state.analysisPerformed = false;
+                    state.measurements = {};
+                    state.angles = {};
+                    resetAnalysis();
+
+                    // Update UI
+                    updatePointStatus(lastIndex, false);
+                    updateStatus();
+                    drawAllPoints();
+
+                    // Jump back to the undone point
+                    setTimeout(() => selectPoint(lastIndex), 50);
+                });
+            }
+// Initialize points list
+            initializePointsList();
+            
+            // Update status
+            updateStatus();
+        
+            // Auto-load image if coming from photo.html
+            rrzAutoLoadFromPhoto();
+            // Safety: never leave overlay stuck (e.g. IndexedDB blocked on some browsers)
+            const RRZ_AUTOLOAD_TIMEOUT_MS = 2500;
+            setTimeout(() => {
+                try{
+                    const ov = document.getElementById('auto-load-overlay');
+                    if (!ov) return;
+                    if (ov.style.display !== 'none' && !state.imageLoaded){
+                        ov.style.display = 'none';
+                        document.documentElement.classList.remove('from-photo');
+                        const ua = document.getElementById('upload-area');
+                        if (ua) ua.classList.add('active');
+                    }
+                }catch(e){}
+            }, RRZ_AUTOLOAD_TIMEOUT_MS);
+
+        });
+
+        // Initialize points list in sidebar
+        function initializePointsList() {
+            const pointsList = document.getElementById('points-list');
+            if (!pointsList) return;
+
+            pointsList.innerHTML = '';
+
+            // Scroll wheel selection (native <select>)
+            pointsList.onchange = function() {
+                const idx = parseInt(this.value, 10);
+                if (!Number.isNaN(idx)) selectPoint(idx);
+            };
+
+            state.pointLabels.forEach((label, index) => {
+                const [name, description] = label.split(' (');
+                const desc = description ? description.replace(')', '') : '';
+
+                const baseText = `${index + 1}. ${name}${desc ? ' ' + desc : ''}`;
+
+                const opt = document.createElement('option');
+                opt.value = String(index);
+                opt.id = `point-option-${index}`;
+                opt.dataset.baseText = baseText;
+                opt.textContent = baseText;
+
+                pointsList.appendChild(opt);
+            });
+        }
+
+        // Select a point from the sidebar
+        function selectPoint(index) {
+            if (!state.imageLoaded) {
+                alert("Please upload an image first");
+                return;
+            }
+
+            // Update UI (scroll wheel)
+            const pointsList = document.getElementById('points-list');
+            if (pointsList) {
+                pointsList.value = String(index);
+            }
+
+            // Update state
+            state.currentPointIndex = index;
+
+            // Change cursor
+            state.canvas.style.cursor = 'crosshair';
+        }
+
+        // Handle image upload
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Check file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File size exceeds 5MB limit. Please choose a smaller image.");
+                return;
+            }
+            
+            // Check file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert("Please upload a valid image file (JPG, PNG, or WebP).");
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Calculate dimensions to fit canvas while maintaining aspect ratio
+                    const maxWidth = 800;
+                    const maxHeight = 600;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                        height = (maxWidth / width) * height;
+                        width = maxWidth;
+                    }
+                    
+                    if (height > maxHeight) {
+                        width = (maxHeight / height) * width;
+                        height = maxHeight;
+                    }
+                    
+                    state.canvas.width = width;
+                    state.canvas.height = height;
+                    
+                    // Draw image
+                    state.ctx.drawImage(img, 0, 0, width, height);
+                    state.image = img;
+                    state.imageLoaded = true;
+                    
+                    // Hide upload area and show canvas
+                    document.getElementById('upload-area').classList.remove('active');
+                    document.getElementById('canvas-container').classList.add('active');
+                    document.getElementById('image-controls').classList.add('active');
+                    
+                    // Reset points
+                    state.points = [];
+            state.placementHistory = [];
+            state.analysisPerformed = false;
+                    state.currentPointIndex = null;
+                    
+                    // Reset UI
+                    resetPointListUI();
+                    resetAnalysis();
+                    
+                    // Update status
+                    updateStatus();
+                    
+                    // Auto-select first point
+                    setTimeout(() => selectPoint(0), 500);
+                
+
+                    // Show calibration modal (same behavior as workflow.html)
+                    setTimeout(() => {
+                        const m = document.getElementById('calibration-modal');
+                        if (m) m.style.display = 'block';
+                    }, 800);
+};
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                alert("Error reading file. Please try again.");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /* ---------- Auto-load from photo.html (IndexedDB) ---------- */
+        const RRZ_DB_NAME = "rrz_clinical_photos_db";
+        const RRZ_DB_STORE = "images";
+        const RRZ_DB_VER = 1;
+
+        function rrzOpenDB(){
+            return new Promise((resolve, reject)=>{
+                const req = indexedDB.open(RRZ_DB_NAME, RRZ_DB_VER);
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains(RRZ_DB_STORE)){
+                        db.createObjectStore(RRZ_DB_STORE, { keyPath:"id" });
+                    }
+                };
+                req.onsuccess = ()=> resolve(req.result);
+                req.onerror = ()=> reject(req.error);
+            });
+        }
+
+        async function rrzGetImageRecord(id){
+            const db = await rrzOpenDB();
+            return new Promise((resolve, reject)=>{
+                const tx = db.transaction(RRZ_DB_STORE, "readonly");
+                const req = tx.objectStore(RRZ_DB_STORE).get(String(id||""));
+                req.onsuccess = ()=> { const r = req.result; db.close(); resolve(r || null); };
+                req.onerror = ()=> { db.close(); reject(req.error); };
+            });
+        }
+
+        function rrzGetSlotId(){
+            try{
+                const qs = new URLSearchParams(location.search);
+                return qs.get("slot") || sessionStorage.getItem("rrz_workflow_slot") || "";
+            }catch(e){ return ""; }
+        }
+
+        function rrzLoadImageFromBlob(blob){
+            return new Promise((resolve, reject)=>{
+                try{
+                    const reader = new FileReader();
+                    reader.onload = function(e){
+                        const img = new Image();
+                        img.onload = function(){
+                            const maxWidth = 800;
+                            const maxHeight = 600;
+                            let width = img.width;
+                            let height = img.height;
+                            if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+                            if (height > maxHeight){ width = (maxHeight / height) * width; height = maxHeight; }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.clearRect(0,0,width,height);
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            state.image = img;
+                            state.imageLoaded = true;
+
+                            const ua = document.getElementById('upload-area');
+                            if (ua) ua.classList.remove('active');
+                            const cc = document.getElementById('canvas-container');
+                            if (cc) cc.classList.add('active');
+                            const ic = document.getElementById('image-controls');
+                            if (ic) ic.classList.add('active');
+
+                            state.points = [];
+                            state.currentPointIndex = null;
+                            state.placementHistory = [];
+                            state.analysisPerformed = false;
+                            resetPointListUI();
+                            resetAnalysis();
+
+                            if (typeof updateStatus === "function") updateStatus();
+
+                            
+
+                            // Auto-select first point and open Calibration Settings (same as workflow.html)
+                            setTimeout(() => { 
+                                try{ if (typeof selectPoint === "function") selectPoint(0); }catch(e){} 
+                            }, 500);
+                            setTimeout(() => { 
+                                try{ const m = document.getElementById('calibration-modal'); if (m) m.style.display = 'block'; }catch(e){} 
+                            }, 800);
+resolve(true);
+                        };
+                        img.onerror = ()=> reject(new Error("Image decode failed"));
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = ()=> reject(reader.error || new Error("File read failed"));
+                    reader.readAsDataURL(blob);
+                }catch(err){ reject(err); }
+            });
+        }
+
+        async function rrzAutoLoadFromPhoto(){
+            let qs;
+            try{ qs = new URLSearchParams(location.search); }catch(e){ qs = null; }
+            const from = qs ? (qs.get("from")||"") : "";
+            const slot = rrzGetSlotId();
+            if (!slot) { 
+                const ov = document.getElementById('auto-load-overlay');
+                if (ov) ov.style.display = 'none';
+                document.documentElement.classList.remove('from-photo');
+                return;
+            }
+
+            if (from === "photo") document.documentElement.classList.add('from-photo');
+
+            try{
+                const rec = await rrzGetImageRecord(slot);
+                let blob = (rec && rec.blob) ? rec.blob : null;
+
+                // Fallback: try sessionStorage dataURL set by photo.html
+                if (!blob){
+                    try{
+                        const keys = [
+                            `rrz_${slot}_image_dataurl`,
+                            `rrz_${slot}_image`,
+                            'rrz_uploaded_image',
+                            'uploadedImageDataUrl',
+                            'selectedImageDataUrl'
+                        ];
+                        let dataUrl = null;
+                        for(const k of keys){
+                            const v = (sessionStorage.getItem(k) || '').trim();
+                            if (v && v.startsWith('data:image')) { dataUrl = v; break; }
+                        }
+                        if (dataUrl){
+                            blob = await (await fetch(dataUrl)).blob();
+                        }
+                    }catch(e){}
+                }
+
+                if (!blob){
+                    document.documentElement.classList.remove('from-photo');
+                    const ov = document.getElementById('auto-load-overlay');
+                    if (ov) ov.style.display = 'none';
+                    const ua = document.getElementById('upload-area');
+                    if (ua) ua.classList.add('active');
+                    return;
+                }
+
+                await rrzLoadImageFromBlob(blob);
+
+                const ov = document.getElementById('auto-load-overlay');
+                if (ov) ov.style.display = 'none';
+            }catch(err){
+                document.documentElement.classList.remove('from-photo');
+                const ov = document.getElementById('auto-load-overlay');
+                if (ov) ov.style.display = 'none';
+                const ua = document.getElementById('upload-area');
+                if (ua) ua.classList.add('active');
+                console.warn(err);
+            }
+        }
+
+        // Handle canvas mouse down (for placing and dragging points)
+
+
+// Convert pointer coordinates from CSS pixels to canvas pixels (handles CSS scaling).
+function getCanvasPointerPos(evt) {
+    const rect = state.canvas.getBoundingClientRect();
+    const e = (evt && evt.touches && evt.touches[0]) ? evt.touches[0] : evt;
+    const scaleX = state.canvas.width / rect.width;
+    const scaleY = state.canvas.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+    };
+}
+
+        function handleCanvasMouseDown(event) {
+            if (!state.imageLoaded) return;
+            
+            const { x, y } = getCanvasPointerPos(event);
+            
+            // Check if clicking on an existing point to drag
+            for (let i = 0; i < state.points.length; i++) {
+                if (state.points[i]) {
+                    const point = state.points[i];
+                    const distance = Math.sqrt(Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2));
+                    
+                    if (distance < 10) {
+                        state.isDragging = true;
+                        state.dragPointIndex = i;
+                        state.canvas.style.cursor = 'grabbing';
+                        
+                        // Select this point in sidebar
+                        selectPoint(i);
+                        return;
+                    }
+                }
+            }
+            
+            // If not dragging and a point is selected, place the point
+            if (state.currentPointIndex !== null) {
+                const wasPlaced = !!state.points[state.currentPointIndex];
+                state.points[state.currentPointIndex] = {x, y, label: state.pointLabels[state.currentPointIndex]};
+                if (!wasPlaced) {
+                    state.placementHistory.push(state.currentPointIndex);
+                }
+                
+                // Draw the point
+                drawAllPoints();
+                
+                // Update UI
+                updatePointStatus(state.currentPointIndex, true);
+                
+                // Move to next point automatically if not all placed
+                const placedCount = state.points.filter(p => p).length;
+                if (placedCount < state.pointLabels.length) {
+                    let nextIndex = (state.currentPointIndex + 1) % state.pointLabels.length;
+                    while (state.points[nextIndex] && nextIndex !== state.currentPointIndex) {
+                        nextIndex = (nextIndex + 1) % state.pointLabels.length;
+                    }
+                    selectPoint(nextIndex);
+                } else {
+                    state.currentPointIndex = null;
+                    state.canvas.style.cursor = 'default';
+                }
+                
+                // Update status and perform analysis if all points placed
+                updateStatus();
+                if (placedCount === state.pointLabels.length) {
+                    // Do not auto-analyze. User must click Analyze Face.
+                    // (If analysis was previously performed, require re-click after edits.)
+                }
+}
+        }
+
+        // Handle canvas mouse move (for dragging points)
+        function handleCanvasMouseMove(event) {
+            if (!state.imageLoaded || !state.isDragging || state.dragPointIndex === null) return;
+            
+            const { x, y } = getCanvasPointerPos(event);
+            
+            // Update point position
+            state.points[state.dragPointIndex] = {
+                ...state.points[state.dragPointIndex],
+                x, y
+            };
+            
+            // Redraw everything
+            drawAllPoints();
+            
+            // If analysis has been triggered, keep results in sync while dragging.
+            if (state.analysisPerformed && state.points.filter(p => p).length === state.pointLabels.length) {
+                performAnalysis();
+            }
+}
+
+        // Handle canvas mouse up (stop dragging)
+        function handleCanvasMouseUp() {
+            if (state.isDragging) {
+                state.isDragging = false;
+                state.dragPointIndex = null;
+                state.canvas.style.cursor = state.currentPointIndex !== null ? 'crosshair' : 'default';
+            }
+        }
+
+        // Draw all points and measurement lines on canvas
+        function drawAllPoints() {
+            // Redraw image
+            state.ctx.drawImage(state.image, 0, 0, state.canvas.width, state.canvas.height);
+            
+            // Draw all points
+            state.points.forEach((point, index) => {
+                if (point) {
+                    drawPoint(point.x, point.y, index);
+                }
+            });
+            
+            // Draw measurement lines only after user clicks Analyze Face
+            if (state.analysisPerformed && state.measurements && Object.keys(state.measurements).length > 0) {
+                drawMeasurementLines();
+            }
+}
+
+        // Draw a single point
+        function drawPoint(x, y, index) {
+            // Draw point circle
+            state.ctx.beginPath();
+            state.ctx.arc(x, y, 4, 0, Math.PI * 2);
+            state.ctx.fillStyle = '#e74c3c';
+            state.ctx.fill();
+            state.ctx.strokeStyle = 'white';
+            state.ctx.lineWidth = 1.5;
+            state.ctx.stroke();
+            
+            // Draw number inside
+            state.ctx.font = 'bold 10px Arial';
+            state.ctx.fillStyle = 'white';
+            state.ctx.textAlign = 'center';
+            state.ctx.textBaseline = 'middle';
+            state.ctx.fillText(index + 1, x, y);
+            
+            // Draw drag handle indicator
+            state.ctx.beginPath();
+            state.ctx.arc(x, y, 8, 0, Math.PI * 2);
+            state.ctx.strokeStyle = 'rgba(52, 152, 219, 0.3)';
+            state.ctx.lineWidth = 0.8;
+            state.ctx.stroke();
+        }
+
+        // Draw measurement lines between points
+        function drawMeasurementLines() {
+            if (!state.points || state.points.filter(p => p).length < state.pointLabels.length) return;
+            
+            const points = state.points;
+            
+            // Define measurement pairs to draw
+            const measurements = [
+                { from: 0, to: 1, color: '#3498db', label: 'G-N\'' }, // Glabella to Nasion
+                { from: 1, to: 2, color: '#3498db', label: 'N\'-Prn' }, // Nasion to Pronasale
+                { from: 2, to: 3, color: '#2ecc71', label: 'Nose Basal' }, // Pronasale to Subnasale (Renamed for visualization)
+                { from: 3, to: 4, color: '#2ecc71', label: 'Sn-Ls' }, // Subnasale to Labrale Superius
+                { from: 4, to: 5, color: '#9b59b6', label: 'Ls-Li' }, // Upper lip to lower lip
+                { from: 5, to: 10, color: '#f39c12', label: 'Li-Su' }, // Lower lip to Sulcus
+                { from: 10, to: 6, color: '#f39c12', label: 'Su-Pog\'' }, // Sulcus to Pogonion
+                { from: 6, to: 7, color: '#1abc9c', label: 'Pog\'-Me\'' }, // Pogonion to Menton
+                { from: 8, to: 9, color: '#e74c3c', label: 'Po-Or' }, // Porion to Orbitale (Frankfort Plane)
+                { from: 2, to: 6, color: '#d35400', label: 'E-Line' }, // Pronasale to Pogonion (Ricketts E-Line)
+                { from: 0, to: 6, color: '#34495e', label: 'Facial Plane' }, // Glabella to Pogonion
+                { from: 1, to: 6, color: '#8e44ad', label: 'N\'-Pog\'' } // Nasion to Pogonion (Reference line)
+            ];
+            
+            // Draw each measurement line
+            measurements.forEach(measurement => {
+                const fromPoint = points[measurement.from];
+                const toPoint = points[measurement.to];
+                
+                if (fromPoint && toPoint) {
+                    drawLine(fromPoint, toPoint, measurement.color, measurement.label);
+                }
+            });
+
+            // Draw extended Frankfort Line and its intersection with Facial Plane (N'-Pog')
+            if (points[8] && points[9]) {
+                // Calculate extended point to the right
+                const slope = (points[9].y - points[8].y) / (points[9].x - points[8].x);
+                const extX = state.canvas.width; // Extend to edge
+                const extY = points[9].y + slope * (extX - points[9].x);
+                
+                // Draw extended dashed line
+                state.ctx.beginPath();
+                state.ctx.moveTo(points[9].x, points[9].y);
+                state.ctx.lineTo(extX, extY);
+                state.ctx.strokeStyle = '#e74c3c';
+                state.ctx.lineWidth = 1.0;
+                state.ctx.setLineDash([4, 4]); // Dashed extension
+                state.ctx.stroke();
+                state.ctx.setLineDash([]); // Reset
+
+                // Draw label for Frankfort Extension
+                state.ctx.fillStyle = '#e74c3c';
+                state.ctx.font = '9px Arial';
+                state.ctx.fillText("FH Ext", (points[9].x + extX)/2, (points[9].y + extY)/2 - 5);
+            }
+
+            // Nasal Projection: perpendicular from Pronasale (Prn) to the Nasion–Pogonion reference line
+            if (points[1] && points[6] && points[2]) {
+                const proj = projectPointToLine(points[2], points[1], points[6]);
+                if (proj && proj.foot && isFinite(proj.dist)) {
+                    drawLine(points[2], proj.foot, '#e67e22', 'Nasal Projection');
+                }
+            }
+
+        }
+
+        // Draw a single measurement line
+        function drawLine(from, to, color, label) {
+            // Draw line
+            state.ctx.beginPath();
+            state.ctx.moveTo(from.x, from.y);
+            state.ctx.lineTo(to.x, to.y);
+            state.ctx.strokeStyle = color;
+            state.ctx.lineWidth = 1.2;
+            state.ctx.setLineDash([4, 3]);
+            state.ctx.stroke();
+            state.ctx.setLineDash([]);
+
+            // Calculate midpoint for label
+            const midX = (from.x + to.x) / 2;
+            const midY = (from.y + to.y) / 2;
+
+            // Transparent label (no background box)
+            const distance = calculateDistance(from, to);
+            const displayDistance = formatDistance(distance);
+            const txt = `${label}: ${displayDistance}`;
+
+            state.ctx.save();
+            state.ctx.font = '9px Arial';
+            state.ctx.textAlign = 'center';
+            state.ctx.textBaseline = 'middle';
+            // Improve readability without a background rectangle
+            state.ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+            state.ctx.shadowBlur = 4;
+            state.ctx.shadowOffsetX = 1;
+            state.ctx.shadowOffsetY = 1;
+            state.ctx.fillStyle = color;
+            state.ctx.fillText(txt, midX, midY);
+            state.ctx.restore();
+        }
+
+        // Update point status in sidebar
+        function updatePointStatus(index, placed) {
+            const opt = document.getElementById(`point-option-${index}`);
+            if (!opt) return;
+
+            const base = opt.dataset.baseText || opt.textContent.replace(/^✓\s*/, '');
+            opt.dataset.baseText = base;
+
+            opt.textContent = placed ? `✓ ${base}` : base;
+        }
+
+        // Update status bar and counters
+        function updateStatus() {
+            const placedCount = state.points.filter(p => p).length;
+            const totalPoints = state.pointLabels.length;
+            
+            // Update counters
+            document.getElementById('points-count').textContent = `${placedCount}/${totalPoints}`;
+            document.getElementById('points-status').textContent = `${placedCount} of ${totalPoints} points placed`;
+            
+            // Update progress bar
+            const progressPercent = (placedCount / totalPoints) * 100;
+            document.getElementById('points-progress-fill').style.width = `${progressPercent}%`;
+            
+            // Update status dots
+            const imageStatusDot = document.getElementById('image-status-dot');
+            const pointsStatusDot = document.getElementById('points-status-dot');
+            
+            if (state.imageLoaded) {
+                document.getElementById('image-status').textContent = 'Image loaded';
+                imageStatusDot.classList.add('active');
+            } else {
+                document.getElementById('image-status').textContent = 'No image loaded';
+                imageStatusDot.classList.remove('active');
+            }
+            
+            if (placedCount === totalPoints) {
+                pointsStatusDot.classList.add('active');
+            } else {
+                pointsStatusDot.classList.remove('active');
+            }
+
+            // Enable/disable undo
+            const undoBtn = document.getElementById('undo-point-btn');
+            if (undoBtn) {
+                undoBtn.disabled = placedCount === 0;
+            }
+        }
+
+        // Switch between analysis tabs
+        function switchTab(tabId) {
+            // Update tab UI
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            
+            // Show corresponding content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        }
+
+        // Reset everything
+        function resetAll() {
+            if (!state.imageLoaded) return;
+            
+            // Clear canvas and redraw image
+            state.ctx.drawImage(state.image, 0, 0, state.canvas.width, state.canvas.height);
+            
+            // Reset points
+            state.points = [];
+            state.currentPointIndex = null;
+                    state.placementHistory = [];
+                    state.analysisPerformed = false;
+            state.isDragging = false;
+            state.dragPointIndex = null;
+            state.canvas.style.cursor = 'default';
+            
+            // Reset measurements
+            state.measurements = {};
+            state.angles = {};
+            
+            // Reset UI
+            resetPointListUI();
+            resetAnalysis();
+            updateStatus();
+            
+            // Auto-select first point
+            selectPoint(0);
+        }
+
+        // Reset points UI
+        function resetPointListUI() {
+            for (let i = 0; i < state.pointLabels.length; i++) {
+                updatePointStatus(i, false);
+            }
+        }
+
+        // Reset analysis displays
+        function resetAnalysis() {
+            // Reset all metrics
+            document.getElementById('angles-table').innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Angle</th>
+                        <th>Value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            `;
+            
+            document.getElementById('measurements-table').innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Measurement</th>
+                        <th>Distance</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            `;
+            
+            // Reset E-line displays
+            document.getElementById('e-line-status').textContent = '-';
+            document.getElementById('e-line-upper').textContent = '-';
+            document.getElementById('e-line-lower').textContent = '-';
+            document.getElementById('e-line-upper-progress').style.width = '0%';
+            document.getElementById('e-line-lower-progress').style.width = '0%';
+            
+            // Reset Frankfort display
+            document.getElementById('frankfort-status').textContent = 'Not Set';
+            document.getElementById('frankfort-info').textContent = 'Place Porion (Po) and Orbitale (Or) points to establish Natural Head Position';
+            
+            // Reset Facial Plane
+            document.getElementById('facial-plane-status').textContent = '-';
+        }
+
+        // Calculate distance between two points
+        function calculateDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+
+        
+
+        // Project point P onto line AB (infinite line). Returns the foot point and perpendicular distance.
+        function projectPointToLine(P, A, B) {
+            const ABx = B.x - A.x;
+            const ABy = B.y - A.y;
+            const denom = ABx * ABx + ABy * ABy;
+            if (!isFinite(denom) || denom === 0) return { foot: { x: A.x, y: A.y }, dist: NaN };
+
+            const t = ((P.x - A.x) * ABx + (P.y - A.y) * ABy) / denom;
+            const foot = { x: A.x + t * ABx, y: A.y + t * ABy };
+            const dx = P.x - foot.x;
+            const dy = P.y - foot.y;
+            return { foot, dist: Math.sqrt(dx * dx + dy * dy) };
+        }
+// Calculate angle between three points
+        function calculateAngle(p1, p2, p3) {
+            const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
+            const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+
+            const dot = v1.x * v2.x + v1.y * v2.y;
+            const mag1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+            const mag2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+
+            // Guard against zero-length vectors & floating-point drift
+            if (!isFinite(mag1) || !isFinite(mag2) || mag1 === 0 || mag2 === 0) return NaN;
+            let cos = dot / (mag1 * mag2);
+            cos = Math.max(-1, Math.min(1, cos));
+
+            const angleRad = Math.acos(cos);
+            const angleDeg = angleRad * (180 / Math.PI);
+
+            return angleDeg;
+        }
+
+        // Format distance based on calibration
+        function formatDistance(distanceInPixels) {
+            if (state.calibration.method === 'mm' && state.calibration.pixelsPerMM) {
+                const distanceInMM = distanceInPixels / state.calibration.pixelsPerMM;
+                return distanceInMM.toFixed(1) + ' mm';
+            } else {
+                return Math.round(distanceInPixels) + ' px';
+            }
+        }
+
+        // Perform complete analysis
+        function performAnalysis() {
+            if (state.points.filter(p => p).length < state.pointLabels.length) return;
+            
+            // Store measurements and angles
+            state.measurements = {};
+            state.angles = {};
+            
+            // 1. Calculate all required angles
+            calculateAllAngles();
+            
+            // 2. Calculate linear measurements
+            calculateAllMeasurements();
+            
+            // 3. Analyze reference lines
+            analyzeReferenceLines();
+            
+            // 4. Update UI with results
+            updateAnalysisUI();
+            
+            // 5. Redraw canvas with measurement lines
+            drawAllPoints();
+        }
+
+        // Calculate all required angles
+        function calculateAllAngles() {
+            const points = state.points;
+            
+            // Nasofrontal Angle (G-N'-Prn)
+            if (points[0] && points[1] && points[2]) {
+                state.angles.nasofrontal = calculateAngle(points[0], points[1], points[2]);
+            }
+            
+            // Nasolabial Angle (Prn-Sn-Ls)
+            if (points[2] && points[3] && points[4]) {
+                state.angles.nasolabial = calculateAngle(points[2], points[3], points[4]);
+            }
+            
+            // Mentolabial Angle (Li-Su-Pog')
+            if (points[5] && points[10] && points[6]) {
+                state.angles.mentolabial = calculateAngle(points[5], points[10], points[6]);
+            }
+            
+            // Facial Angle (angle of G-Pog' line relative to vertical)
+            if (points[0] && points[6]) {
+                const dx = points[6].x - points[0].x;
+                const dy = points[6].y - points[0].y;
+                state.angles.facial = Math.atan2(dx, dy) * (180 / Math.PI);
+            }
+            
+            // Frankfort Plane angle (Po-Or relative to horizontal)
+            if (points[8] && points[9]) {
+                const dx = points[9].x - points[8].x;
+                const dy = points[9].y - points[8].y;
+                state.angles.frankfort = Math.atan2(dy, dx) * (180 / Math.PI);
+            }
+
+            // Chin Projection Angle: Angle between line (N'-Pog') and line (Po-Or)
+            if (points[1] && points[6] && points[8] && points[9]) {
+                // Vector 1 (Facial Plane: Pog' -> N') - using upward vector
+                const v1 = { x: points[1].x - points[6].x, y: points[1].y - points[6].y };
+                // Vector 2 (Frankfort: Po -> Or) - using forward vector
+                const v2 = { x: points[9].x - points[8].x, y: points[9].y - points[8].y };
+
+                const dot = v1.x * v2.x + v1.y * v2.y;
+                const mag1 = Math.sqrt(v1.x*v1.x + v1.y*v1.y);
+                const mag2 = Math.sqrt(v2.x*v2.x + v2.y*v2.y);
+
+                if (isFinite(mag1) && isFinite(mag2) && mag1 > 0 && mag2 > 0) {
+                    const angleRad = Math.acos(dot / (mag1 * mag2));
+                    let angleDeg = angleRad * (180 / Math.PI);
+                    // Standard clinical presentation is usually the inferior posterior angle ~80-95 deg
+                    // Simple geometric angle between vectors is sufficient for now
+                    state.angles.chinProjection = angleDeg;
+                }
+            }
+        }
+
+        // Calculate all linear measurements
+        function calculateAllMeasurements() {
+            const points = state.points;
+
+            // Main measurements
+            if (points[0] && points[6]) state.measurements.glabellaPogonion = calculateDistance(points[0], points[6]);
+            if (points[2] && points[6]) state.measurements.prnPogonion = calculateDistance(points[2], points[6]);
+
+            // Nasal metrics (requested)
+            // Nasal Length: direct distance from Nasion to Pronasale
+            if (points[1] && points[2]) state.measurements.nasalLength = calculateDistance(points[1], points[2]);
+
+            // Nose Basal Length: Distance between Pronasale (Prn) and Subnasale (Sn)
+            if (points[2] && points[3]) state.measurements.noseBasalLength = calculateDistance(points[2], points[3]);
+
+            // Nasal Projection: perpendicular distance from Pronasale to the Nasion–Pogonion line
+            if (points[1] && points[6] && points[2]) {
+                const proj = projectPointToLine(points[2], points[1], points[6]);
+                if (proj && isFinite(proj.dist)) state.measurements.nasalProjection = proj.dist;
+            }
+
+            if (points[3] && points[4]) state.measurements.snLs = calculateDistance(points[3], points[4]);
+            if (points[5] && points[10]) state.measurements.liSu = calculateDistance(points[5], points[10]);
+            if (points[10] && points[6]) state.measurements.suPogonion = calculateDistance(points[10], points[6]);
+            if (points[6] && points[7]) state.measurements.pogonionMenton = calculateDistance(points[6], points[7]);
+            if (points[8] && points[9]) state.measurements.frankfortLength = calculateDistance(points[8], points[9]);
+        }
+
+        // Analyze reference lines (E-Line, Facial Plane, etc.)
+        function analyzeReferenceLines() {
+            const points = state.points;
+            
+            // Ricketts E-Line analysis
+            if (points[2] && points[6] && points[4] && points[5]) {
+                // Calculate distance from upper and lower lips to E-Line
+                // Simplified perpendicular distance calculation
+                const A = points[2];
+                const B = points[6];
+                const Ls = points[4];
+                const Li = points[5];
+                
+                // Line equation: Ax + By + C = 0
+                const A_coeff = B.y - A.y;
+                const B_coeff = A.x - B.x;
+                const C_coeff = A.y * B.x - A.x * B.y;
+                
+                // Distance from point to line (guard against degenerate line)
+                const denom = Math.sqrt(A_coeff*A_coeff + B_coeff*B_coeff);
+                if (!isFinite(denom) || denom === 0) return;
+                const distLs = Math.abs(A_coeff * Ls.x + B_coeff * Ls.y + C_coeff) / denom;
+                const distLi = Math.abs(A_coeff * Li.x + B_coeff * Li.y + C_coeff) / denom;
+                state.measurements.eLineUpper = distLs;
+                state.measurements.eLineLower = distLi;
+                
+                // Convert to mm if calibrated
+                let upperText, lowerText;
+                if (state.calibration.method === 'mm' && state.calibration.pixelsPerMM) {
+                    upperText = (distLs / state.calibration.pixelsPerMM).toFixed(1) + ' mm';
+                    lowerText = (distLi / state.calibration.pixelsPerMM).toFixed(1) + ' mm';
+                } else {
+                    upperText = Math.round(distLs) + ' px';
+                    lowerText = Math.round(distLi) + ' px';
+                }
+                
+                // Update UI
+                document.getElementById('e-line-status').textContent = 'Measured';
+                document.getElementById('e-line-upper').textContent = upperText;
+                document.getElementById('e-line-lower').textContent = lowerText;
+                
+                // Progress bars (ideal: upper 4mm behind, lower 2mm behind)
+                const idealUpper = 4; // mm
+                const idealLower = 2; // mm
+                
+                let upperPercent, lowerPercent;
+                if (state.calibration.method === 'mm' && state.calibration.pixelsPerMM) {
+                    const upperMM = distLs / state.calibration.pixelsPerMM;
+                    const lowerMM = distLi / state.calibration.pixelsPerMM;
+                    upperPercent = Math.min(Math.abs(upperMM) / 8 * 100, 100);
+                    lowerPercent = Math.min(Math.abs(lowerMM) / 4 * 100, 100);
+                } else {
+                    upperPercent = Math.min(distLs / 40 * 100, 100);
+                    lowerPercent = Math.min(distLi / 20 * 100, 100);
+                }
+                
+                document.getElementById('e-line-upper-progress').style.width = upperPercent + '%';
+                document.getElementById('e-line-lower-progress').style.width = lowerPercent + '%';
+            }
+            
+            // Facial Plane
+            if (points[0] && points[6]) {
+                document.getElementById('facial-plane-status').textContent = 'Established';
+            }
+            
+            // Frankfort Horizontal Plane
+            if (points[8] && points[9]) {
+                const angle = Math.abs(state.angles.frankfort);
+                let status = 'Not Horizontal';
+                if (angle < 5) {
+                    status = 'Ideal (Horizontal)';
+                    document.getElementById('frankfort-status').textContent = status;
+                    document.getElementById('frankfort-status').className = 'metric-value good';
+                    document.getElementById('frankfort-info').textContent = 'Frankfort Plane is properly horizontal. Natural Head Position confirmed.';
+                } else if (angle < 10) {
+                    status = 'Acceptable';
+                    document.getElementById('frankfort-status').textContent = status;
+                    document.getElementById('frankfort-status').className = 'metric-value warning';
+                    document.getElementById('frankfort-info').textContent = `Frankfort Plane deviates ${angle.toFixed(1)}° from horizontal.`;
+                } else {
+                    status = 'Needs Adjustment';
+                    document.getElementById('frankfort-status').textContent = status;
+                    document.getElementById('frankfort-status').className = 'metric-value alert';
+                    document.getElementById('frankfort-info').textContent = `Frankfort Plane deviates ${angle.toFixed(1)}° from horizontal. Head position may affect measurements.`;
+                }
+            }
+        }
+
+        // Update analysis UI with results
+        function updateAnalysisUI() {
+            // Update angles table
+            const anglesTable = document.getElementById('angles-table').querySelector('tbody');
+            anglesTable.innerHTML = '';
+            
+            for (const [key, angle] of Object.entries(state.angles)) {
+                if (angle !== undefined) {
+                    const row = document.createElement('tr');
+                    const angleName = state.angleLabels[key] || key;
+                    const angleValue = angle.toFixed(1) + '°';
+                    
+                    let status = 'Normal';
+                    let statusClass = '';
+                    
+                    // Define normal ranges for each angle
+                    if (key === 'nasofrontal') {
+                        if (angle >= 115 && angle <= 135) {
+                            status = 'Normal';
+                            statusClass = 'good';
+                        } else if (angle >= 100 && angle < 115 || angle > 135 && angle <= 150) {
+                            status = 'Borderline';
+                            statusClass = 'warning';
+                        } else {
+                            status = 'Abnormal';
+                            statusClass = 'alert';
+                        }
+                    } else if (key === 'nasolabial') {
+                        if (angle >= 90 && angle <= 110) {
+                            status = 'Normal';
+                            statusClass = 'good';
+                        } else if (angle >= 80 && angle < 90 || angle > 110 && angle <= 120) {
+                            status = 'Borderline';
+                            statusClass = 'warning';
+                        } else {
+                            status = 'Abnormal';
+                            statusClass = 'alert';
+                        }
+                    } else if (key === 'mentolabial') {
+                        if (angle >= 120 && angle <= 140) {
+                            status = 'Normal';
+                            statusClass = 'good';
+                        } else if (angle >= 110 && angle < 120 || angle > 140 && angle <= 150) {
+                            status = 'Borderline';
+                            statusClass = 'warning';
+                        } else {
+                            status = 'Abnormal';
+                            statusClass = 'alert';
+                        }
+                    } else if (key === 'facial') {
+                        if (Math.abs(angle) < 5) {
+                            status = 'Straight';
+                            statusClass = 'good';
+                        } else if (angle > 5) {
+                            status = 'Convex';
+                            statusClass = 'warning';
+                        } else {
+                            status = 'Concave';
+                            statusClass = 'warning';
+                        }
+                    } else if (key === 'frankfort') {
+                        if (Math.abs(angle) < 5) {
+                            status = 'Horizontal';
+                            statusClass = 'good';
+                        } else {
+                            status = 'Tilted';
+                            statusClass = 'warning';
+                        }
+                    } else if (key === 'chinProjection') {
+                        // General guidance for Facial Angle (FH) approx 87 +/- 3
+                        if (angle >= 84 && angle <= 92) {
+                            status = 'Normal';
+                            statusClass = 'good';
+                        } else if (angle < 84) {
+                            status = 'Retrusive';
+                            statusClass = 'warning';
+                        } else {
+                            status = 'Protrusive';
+                            statusClass = 'warning';
+                        }
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${angleName}</td>
+                        <td>${angleValue}</td>
+                        <td><span class="${statusClass}">${status}</span></td>
+                    `;
+                    anglesTable.appendChild(row);
+                }
+            }
+            
+            // Update measurements table
+            const measurementsTable = document.getElementById('measurements-table').querySelector('tbody');
+            measurementsTable.innerHTML = '';
+            
+            const measurementData = [
+                { name: 'Glabella to Pogonion (Facial Plane)', value: state.measurements.glabellaPogonion },
+                { name: 'Pronasale to Pogonion (E-Line)', value: state.measurements.prnPogonion },
+                { name: 'Nasal Projection (Prn to N\'-Pog\' line)', value: state.measurements.nasalProjection },
+                { name: 'Nasal Length (N\' to Prn)', value: state.measurements.nasalLength },
+                { name: 'Nose Basal Length (Prn to Sn)', value: state.measurements.noseBasalLength },
+                { name: 'Subnasale to Labrale Superius', value: state.measurements.snLs },
+                { name: 'Labrale Inferius to Sulcus', value: state.measurements.liSu },
+                { name: 'Sulcus to Pogonion', value: state.measurements.suPogonion },
+                { name: 'Pogonion to Menton', value: state.measurements.pogonionMenton },
+                { name: 'Porion to Orbitale (Frankfort)', value: state.measurements.frankfortLength }
+            ];
+            
+            measurementData.forEach(measurement => {
+                if (measurement.value) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${measurement.name}</td>
+                        <td>${formatDistance(measurement.value)}</td>
+                        <td><span style="color: #2ecc71;">✓ Measured</span></td>
+                    `;
+                    measurementsTable.appendChild(row);
+                }
+            });
+        }
+
+        // Export analysis results
+        function exportAnalysis() {
+            if (!state.imageLoaded || state.points.filter(p => p).length < state.pointLabels.length || !state.analysisPerformed) {
+                alert("Please complete the analysis before exporting.");
+                return;
+            }
+            
+            // Create a new window for printing
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Profile Analysis Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .header h1 { color: #2c3e50; }
+                        .image-container { text-align: center; margin: 20px 0; }
+                        .image-container img { max-width: 100%; border: 1px solid #ddd; }
+                        .results { margin-top: 30px; }
+                        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                        th { background: #2c3e50; color: white; padding: 10px; text-align: left; }
+                        td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
+                        .section { margin: 30px 0; }
+                        .section h3 { color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+                        .timestamp { color: #7f8c8d; font-size: 14px; }
+                        .good { color: #2ecc71; }
+                        .warning { color: #f39c12; }
+                        .alert { color: #e74c3c; }
+                        @media print {
+                            .no-print { display: none; }
+                            body { padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Facial Profile Analysis Report</h1>
+                        <div class="timestamp">Generated: ${new Date().toLocaleString()}</div>
+                    </div>
+                    
+                    <div class="image-container">
+                        <h3>Analyzed Profile with Landmarks</h3>
+                        <img src="${state.canvas.toDataURL('image/png')}" alt="Profile Analysis">
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Angular Analysis</h3>
+                        <table>
+                            <tr>
+                                <th>Angle</th>
+                                <th>Value</th>
+                                <th>Status</th>
+                            </tr>
+            `);
+            
+            // Add angles
+            for (const [key, angle] of Object.entries(state.angles)) {
+                if (angle !== undefined) {
+                    const angleName = state.angleLabels[key] || key;
+                    const angleValue = angle.toFixed(1) + '°';
+                    
+                    let status = 'Normal';
+                    let statusClass = 'good';
+                    
+                    if (key === 'nasofrontal') {
+                        status = (angle >= 115 && angle <= 135) ? 'Normal' : (angle >= 100 && angle < 115 || angle > 135 && angle <= 150) ? 'Borderline' : 'Abnormal';
+                        statusClass = (status === 'Normal') ? 'good' : (status === 'Borderline') ? 'warning' : 'alert';
+                    } else if (key === 'nasolabial') {
+                        status = (angle >= 90 && angle <= 110) ? 'Normal' : (angle >= 80 && angle < 90 || angle > 110 && angle <= 120) ? 'Borderline' : 'Abnormal';
+                        statusClass = (status === 'Normal') ? 'good' : (status === 'Borderline') ? 'warning' : 'alert';
+                    } else if (key === 'mentolabial') {
+                        status = (angle >= 120 && angle <= 140) ? 'Normal' : (angle >= 110 && angle < 120 || angle > 140 && angle <= 150) ? 'Borderline' : 'Abnormal';
+                        statusClass = (status === 'Normal') ? 'good' : (status === 'Borderline') ? 'warning' : 'alert';
+                    } else if (key === 'facial') {
+                        status = (Math.abs(angle) < 5) ? 'Straight' : (angle > 5) ? 'Convex' : 'Concave';
+                        statusClass = (status === 'Straight') ? 'good' : 'warning';
+                    } else if (key === 'chinProjection') {
+                        status = (angle >= 84 && angle <= 92) ? 'Normal' : (angle < 84) ? 'Retrusive' : 'Protrusive';
+                        statusClass = (status === 'Normal') ? 'good' : 'warning';
+                    }
+                    
+                    printWindow.document.write(`
+                        <tr>
+                            <td>${angleName}</td>
+                            <td>${angleValue}</td>
+                            <td class="${statusClass}">${status}</td>
+                        </tr>
+                    `);
+                }
+            }
+            
+            printWindow.document.write(`
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Linear Measurements</h3>
+                        <table>
+                            <tr>
+                                <th>Measurement</th>
+                                <th>Value</th>
+                            </tr>
+            `);
+            
+            // Add measurements
+            const allMeasurements = [
+                { name: 'Glabella to Pogonion (Facial Plane)', value: state.measurements.glabellaPogonion },
+                { name: 'Pronasale to Pogonion (E-Line)', value: state.measurements.prnPogonion },
+                { name: 'Nasal Projection (Prn to N\'-Pog\' line)', value: state.measurements.nasalProjection },
+                { name: 'Nasal Length (N\' to Prn)', value: state.measurements.nasalLength },
+                { name: 'Nose Basal Length (Prn to Sn)', value: state.measurements.noseBasalLength },
+                { name: 'Subnasale to Labrale Superius', value: state.measurements.snLs },
+                { name: 'Labrale Inferius to Sulcus', value: state.measurements.liSu },
+                { name: 'Sulcus to Pogonion', value: state.measurements.suPogonion },
+                { name: 'Pogonion to Menton', value: state.measurements.pogonionMenton }
+            ];
+            
+            allMeasurements.forEach(measurement => {
+                if (measurement.value) {
+                    printWindow.document.write(`
+                        <tr>
+                            <td>${measurement.name}</td>
+                            <td>${formatDistance(measurement.value)}</td>
+                        </tr>
+                    `);
+                }
+            });
+            
+            // Add E-Line measurements
+            if (state.measurements.eLineUpper && state.measurements.eLineLower) {
+                let upperText, lowerText;
+                if (state.calibration.method === 'mm' && state.calibration.pixelsPerMM) {
+                    upperText = (state.measurements.eLineUpper / state.calibration.pixelsPerMM).toFixed(1) + ' mm';
+                    lowerText = (state.measurements.eLineLower / state.calibration.pixelsPerMM).toFixed(1) + ' mm';
+                } else {
+                    upperText = Math.round(state.measurements.eLineUpper) + ' px';
+                    lowerText = Math.round(state.measurements.eLineLower) + ' px';
+                }
+                
+                printWindow.document.write(`
+                    <tr>
+                        <td>Upper Lip to E-Line (Ricketts)</td>
+                        <td>${upperText}</td>
+                    </tr>
+                    <tr>
+                        <td>Lower Lip to E-Line (Ricketts)</td>
+                        <td>${lowerText}</td>
+                    </tr>
+                `);
+            }
+            
+            printWindow.document.write(`
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Calibration Information</h3>
+                        <p>Measurement unit: ${state.calibration.method === 'mm' ? 'Millimeters' : 'Pixels'}</p>
+                        ${state.calibration.method === 'mm' ? 
+                          `<p>Conversion factor: ${state.calibration.pixelsPerMM.toFixed(2)} pixels per mm</p>` : 
+                          ''}
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Analysis Notes</h3>
+                        <p><strong>Frankfort Plane:</strong> ${document.getElementById('frankfort-info').textContent}</p>
+                        <p><strong>Profile Type:</strong> ${Math.abs(state.angles.facial) < 5 ? 'Straight' : state.angles.facial > 5 ? 'Convex' : 'Concave'}</p>
+                    </div>
+                    
+                    <div class="no-print" style="margin-top: 30px; text-align: center;">
+                        <button onclick="window.print()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Print Report
+                        </button>
+                    </div>
+                    
+                    <script>
+                        window.onload = function() {
+                            // Auto-print option (commented out)
+                            // window.print();
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+        }
+    </script>
+
+<script>
+(function(){
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>

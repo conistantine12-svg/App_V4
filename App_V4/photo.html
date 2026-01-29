@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Royal Ray Zone | Clinical Photos</title>
+  <meta name="theme-color" content="#c5a059" />
+  <link rel="manifest" href="manifest.json" />
+  <!-- Add jsPDF library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1b2f;
+      --panel2:#0b162a;
+      --text:#e5e7eb;
+      --muted:#94a3b8;
+      --gold:#c5a059;
+      --line:rgba(229,231,235,.14);
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(900px 600px at 20% 10%, rgba(197,160,89,.18), transparent 55%),
+        radial-gradient(900px 600px at 90% 30%, rgba(59,130,246,.12), transparent 55%),
+        linear-gradient(180deg, #050912 0%, var(--bg) 55%, #050912 100%);
+      color:var(--text);
+      min-height:100vh;
+      padding:16px;
+    }
+
+    /* Header */
+    .topbar{
+      max-width:1200px;
+      margin:0 auto 12px auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .logo{
+      width:36px;height:36px;border-radius:12px;
+      background: linear-gradient(135deg, rgba(197,160,89,.95), rgba(197,160,89,.25));
+      box-shadow: 0 10px 25px rgba(197,160,89,.15);
+      display:grid;place-items:center;
+      color:#111827;
+      font-weight:900;
+    }
+    .brand h1{
+      font-size:16px;
+      margin:0;
+      letter-spacing:.2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .brand p{
+      margin:2px 0 0 0;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(15,27,47,.55);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:12px;
+      transition:.15s;
+      backdrop-filter: blur(10px);
+    }
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(197,160,89,.45); }
+    .btn:active{ transform: translateY(0); }
+    .btn.primary{
+      border-color: rgba(197,160,89,.45);
+      background: rgba(197,160,89,.12);
+    }
+    .btn.danger{
+      border-color: rgba(239,68,68,.35);
+      background: rgba(239,68,68,.10);
+    }
+
+    /* Layout cards */
+    .wrap{
+      max-width:1200px;
+      margin:0 auto;
+      display:grid;
+      gap:12px;
+      grid-template-columns: 1fr;
+    }
+    @media (max-width: 980px){
+      .wrap{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      border:1px solid var(--line);
+      background: rgba(15,27,47,.55);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(12px);
+    }
+    .card-h{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .card-h .title{
+      font-weight:900;
+      font-size:13px;
+      margin:0;
+    }
+    .card-h .meta{
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .card-b{ padding:12px 14px; }
+
+    /* Progress */
+    .progress{
+      width:100%;
+      height:10px;
+      border-radius:999px;
+      background: rgba(148,163,184,.15);
+      overflow:hidden;
+      border:1px solid rgba(229,231,235,.10);
+    }
+    .progress > div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(197,160,89,.95), rgba(34,197,94,.85));
+      transition: width .25s ease;
+    }
+    .hint{
+      margin:10px 0 0 0;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    /* Grid */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+      gap:12px;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+    }
+    @media (max-width: 560px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .slot{
+      border:2px solid rgba(229,231,235,.10);
+      border-radius: 14px;
+      background: rgba(11,22,42,.55);
+      overflow:hidden;
+      position:relative;
+      min-height: 310px;
+      display:flex;
+      flex-direction:column;
+    }
+    .slot.active{
+      border-color: rgba(197,160,89,.75);
+      box-shadow: 0 0 0 3px rgba(197,160,89,.10);
+    }
+    .slot.done{
+      border-color: rgba(34,197,94,.65);
+      box-shadow: 0 0 0 3px rgba(34,197,94,.08);
+    }
+    .slot.disabled{
+      opacity:.55;
+      filter:saturate(.65);
+    }
+    .slot-h{
+      padding:10px 10px 8px 10px;
+      background: rgba(0,0,0,.45);
+      border-bottom:1px solid rgba(229,231,235,.08);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .slot-h h3{
+      margin:0;
+      font-size:13px;
+      font-weight:900;
+      line-height:1.25;
+    }
+    .badge{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius: 999px;
+      border:1px solid rgba(229,231,235,.12);
+      color: var(--muted);
+      background: rgba(15,27,47,.55);
+      white-space:nowrap;
+    }
+    .badge.ok{ border-color: rgba(34,197,94,.35); color: rgba(34,197,94,.95); background: rgba(34,197,94,.08); }
+    .badge.wait{ border-color: rgba(245,158,11,.35); color: rgba(245,158,11,.95); background: rgba(245,158,11,.08); }
+
+    .slot-preview{
+      flex:1;
+      background:#fff;
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .slot-preview img{
+      max-width:100%;
+      max-height:100%;
+      object-fit:contain;
+      display:none;
+    }
+    .slot-preview .empty{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding:18px;
+      text-align:center;
+      color:#111827;
+    }
+    .select-btn{
+      border:0;
+      cursor:pointer;
+      font-weight:900;
+      padding:12px 16px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #22c55e, #16a34a);
+      color:white;
+      box-shadow: 0 10px 20px rgba(34,197,94,.18);
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+    }
+    .select-btn:hover{ filter: brightness(1.02); transform: translateY(-1px); }
+    .select-btn:active{ transform: translateY(0); }
+
+    .slot-actions{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:0;
+      border-top:1px solid rgba(229,231,235,.10);
+      background: rgba(0,0,0,.40);
+    }
+    .slot-actions button{
+      border:0;
+      background:transparent;
+      color:var(--text);
+      font-weight:900;
+      padding:10px 8px;
+      cursor:pointer;
+      border-right:1px solid rgba(229,231,235,.10);
+    }
+    .slot-actions button:last-child{ border-right:0; }
+    .slot-actions button:hover{ background: rgba(197,160,89,.10); }
+    .slot-actions button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      background:transparent;
+    }
+
+    /* Side panel */
+    .side .card-b{ display:flex; flex-direction:column; gap:10px; }
+    .kv{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border:1px solid rgba(229,231,235,.10);
+      border-radius: 14px;
+      background: rgba(11,22,42,.45);
+    }
+    .kv .k{ color:var(--muted); font-size:12px; }
+    .kv .v{ font-weight:900; font-size:12px; }
+    .note{
+      border:1px dashed rgba(197,160,89,.35);
+      background: rgba(197,160,89,.08);
+      border-radius: 14px;
+      padding:10px 12px;
+      color: rgba(229,231,235,.92);
+      font-size:12px;
+      line-height:1.55;
+    }
+
+    /* Toast */
+    .toast{
+      position: fixed;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(229,231,235,.12);
+      background: rgba(15,27,47,.85);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      z-index: 9999;
+    }
+    .toast.show{ display:flex; }
+    .toast .msg{ font-size:12px; color: rgba(229,231,235,.95); line-height:1.4; }
+    .toast .x{
+      border:0; background:transparent; color: var(--muted);
+      cursor:pointer; font-weight:900; font-size:14px;
+    }
+  
+/* ---------- Embedded Workflow Overlay (Extra-Oral Close Mouth) ---------- */
+.wf-overlay{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.72);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  z-index:9999;
+}
+.wf-overlay.active{ display:flex; }
+.wf-shell{
+  width:min(1200px, 100%);
+  height:min(92vh, 900px);
+  background:var(--panel2);
+  border:1px solid var(--line);
+  border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 24px 70px rgba(0,0,0,.55);
+  display:flex;
+  flex-direction:column;
+}
+.wf-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 12px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(197,160,89,.14), rgba(15,27,47,.0));
+}
+.wf-title{
+  flex:1;
+  font-weight:700;
+  font-size:14px;
+  color:var(--text);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.wf-btn{
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+.wf-btn:hover{ border-color:rgba(197,160,89,.55); }
+.wf-btn:active{ transform:translateY(1px); }
+.wf-primary{
+  background:rgba(197,160,89,.18);
+  border-color:rgba(197,160,89,.35);
+}
+#wfFrame{
+  width:100%;
+  height:100%;
+  border:0;
+  background:#ffffff;
+}
+@media (max-width: 560px){
+  .wf-shell{ height:94vh; }
+  .wf-title{ display:none; }
+}
+
+
+    .footerActions{
+      margin-top:14px;
+      display:flex;
+      justify-content:center;
+      gap:12px;
+      flex-wrap: wrap;
+    }
+    .footerActions .btn{
+      min-width: 180px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+    @media print{
+      body{ background:#fff !important; }
+      .topbar, .toast, #btnReset, #btnDashboard, #btnPrint, #btnUploadLogo, .hint{ display:none !important; }
+      .wrap{ padding:0 !important; }
+      .card{ box-shadow:none !important; border:none !important; }
+      .slot{ break-inside:avoid; page-break-inside:avoid; }
+      .slot-actions{ display:none !important; }
+      .slot-title{ color:#000 !important; }
+    }
+
+    /* Hidden file input for logo upload */
+    #logoUploadInput {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <button class="btn primary" id="btnDashboard" title="Back to Dashboard">Dashboard</button>
+
+    <div class="brand">
+      <div class="logo">RR</div>
+      <div style="min-width:0">
+        <h1>Clinical Photos Workflow</h1>
+        <p id="patientLine">Offline-ready • PWA-safe</p>
+      </div>
+    </div>
+
+    <button class="btn danger" id="btnReset" title="Clear saved photos for this case">Reset</button>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="card-h">
+        <p class="title">Photo Grid (9 Views)</p>
+        <p class="meta"><span id="doneCount">0</span>/9 Completed</p>
+      </div>
+      <div class="card-b">
+        <div class="progress" aria-label="progress">
+          <div id="progressFill"></div>
+        </div>
+        <p class="hint" id="hintLine">
+          Workflow rule: select any image → click Analyze to open its workflow (no required order).
+        </p>
+
+        <div style="height:12px"></div>
+        <div class="grid" id="grid"></div>
+      </div>
+    </div>
+    <div class="footerActions">
+      <button class="btn" id="btnPrint" title="Generate PDF with all uploaded clinical photos">Generate PDF</button>
+      <button class="btn" id="btnUploadLogo" title="Upload Logo for PDF">Upload Logo</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <div class="msg" id="toastMsg">Saved</div>
+    <button class="x" id="toastX" aria-label="close">✕</button>
+  </div>
+
+  <!-- Hidden file input for logo upload -->
+  <input type="file" accept="image/*" id="logoUploadInput" />
+
+<script>
+/* =========================
+   Clinical Photos Grid v1
+   - PWA-ready (offline, no external libs)
+   - Stores images in IndexedDB (preferred) with fallback
+   - Stores completion metadata in localStorage
+   ========================= */
+
+const DASHBOARD_URL = "dashboard.html";
+const LS_KEY = "rrz_clinical_photos_meta_v1";
+const DB_NAME = "rrz_clinical_photos_db";
+const DB_STORE = "images";
+const DB_VER = 1;
+const LOGO_KEY = "rrz_pdf_logo"; // Key for storing logo in localStorage
+
+
+const WORKFLOW_MAP = {
+  "extra_close":    "workflow.html",
+  "extra_open":     "workflow2.html",
+  "extra_side":     "workflow3.html",
+  "intra_close":    "workflow4.html",
+  "intra_open":     "workflow5.html",
+  "intra_right":    "workflow6.html",
+  "intra_left":     "workflow7.html",
+  "intra_maxilla":  "workflow8.html",
+  "intra_mandible": "workflow9.html"
+};
+
+function getWorkflowUrl(slotId){
+  return WORKFLOW_MAP[String(slotId || "")] || "workflow.html";
+}
+
+const SLOTS = [
+  { id:"extra_close",   title:"EXtra-Oral (Close Mouth)" },
+  { id:"extra_open",    title:"EXtra-Oral (Open Mouth)" },
+  { id:"extra_side",    title:"EXtra-Oral (Side View)" },
+  { id:"intra_close",   title:"Intra-Oral (Close Mouth)" },
+  { id:"intra_open",    title:"Intra-Oral (Open Mouth)" },
+  { id:"intra_right",   title:"Intra-Oral (Right Side)" },
+  { id:"intra_left",    title:"Intra-Oral (Left Side)" },
+  { id:"intra_maxilla", title:"Intra-Oral (Maxilla)" },
+  { id:"intra_mandible",title:"Intra-Oral (Mandible)" }
+];
+
+let meta = loadMeta();
+let objectUrls = {}; // id -> objectURL (for cleanup)
+let dbOk = true;
+let pdfLogo = null; // Store logo data URL
+
+
+async function launchWorkflow(slotId){
+  const url = getWorkflowUrl(slotId);
+  const _slot = String(slotId || "");
+
+  // Persist slot id (useful for workflows)
+  try{ sessionStorage.setItem("rrz_workflow_slot", _slot); }catch(e){}
+
+  // Transfer the slot image to the workflow page (session-scoped, safe for PWA).
+  // Workflows 6/7 already look for: rrz_${slot}_image / rrz_${slot}_image_dataurl
+  // Other workflows may look for generic keys.
+  try{
+    const dataUrl = await getSlotImageDataURL(_slot);
+    if (dataUrl && typeof dataUrl === 'string' && dataUrl.startsWith('data:image')){
+      try{ sessionStorage.setItem(`rrz_${_slot}_image`, dataUrl); }catch(e){}
+      try{ sessionStorage.setItem(`rrz_${_slot}_image_dataurl`, dataUrl); }catch(e){}
+
+      // Generic fallbacks used in some workflows
+      try{ sessionStorage.setItem('rrz_uploaded_image', dataUrl); }catch(e){}
+      try{ sessionStorage.setItem('uploadedImageDataUrl', dataUrl); }catch(e){}
+      try{ sessionStorage.setItem('selectedImageDataUrl', dataUrl); }catch(e){}
+    }
+  }catch(e){}
+
+  // autocal=1 makes the workflow open Calibration automatically (when supported)
+  window.location.href = url + "?slot=" + encodeURIComponent(_slot) + "&from=photo&autocal=1";
+}
+const $ = (id) => document.getElementById(id);
+
+
+const setText = (id, txt) => { const el = $(id); if (el) el.textContent = txt; };
+function showToast(msg){
+  $("toastMsg").textContent = msg;
+  $("toast").classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>$("toast").classList.remove("show"), 2200);
+}
+
+$("toastX").addEventListener("click", ()=> $("toast").classList.remove("show"));
+
+$("btnDashboard").addEventListener("click", () => {
+  window.location.href = DASHBOARD_URL;
+});
+
+$("btnReset").addEventListener("click", async () => {
+  if (!confirm("Clear all saved clinical photos for this case?")) return;
+  try{
+    await clearDB();
+  }catch(e){}
+  localStorage.removeItem(LS_KEY);
+  // cleanup object URLs
+  for (const k of Object.keys(objectUrls)){ try{ URL.revokeObjectURL(objectUrls[k]); }catch(e){} }
+  objectUrls = {};
+  meta = loadMeta(true);
+  renderAll();
+  showToast("Cleared. Starting from first view.");
+});
+
+
+// Load logo from localStorage on init
+function loadLogo() {
+  try {
+    const logoData = localStorage.getItem(LOGO_KEY);
+    if (logoData) {
+      pdfLogo = logoData;
+      console.log("Logo loaded from localStorage");
+    }
+  } catch (e) {
+    console.warn("Failed to load logo:", e);
+  }
+}
+
+// Handle logo upload
+$("btnUploadLogo").addEventListener("click", () => {
+  document.getElementById("logoUploadInput").click();
+});
+
+document.getElementById("logoUploadInput").addEventListener("change", async (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+
+  try {
+    const dataUrl = await fileToDataURL(file);
+    // Validate image size (optional)
+    const img = new Image();
+    img.onload = function() {
+      // Store logo in localStorage
+      try {
+        localStorage.setItem(LOGO_KEY, dataUrl);
+        pdfLogo = dataUrl;
+        showToast("Logo uploaded successfully for PDF.");
+      } catch (e) {
+        showToast("Logo too large for storage. Try a smaller image.");
+      }
+    };
+    img.src = dataUrl;
+  } catch (e) {
+    showToast("Failed to upload logo.");
+  }
+  
+  // Reset file input
+  ev.target.value = '';
+});
+
+$("btnPrint").addEventListener("click", async () => {
+  await generatePDF();
+});
+
+const _btnScrollActive = $("btnScrollActive");
+if (_btnScrollActive) _btnScrollActive.addEventListener("click", () => {
+  const activeId = getActiveSlotId();
+  const el = document.querySelector(`[data-slot="${activeId}"]`);
+  if (el) el.scrollIntoView({behavior:"smooth", block:"center"});
+});
+
+const _btnGoNext = $("btnGoNext");
+if (_btnGoNext) _btnGoNext.addEventListener("click", () => {
+  const nextId = getActiveSlotId();
+  const el = document.querySelector(`[data-slot="${nextId}"]`);
+  if (el) el.scrollIntoView({behavior:"smooth", block:"center"});
+});
+
+function loadMeta(reset=false){
+  if (reset) return { slots:{}, updatedAt: Date.now() };
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return { slots:{}, updatedAt: Date.now() };
+    const obj = JSON.parse(raw);
+    if (!obj || typeof obj !== "object") throw new Error("bad meta");
+    if (!obj.slots) obj.slots = {};
+    return obj;
+  }catch(e){
+    return { slots:{}, updatedAt: Date.now() };
+  }
+}
+function saveMeta(){
+  meta.updatedAt = Date.now();
+  localStorage.setItem(LS_KEY, JSON.stringify(meta));
+}
+
+function getDoneCount(){
+  let n = 0;
+  for (const s of SLOTS){
+    if ((meta && meta.slots && meta.slots[s.id] && meta.slots[s.id].completed)) n++;
+  }
+  return n;
+}
+function getActiveSlotId(){
+  // first not completed
+  for (const s of SLOTS){
+    if (!(meta && meta.slots && meta.slots[s.id] && meta.slots[s.id].completed)) return s.id;
+  }
+  return SLOTS[SLOTS.length-1].id;
+}
+function canAccessSlot(id){
+  // User can analyze any view in any order (no gating).
+  return true;
+}
+
+/* ---------- IndexedDB ---------- */
+function openDB(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = (ev) => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(DB_STORE)){
+        db.createObjectStore(DB_STORE, { keyPath:"id" });
+      }
+    };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error || new Error("IDB open failed"));
+  });
+}
+async function putImage(id, file){
+  const db = await openDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(DB_STORE, "readwrite");
+    tx.objectStore(DB_STORE).put({
+      id,
+      blob: file,
+      name: file.name || "image",
+      type: file.type || "image/*",
+      updatedAt: Date.now()
+    });
+    tx.oncomplete = ()=> { db.close(); resolve(true); };
+    tx.onerror = ()=> { db.close(); reject(tx.error); };
+  });
+}
+async function getImage(id){
+  const db = await openDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(DB_STORE, "readonly");
+    const req = tx.objectStore(DB_STORE).get(id);
+    req.onsuccess = ()=> { const r = req.result; db.close(); resolve(r || null); };
+    req.onerror = ()=> { db.close(); reject(req.error); };
+  });
+}
+async function deleteImage(id){
+  const db = await openDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(DB_STORE, "readwrite");
+    tx.objectStore(DB_STORE).delete(id);
+    tx.oncomplete = ()=> { db.close(); resolve(true); };
+    tx.onerror = ()=> { db.close(); reject(tx.error); };
+  });
+}
+async function clearDB(){
+  const db = await openDB();
+  return new Promise((resolve, reject)=>{
+    const tx = db.transaction(DB_STORE, "readwrite");
+    tx.objectStore(DB_STORE).clear();
+    tx.oncomplete = ()=> { db.close(); resolve(true); };
+    tx.onerror = ()=> { db.close(); reject(tx.error); };
+  });
+}
+
+
+async function clearSlot(id){
+  // Remove preview objectURL if any
+  if (objectUrls[id]){
+    try{ URL.revokeObjectURL(objectUrls[id]); }catch(e){}
+    objectUrls[id] = null;
+  }
+
+  // Clear meta state for that slot (keeps other views untouched)
+  if (meta && meta.slots && meta.slots[id]){
+    delete meta.slots[id];
+    saveMeta();
+  }
+
+  // Clear any fallback dataURL just in case
+  try{
+    const m = meta && meta.slots ? meta.slots[id] : null;
+    if (m && m.dataURL) delete m.dataURL;
+  }catch(e){}
+
+  // Clear stored image from IndexedDB (best-effort)
+  try{
+    await deleteImage(id);
+  }catch(e){}
+}
+
+/* ---------- Rendering ---------- */
+function slotStatus(id){
+  const m = (meta && meta.slots ? meta.slots[id] : undefined) || {};
+  if (m.completed) return { label:"Done", cls:"ok" };
+  if (m.hasImage) return { label:"Ready", cls:"wait" };
+  return { label:"Empty", cls:"" };
+}
+
+function renderAll(){
+  renderHeader();
+  renderGrid();
+  renderSide();
+}
+
+function renderHeader(){
+  const done = getDoneCount();
+  $("doneCount").textContent = String(done);
+  const pct = Math.round((done/9)*100);
+  $("progressFill").style.width = pct + "%";
+  setText("caseStatus", done === 9 ? "All Completed" : "In Progress");
+
+  // patient hint (if already saved elsewhere in your app)
+  const pn = localStorage.getItem("patient_name") || localStorage.getItem("patientName") || "";
+  const pid = localStorage.getItem("patient_id") || localStorage.getItem("patientId") || "";
+  $("patientLine").textContent = (pn || pid) ? `Patient: ${pn || "—"} • ID: ${pid || "—"}` : "Offline-ready • PWA-safe";
+}
+
+function renderSide(){
+  const activeId = getActiveSlotId();
+  const activeTitle = (function(){var __t = SLOTS.find(s=>s.id===activeId); return (__t && __t.title) ? __t.title : undefined;})() || "—";
+  setText("activeView", activeTitle);
+
+  setText("storageMode", dbOk ? "IndexedDB" : "LocalStorage (fallback)");
+}
+
+function renderGrid(){
+  const grid = $("grid");
+  grid.innerHTML = "";
+
+  const activeId = getActiveSlotId();
+
+  for (const s of SLOTS){
+    const m = (meta && meta.slots ? meta.slots[s.id] : undefined) || {};
+    const accessible = canAccessSlot(s.id);
+    const st = slotStatus(s.id);
+
+    const el = document.createElement("div");
+    el.className = "slot" +
+      (s.id === activeId && !m.completed ? " active" : "") +
+      (m.completed ? " done" : "") +
+      (!accessible ? " disabled" : "");
+    el.dataset.slot = s.id;
+
+    el.innerHTML = `
+      <div class="slot-h">
+        <h3>${escapeHtml(s.title)}</h3>
+        <span class="badge ${st.cls}">${st.label}</span>
+      </div>
+
+      <div class="slot-preview">
+        <img id="img_${s.id}" alt="${escapeHtml(s.title)}"/>
+        <div class="empty" id="empty_${s.id}">
+          <div style="font-weight:900; opacity:.9">Select Image</div>
+          <button class="select-btn" id="btnSelect_${s.id}">
+            <span style="font-size:14px">📷</span>
+            <span>Select Image</span>
+          </button>
+          <div style="font-size:11px; opacity:.75">Tip: on mobile you can capture from camera</div>
+        </div>
+      </div>
+
+      <div class="slot-actions">
+        <button id="btnChange_${s.id}" ${m.hasImage && accessible ? "" : "disabled"}>Change Image</button>
+        <button id="btnAnalyze_${s.id}" ${m.hasImage && accessible ? "" : "disabled"}>Analyze</button>
+      </div>
+
+      <!-- NOTE: Do NOT force camera-only on mobile. Omitting the capture attribute allows gallery OR camera chooser. -->
+      <input type="file" accept="image/*" id="file_${s.id}" style="display:none" />
+    `;
+    grid.appendChild(el);
+
+    // Wire up actions
+    const btnSelect = el.querySelector(`#btnSelect_${s.id}`);
+    const btnChange = el.querySelector(`#btnChange_${s.id}`);
+    const btnAnalyze = el.querySelector(`#btnAnalyze_${s.id}`);
+    const fileInput = el.querySelector(`#file_${s.id}`);
+
+    const openPicker = () => {
+fileInput.click();
+    };
+
+    if (btnSelect) btnSelect.addEventListener("click", openPicker);
+    if (btnChange) btnChange.addEventListener("click", openPicker);
+
+    fileInput.addEventListener("change", async (ev) => {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+
+      setText("caseStatus","Saving...");
+      try{
+        await putImage(s.id, file);
+        dbOk = true;
+        // mark in meta
+        meta.slots[s.id] = meta.slots[s.id] || {};
+        meta.slots[s.id].hasImage = true;
+        meta.slots[s.id].completed = false; // requires Analyze again
+        meta.slots[s.id].updatedAt = Date.now();
+        saveMeta();
+        await paintPreviewFromDB(s.id);
+        renderAll();
+        showToast("Image saved. Click Analyze to continue.");
+}catch(e){
+        dbOk = false;
+        // Fallback to localStorage dataURL (may be limited)
+        try{
+          const dataUrl = await fileToDataURL(file);
+          meta.slots[s.id] = meta.slots[s.id] || {};
+          meta.slots[s.id].hasImage = true;
+          meta.slots[s.id].completed = false;
+          meta.slots[s.id].dataURL = dataUrl;
+          meta.slots[s.id].updatedAt = Date.now();
+          saveMeta();
+          paintPreviewFromMeta(s.id);
+          renderAll();
+          showToast("Saved (fallback). Click Analyze to continue.");
+        }catch(e2){
+          showToast("Failed to load image.");
+        }
+      }finally{
+        setText("caseStatus","In Progress");
+        fileInput.value = "";
+      }
+    });
+
+    btnAnalyze.addEventListener("click", async () => {
+  if (!accessible) return;
+
+  const mm = (meta && meta.slots ? meta.slots[s.id] : undefined) || {};
+  if (!mm.hasImage){
+    showToast("Please select an image first.");
+    return;
+  }
+
+  // Mark as completed when user starts the analysis workflow (can be re-opened anytime).
+  meta.slots[s.id] = meta.slots[s.id] || {};
+  meta.slots[s.id].completed = true;
+  meta.slots[s.id].analyzedAt = Date.now();
+  saveMeta();
+  renderAll();
+
+  await launchWorkflow(s.id);
+});
+
+    // Paint preview if exists
+    if (m.hasImage){
+      paintPreview(s.id);
+    }
+  }
+}
+
+async function paintPreview(id){
+  // Try DB first
+  if (dbOk){
+    try{
+      const rec = await getImage(id);
+      if (rec && rec.blob){
+        const url = URL.createObjectURL(rec.blob);
+        setPreviewUrl(id, url);
+        return;
+      }
+    }catch(e){
+      dbOk = false;
+    }
+  }
+  paintPreviewFromMeta(id);
+}
+
+async function paintPreviewFromDB(id){
+  const rec = await getImage(id);
+  if (!rec || !rec.blob) return;
+  const url = URL.createObjectURL(rec.blob);
+  setPreviewUrl(id, url);
+}
+
+function paintPreviewFromMeta(id){
+  const m = (meta && meta.slots ? meta.slots[id] : undefined) || {};
+  if (!m.dataURL) return;
+  setPreviewUrl(id, m.dataURL, true);
+}
+
+function setPreviewUrl(id, url, isDataUrl=false){
+  // cleanup old url if it was objectURL
+  if (objectUrls[id]){
+    try{ URL.revokeObjectURL(objectUrls[id]); }catch(e){}
+    objectUrls[id] = null;
+  }
+  if (!isDataUrl){
+    objectUrls[id] = url;
+  }
+
+  const img = document.getElementById("img_" + id);
+  const empty = document.getElementById("empty_" + id);
+  if (!img || !empty) return;
+  img.src = url;
+  img.style.display = "block";
+  empty.style.display = "none";
+}
+
+/* ---------- Utils ---------- */
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+function fileToDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=> resolve(fr.result);
+    fr.onerror = ()=> reject(fr.error || new Error("read failed"));
+    fr.readAsDataURL(file);
+  });
+}
+
+/* ---------- PDF Generation ---------- */
+async function generatePDF() {
+  showToast("Preparing PDF...");
+  
+  // Check if jsPDF is loaded
+  if (typeof window.jspdf === 'undefined') {
+    showToast("PDF library not loaded. Please check internet connection.");
+    return;
+  }
+  
+  const { jsPDF } = window.jspdf;
+  
+  // Create new PDF document - A4 size
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+  
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 10;
+  
+  // Add logo at top right if uploaded
+  if (pdfLogo) {
+    try {
+      // Add logo at top right (max 25x25 mm)
+      doc.addImage(pdfLogo, 'JPEG', pageWidth - margin - 25, margin, 25, 25);
+    } catch (e) {
+      console.warn("Could not add logo:", e);
+    }
+  }
+  
+  // Add patient info at top left
+  const patientName = localStorage.getItem("patient_name") || localStorage.getItem("patientName") || "N/A";
+  const patientGender = localStorage.getItem("patient_gender") || localStorage.getItem("patientGender") || "N/A";
+  const dateStr = new Date().toLocaleDateString();
+  
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Patient Name:", margin, margin + 5);
+  doc.text("Gender:", margin, margin + 12);
+  doc.text("Date:", margin, margin + 19);
+  
+  doc.setFont("helvetica", "normal");
+  doc.text(patientName, margin + 35, margin + 5);
+  doc.text(patientGender, margin + 35, margin + 12);
+  doc.text(dateStr, margin + 35, margin + 19);
+  
+  // Calculate grid position and dimensions
+  const headerHeight = 30; // Space for patient info
+  const gridTop = margin + headerHeight + 5; // Add extra space
+  const gridBottom = pageHeight - margin;
+  const gridLeft = margin;
+  const gridRight = pageWidth - margin;
+  
+  const gridWidth = gridRight - gridLeft;
+  const gridHeight = gridBottom - gridTop;
+  
+  // Create 3x3 grid with minimal gaps
+  const cols = 3;
+  const rows = 3;
+  const cellPadding = 2; // Minimal padding inside each cell
+  const cellSpacing = 1; // Minimal spacing between cells
+  
+  const cellWidth = (gridWidth - (cellSpacing * (cols - 1))) / cols;
+  const cellHeight = (gridHeight - (cellSpacing * (rows - 1))) / rows;
+  
+  // Collect all images
+  const imagePromises = SLOTS.map(async (slot) => {
+    const dataUrl = await getSlotImageDataURL(slot.id);
+    return {
+      title: slot.title,
+      dataUrl: dataUrl,
+      hasImage: !!dataUrl
+    };
+  });
+  
+  const images = await Promise.all(imagePromises);
+  
+  // Preload all images to get their dimensions
+  const imageInfoPromises = images.map(async (imgData) => {
+    if (!imgData.hasImage || !imgData.dataUrl) {
+      return { ...imgData, width: 0, height: 0, aspectRatio: 1 };
+    }
+    
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = function() {
+        const aspectRatio = img.width / img.height;
+        resolve({ 
+          ...imgData, 
+          width: img.width, 
+          height: img.height, 
+          aspectRatio: aspectRatio 
+        });
+      };
+      img.onerror = function() {
+        resolve({ ...imgData, width: 0, height: 0, aspectRatio: 1 });
+      };
+      img.src = imgData.dataUrl;
+    });
+  });
+  
+  const imagesWithDimensions = await Promise.all(imageInfoPromises);
+  
+  // Draw the 3x3 grid with properly scaled images
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const index = row * cols + col;
+      if (index >= imagesWithDimensions.length) break;
+      
+      const imgData = imagesWithDimensions[index];
+      const xPos = gridLeft + (col * (cellWidth + cellSpacing));
+      const yPos = gridTop + (row * (cellHeight + cellSpacing));
+      
+      // Draw cell border (thin line)
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.2);
+      doc.rect(xPos, yPos, cellWidth, cellHeight);
+      
+      // Add image if available
+      if (imgData.hasImage && imgData.dataUrl) {
+        try {
+          // Calculate image dimensions to fit in cell while maintaining aspect ratio
+          const availableWidth = cellWidth - (cellPadding * 2);
+          const availableHeight = cellHeight - (cellPadding * 2) - 8; // Reserve space for title
+          
+          let imgWidth, imgHeight;
+          const cellAspectRatio = availableWidth / availableHeight;
+          
+          if (imgData.aspectRatio > cellAspectRatio) {
+            // Image is wider than cell - fit to width
+            imgWidth = availableWidth;
+            imgHeight = availableWidth / imgData.aspectRatio;
+          } else {
+            // Image is taller than cell - fit to height
+            imgHeight = availableHeight;
+            imgWidth = availableHeight * imgData.aspectRatio;
+          }
+          
+          // Center the image in the cell
+          const imgX = xPos + cellPadding + (availableWidth - imgWidth) / 2;
+          const imgY = yPos + cellPadding + (availableHeight - imgHeight) / 2;
+          
+          // Add image with proper aspect ratio
+          doc.addImage(imgData.dataUrl, 'JPEG', imgX, imgY, imgWidth, imgHeight);
+        } catch (e) {
+          // If image fails to load, show placeholder
+          doc.setFontSize(10);
+          doc.setTextColor(150, 150, 150);
+          doc.text("Image Error", xPos + (cellWidth / 2), yPos + (cellHeight / 2), { align: 'center' });
+        }
+      } else {
+        // No image placeholder
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text("No Image", xPos + (cellWidth / 2), yPos + (cellHeight / 2), { align: 'center' });
+      }
+      
+      // Add title at bottom of cell (centered)
+      doc.setFontSize(8);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "bold");
+      
+      // Split long titles into two lines if needed
+      let title = imgData.title;
+      let titleLines = [];
+      
+      if (title.length > 20) {
+        // Try to split at natural break points
+        const words = title.split(' ');
+        let line1 = '';
+        let line2 = '';
+        
+        for (const word of words) {
+          if ((line1 + ' ' + word).length <= 20 || line1 === '') {
+            line1 += (line1 ? ' ' : '') + word;
+          } else {
+            line2 += (line2 ? ' ' : '') + word;
+          }
+        }
+        
+        if (line2.length > 25) {
+          // Still too long, truncate
+          title = title.substring(0, 22) + "...";
+          titleLines = [title];
+        } else if (line2) {
+          titleLines = [line1, line2];
+        } else {
+          titleLines = [line1];
+        }
+      } else {
+        titleLines = [title];
+      }
+      
+      // Draw title lines
+      const titleY = yPos + cellHeight - 5;
+      if (titleLines.length === 1) {
+        doc.text(titleLines[0], xPos + (cellWidth / 2), titleY, { align: 'center' });
+      } else {
+        doc.text(titleLines[0], xPos + (cellWidth / 2), titleY - 3, { align: 'center' });
+        doc.text(titleLines[1], xPos + (cellWidth / 2), titleY + 2, { align: 'center' });
+      }
+    }
+  }
+  
+  // Add footer with minimal info
+  const footerY = pageHeight - 5;
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  doc.setFont("helvetica", "normal");
+  doc.text("Royal Ray Zone - Clinical Photos", pageWidth / 2, footerY, { align: 'center' });
+  
+  // Save PDF
+  const fileName = `Clinical_Photos_${patientName.replace(/[^a-zA-Z0-9]/g, '_')}_${dateStr.replace(/\//g, '-')}.pdf`;
+  doc.save(fileName);
+  showToast("PDF generated successfully!");
+}
+
+async function blobToDataURL(blob){
+  return new Promise((resolve, reject)=>{
+    try{
+      const r = new FileReader();
+      r.onload = ()=> resolve(String(r.result || ""));
+      r.onerror = ()=> reject(r.error);
+      r.readAsDataURL(blob);
+    }catch(e){ reject(e); }
+  });
+}
+
+async function getSlotImageDataURL(slotId){
+  // Prefer IndexedDB blob
+  if (dbOk){
+    try{
+      const rec = await getImage(slotId);
+      if (rec && rec.blob){
+        return await blobToDataURL(rec.blob);
+      }
+    }catch(e){}
+  }
+  // Fallback: stored dataURL in meta
+  const m = (meta && meta.slots ? meta.slots[slotId] : undefined) || {};
+  if (m.dataURL) return m.dataURL;
+  return null;
+}
+
+/* ---------- Boot ---------- */
+(async function init(){
+  // Load logo from storage
+  loadLogo();
+  
+  // Quick IDB check
+  try{
+    await openDB();
+    dbOk = true;
+  }catch(e){
+    dbOk = false;
+  }
+  try{
+    const _msg = sessionStorage.getItem('rrz_toast');
+    if (_msg){ showToast(_msg); sessionStorage.removeItem('rrz_toast'); }
+  }catch(e){}
+  
+  // Start with a clean grid by default (no stored images) on a fresh app session/tab.
+  // This keeps the current case intact when returning back from a workflow page.
+  try{
+    const CASE_BOOT_KEY = "rrz_case_boot_v1";
+    if (!sessionStorage.getItem(CASE_BOOT_KEY)){
+      sessionStorage.setItem(CASE_BOOT_KEY, String(Date.now()));
+
+      try{ await clearDB(); }catch(e){}
+      try{ localStorage.removeItem(LS_KEY); }catch(e){}
+
+      // cleanup object URLs
+      for (const k of Object.keys(objectUrls)){ try{ URL.revokeObjectURL(objectUrls[k]); }catch(e){} }
+      objectUrls = {};
+      meta = loadMeta(true);
+    }
+  }catch(e){}
+
+  renderAll();
+})();
+</script>
+
+<script>
+(function(){
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>

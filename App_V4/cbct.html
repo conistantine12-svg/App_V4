@@ -1,0 +1,3281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <title>RRZ – Advanced Viewer</title>
+  <meta name="theme-color" content="#0b1220" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  
+  <style>
+    :root{ --bg:#0b1220; --panel:#151f32; --text:#ffd400; --muted:rgba(255,212,0,0.75); --gold:#ffd400; --bad:#ff5b6e; --ok:#20c997; --radius:8px; --sans:system-ui, sans-serif; }
+    *{ box-sizing: border-box; }
+    body{ margin:0; background: #0b1220; color:var(--text); font-family:var(--sans); user-select: none; overflow:hidden; }
+    
+    /* Header */
+    header{ height:40px; background:rgba(20,30,50,0.95); border-bottom:1px solid #333; display:flex; align-items:center; padding:0 10px; gap:10px; }
+    .logo{ font-weight:900; color:var(--gold); border:2px solid var(--gold); padding:1px 6px; border-radius:4px; font-size:13px; }
+    .head-btn{ background:#2a3a55; border:1px solid #445577; color:#fff; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer; transition:0.2s; }
+    .head-btn:hover{ background:#3a4a66; }
+    
+    /* Layout */
+    .layout{ display:grid; grid-template-columns:1fr 230px; height:calc(var(--vh, 1vh) * 100 - 40px); }
+    .view-grid{ display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; background:#000; padding:2px; }
+    /* Grid/Flex min-size fixes */
+    .layout, .view-grid{ min-height:0; min-width:0; }
+    .layout > *, .view-grid > *{ min-height:0; min-width:0; }
+    .panel{ min-height:0; min-width:0; }
+    .panel-body{ min-height:0; min-width:0; }
+    .canvas-wrap{ min-height:0; min-width:0; }
+    .view-grid{ height:100%; }
+
+    
+    /* Panel */
+    .panel{ position:relative; background:var(--panel); overflow:hidden; display:flex; flex-direction:column; border:1px solid #333; }
+    .panel.active{ border-color:var(--gold); }
+    
+    /* Panel Header */
+    .panel-header{ height:24px; background:rgba(0,0,0,0.6); display:flex; justify-content:space-between; align-items:center; padding:0 6px; font-size:11px; color:var(--muted); border-bottom:1px solid #333; }
+    .header-controls { display:flex; align-items:center; gap:6px; }
+    .btn-cam { background:transparent; border:none; color:#888; cursor:pointer; font-size:12px; }
+    .btn-cam:hover { color:var(--gold); }
+    .badge{ background:#000; padding:0 4px; border-radius:3px; color:var(--gold); font-family:monospace; font-size:10px;}
+    
+    /* Sharpness Slider in Header */
+    .sharp-ctrl { display:flex; align-items:center; gap:3px; margin-right:5px; border-right:1px solid #333; padding-right:5px; }
+    .sharp-ctrl input { width: 50px; height: 4px; accent-color: var(--ok); cursor: pointer; }
+    .sharp-label { font-size:9px; color:#aaa; }
+
+    .panel-body{ flex:1; position:relative; display:flex; overflow:hidden; }
+    
+    /* Local Toolbar */
+    .local-tools{ width:30px; background:rgba(0,0,0,0.6); border-right:1px solid #333; display:flex; flex-direction:column; align-items:center; gap:3px; padding-top:4px; z-index:10; backdrop-filter:blur(4px); }
+    .tool-btn{ width:24px; height:24px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.1); border-radius:3px; color:#aaa; display:grid; place-items:center; font-size:12px; cursor:pointer; transition:0.1s; }
+    .tool-btn:hover{ border-color:var(--gold); color:var(--gold); background:transparent; }
+    .tool-btn.active{ background:transparent; color:var(--gold); border-color:var(--gold); box-shadow:none; font-weight:bold; }
+    .tool-btn.ref-active{ background:transparent; color:var(--ok); border-color:var(--ok); box-shadow:none; }
+    
+    /* Canvas & Scroll */
+    .canvas-wrap{ flex:1; position:relative; background:#000; cursor:crosshair; overflow:hidden; }
+    canvas{ display:block; width:100%; height:100%; }
+    .slice-scroll{ width:14px; background:#0e1218; display:flex; justify-content:center; padding:2px 0; border-left:1px solid #333; }
+    input[type=range][orient=vertical] { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 100%; height: 100%; cursor: ns-resize; accent-color:var(--gold); }
+
+    /* Overlays */
+    .overlay-info{ position:absolute; left:6px; bottom:6px; pointer-events:none; font-size:10px; color:var(--gold); text-shadow:0 1px 2px #000; line-height:1.3; font-family:monospace; }
+    .orientation-mark{ position:absolute; right:6px; top:6px; font-size:14px; font-weight:bold; color:rgba(255,255,255,0.3); pointer-events:none; }
+
+    /* NEW: Transparent Floating Input */
+    .floating-input {
+      position: absolute;
+      background: transparent;
+      color: var(--gold);
+      border: 1px dashed var(--gold);
+      font-family: sans-serif;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 2px 5px;
+      z-index: 5000;
+      outline: none;
+      min-width: 150px;
+      text-shadow: 0 1px 2px #000;
+    }
+
+    /* --- NEW SIDEBAR STYLES (GROUPED) --- */
+    .sidebar { 
+        background: #101825; border-left: 1px solid #333; 
+        display: flex; flex-direction: column; 
+        padding: 8px; gap: 6px; 
+        overflow-y: auto; overflow-x: hidden; 
+    }
+    
+    /* Groups */
+    .tool-group {
+        display: flex; flex-direction: column; gap: 5px;
+        padding: 8px 6px;
+        border: 2px solid #333;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.2);
+        position: relative;
+    }
+    
+    /* Group Colors */
+    .grp-nav     { border-color: #3b5bdb; box-shadow: inset 0 0 10px rgba(59, 91, 219, 0.05); } /* Blue */
+    .grp-undo    { border-color: #f39c12; background: rgba(243, 156, 18, 0.05); } /* Orange */
+    .grp-measure { border-color: #00d2d3; } /* Cyan */
+    .grp-med     { border-color: #ff6b6b; } /* Red */
+    .grp-annot   { border-color: #bdc3c7; } /* Grey */
+    .grp-vol     { border-color: #9b59b6; } /* Purple */
+
+    /* Tools inside groups */
+    .big-tool { 
+        display: flex; align-items: center; gap: 8px; 
+        padding: 8px 10px; background: transparent; 
+        border: 1px solid rgba(255,255,255,0.08); 
+        border-radius: 5px; cursor: pointer; 
+        color: #ccc; font-size: 11px; transition: 0.2s; 
+    }
+    .big-tool:hover { border-color: rgba(255,212,0,0.5); color: var(--gold); background: rgba(255,255,255,0.02); }
+    .big-tool.active { background: rgba(255,212,0,0.1); border-color: var(--gold); color: var(--gold); font-weight: bold; }
+    .big-tool svg { width: 16px; height: 16px; fill: currentColor; }
+
+    /* Action buttons inside groups */
+    .action-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+    .action-btn {
+        flex: 1; min-width: auto;
+        background: transparent; border: 1px solid rgba(212,175,55,0.4); color: var(--gold);
+        padding: 6px 4px; border-radius: 4px; cursor: pointer; 
+        font-weight: bold; font-size: 9px; text-align: center;
+        text-transform: uppercase; letter-spacing: 0.5px;
+        transition: 0.2s;
+    }
+    .action-btn:hover { border-color: var(--gold); box-shadow: 0 0 5px rgba(255,212,0,0.3); }
+    .action-btn.secondary { border-color: rgba(255,255,255,0.2); color: #ccc; }
+    .action-btn.secondary:hover { border-color: #fff; color: #fff; }
+
+    /* Undo Main Button */
+    .btn-undo-main {
+        width: 100%;
+        background: transparent;
+        border: 1px solid var(--gold);
+        color: var(--gold);
+        padding: 8px;
+        font-weight: bold;
+        font-size: 11px;
+        text-transform: uppercase;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex; justify-content: center; align-items: center; gap: 6px;
+    }
+    .btn-undo-main:hover { background: rgba(255, 212, 0, 0.1); box-shadow: 0 0 8px rgba(255,212,0,0.2); }
+
+    /* Inputs Areas */
+    .tool-inputs {
+        display: none; flex-direction: column; gap: 6px; 
+        margin-top: 5px; padding: 6px;
+        background: rgba(0,0,0,0.3);
+        border-radius: 6px;
+    }
+    .tool-inputs.show { display: flex; }
+    .inp-row {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 5px; font-size: 11px; color: rgba(255,212,0,0.78);
+    }
+    .inp-sm {
+        width: 60px; min-height: 24px;
+        background: rgba(0,0,0,0.35);
+        border: 1px solid rgba(255,212,0,0.28);
+        color: var(--gold); border-radius: 4px;
+        padding: 2px 4px; font-size: 11px; font-weight: bold;
+        text-align: center; outline: none;
+    }
+    .inp-sm:focus { border-color: var(--gold); }
+    
+    /* Thickness Slider */
+    .thick-control {
+        display:flex; flex-direction:column; gap:4px; padding:6px; 
+        background:rgba(0,0,0,0.3); border-radius:6px; margin-top:2px;
+    }
+
+    /* Implant List Styles */
+    #implantListContainer {
+        display: none; flex-direction: column; gap: 6px; margin-top: 5px;
+    }
+    .imp-item {
+        background: rgba(255,255,255,0.04); border: 1px solid #333; border-radius: 4px; padding: 5px;
+    }
+    .imp-item.active { border-color: var(--gold); background: rgba(255,212,0,0.05); }
+    .imp-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: bold; margin-bottom: 4px; cursor: pointer; }
+    .imp-actions { display: flex; gap: 4px; }
+    .imp-btn { padding: 3px 6px; font-size: 9px; border: 1px solid #555; background: #222; color: #ccc; border-radius: 3px; cursor: pointer; }
+    .imp-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .imp-btn.delete { color: var(--bad); border-color: rgba(255,91,110,0.3); }
+    .imp-btn.delete:hover { background: var(--bad); color: #fff; }
+
+    .btn-show-report {
+        margin-top: auto;
+        padding: 12px;
+        background: #1a2639;
+        border: 1px solid var(--gold);
+        color: var(--gold);
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: 0.2s;
+        margin-bottom: 5px;
+    }
+    .btn-show-report:hover { background: rgba(255,212,0,0.15); box-shadow: 0 0 10px rgba(255,212,0,0.2); }
+
+    /* Report Modal */
+    #reportModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:3000; align-items:center; justify-content:center; backdrop-filter:blur(5px); }
+    .repo-box { width: 90%; max-width: 600px; height: 85vh; background:#151f32; border:1px solid var(--gold); border-radius:8px; display:flex; flex-direction:column; padding:20px; box-shadow:0 0 40px rgba(0,0,0,0.8); }
+    .repo-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px; }
+    .repo-title { font-size:18px; font-weight:bold; color:var(--gold); }
+    .repo-close { background:transparent; border:none; color:var(--bad); font-size:20px; cursor:pointer; }
+    .repo-body { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
+    .repo-item { display:flex; gap:10px; background:#0b1220; padding:10px; border-radius:6px; border:1px solid #333; }
+    .repo-img { width:100px; height:100px; object-fit:contain; background:#000; border:1px solid #444; }
+    .repo-info { display:flex; flex-direction:column; justify-content:center; gap:5px; font-size:12px; color:#ccc; }
+    .repo-foot { padding-top:15px; border-top:1px solid #333; display:flex; justify-content:flex-end; gap:10px; }
+    .btn-pdf { background: var(--ok); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+    .btn-pdf:hover { opacity: 0.9; box-shadow: 0 0 15px rgba(32,201,151,0.4); }
+
+    /* Start Screen & Loader */
+    #startScreen { position: fixed; inset: 0; background: #0b1220; z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
+    .start-box { background: #151f32; padding: 40px; border-radius: 12px; border: 1px solid #333; display: flex; flex-direction: column; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .start-logo { font-size: 40px; font-weight: 900; color: var(--gold); margin-bottom: 10px; border: 3px solid var(--gold); padding: 5px 15px; border-radius: 8px; }
+    .btn-upload-lg { background: transparent; color: var(--gold); border: 2px solid var(--gold); padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+    .btn-upload-lg:hover { background: rgba(255,212,0,0.1); transform: scale(1.05); }
+
+    #loader{ position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:2001; display:none; place-items:center; color:var(--gold); font-size:14px; flex-direction:column; gap:10px; }
+    .spinner { width: 30px; height: 30px; border: 4px solid #fff; border-bottom-color: var(--gold); border-radius: 50%; animation: rot 1s linear infinite; }
+    @keyframes rot { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    #toast { background:transparent !important; border:none !important; color:#ffd400 !important; text-shadow:0 1px 2px #000; }
+    .badge{ background:transparent !important; color:#ffd400 !important; }
+    .panel-header{ color:rgba(255,212,0,0.85) !important; }
+    .overlay-info{ color:#ffd400 !important; }
+    body, button, input, label, select, textarea, .head-btn, .tool-btn, .big-tool, .action-btn, .sub, .repo-opt, .btn-pdf, .imp-btn{ color:#ffd400 !important; }
+    .btn-pdf { color: #000 !important; } 
+
+    /* Animation for Implant */
+    @keyframes pulse-imp { 0% { box-shadow: 0 0 0 0 rgba(255, 212, 0, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(255, 212, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 212, 0, 0); } }
+
+    /* Mobile/PWA fixes */
+    .canvas-wrap, canvas{ touch-action: none; }
+    @media (max-width: 900px){
+      .layout{ grid-template-columns: 1fr 165px; }
+      header{ height:44px; }
+      .layout{ height: calc(var(--vh, 1vh) * 100 - 44px); }
+      .head-btn{ padding:6px 10px; font-size:12px; }
+      .local-tools{ width:34px; }
+      .tool-btn{ width:28px; height:28px; font-size:14px; }
+      .panel-header{ height:26px; font-size:12px; }
+    }
+    @media (max-width: 600px){
+      .layout{ grid-template-columns: 1fr 140px; }
+      .action-btn{ padding:8px 6px; font-size:10px; }
+      .big-tool{ padding:6px 6px; font-size:11px; }
+      .slice-scroll{ width:18px; }
+    }
+
+
+    /* --- Mobile Landscape Viewer Mode (after ZIP load) --- */
+    body.viewer-mode{ overflow:hidden; }
+    body.viewer-mode .layout{ height: calc(var(--vh, 1vh) * 100 - 44px); }
+
+    .layout{ grid-template-columns: 1fr minmax(220px, 28vw); }
+
+    @media (max-width: 1024px) and (orientation: landscape){
+      header{ height:44px; }
+      .layout{ height: calc(var(--vh, 1vh) * 100 - 44px); grid-template-columns: 1fr minmax(220px, 30vw); }
+      .view-grid{ gap:2px; padding:2px; }
+      .sidebar{ padding:5px; }
+    }
+
+    @media (max-width: 1024px) and (orientation: portrait){
+      body.viewer-mode .layout{ grid-template-columns: 1fr; }
+      body.viewer-mode .sidebar{ position: fixed; right: 0; top: 44px; bottom: 0; width: min(78vw, 320px);
+        z-index: 1600; transform: translateX(100%); transition: transform 180ms ease;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.6);
+      }
+      body.viewer-mode.sidebar-open .sidebar{ transform: translateX(0); }
+      body.viewer-mode .sidebar-toggle{ display:block; }
+    }
+
+    #rotateOverlay{ position: fixed; inset: 0; z-index: 2500; display:none; align-items:center; justify-content:center;
+      background: rgba(0,0,0,0.85); padding: 18px;
+    }
+    #rotateOverlay .box{ width:min(520px, 92vw); background:#151f32; border:1px solid rgba(255,212,0,0.35);
+      border-radius: 12px; padding: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    }
+    #rotateOverlay .title{ font-weight: 900; font-size: 16px; margin-bottom: 10px; color: var(--gold); }
+    #rotateOverlay .hint{ color: rgba(255,255,255,0.78); font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+    #rotateOverlay .row{ display:flex; gap:10px; flex-wrap:wrap; }
+    #rotateOverlay .btn{ flex:1; min-width: 170px; padding: 10px 12px; border-radius: 8px; cursor:pointer;
+      font-weight: 800; letter-spacing: 0.3px; border: 1px solid rgba(255,212,0,0.45);
+      background: rgba(255,212,0,0.08); color: var(--gold);
+    }
+    #rotateOverlay .btn.secondary{ border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.9); }
+
+    .sidebar-toggle{ display:none; position: fixed; right: 10px; top: 52px; z-index: 1700;
+      padding: 10px 12px; border-radius: 10px; border:1px solid rgba(255,212,0,0.35);
+      background: rgba(10,16,28,0.75); color: var(--gold); font-weight: 800; cursor:pointer;
+      backdrop-filter: blur(6px);
+    }
+
+  </style>
+  
+  <script src="jszip.min.js"></script>
+  <script>if(typeof JSZip==='undefined')document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"><\/script>');</script>
+  <script>if(typeof JSZip==='undefined')document.write('<script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"><\/script>');</script>
+
+  <script src="daikon.min.js"></script>
+  <script>if(typeof daikon==='undefined')document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/daikon/1.2.42/daikon.min.js"><\/script>');</script>
+  <script>if(typeof daikon==='undefined')document.write('<script src="https://unpkg.com/daikon@1.2.42/release/current/daikon-min.js"><\/script>');</script>
+
+  <!-- jsPDF Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<script>
+(function(){
+  function setVH(){
+    document.documentElement.style.setProperty('--vh', (window.innerHeight*0.01) + 'px');
+  }
+  setVH();
+  window.addEventListener('resize', setVH, {passive:true});
+  window.addEventListener('orientationchange', function(){ setTimeout(setVH, 180); }, {passive:true});
+})();
+</script>
+<div id="startScreen">
+    <div class="start-box">
+        <div class="start-logo">RRZ</div>
+        <div style="color:#aaa; margin-bottom:10px">Advanced CBCT & Nerve Tracer</div>
+        <input type="file" id="zipInputStart" accept=".zip" style="display:none" />
+        <button class="btn-upload-lg" onclick="document.getElementById('zipInputStart').click()">
+            <svg style="width:20px;height:20px;" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+            Load ZIP File
+        </button>
+        <div style="font-size:11px; color:#666">Supports .ZIP containing DICOM files</div>
+    </div>
+</div>
+
+<div id="loader"><div class="spinner"></div><div id="loadText">Processing...</div></div>
+
+
+<div id="rotateOverlay">
+  <div class="box">
+    <div class="title">أفضل تجربة CBCT تكون Landscape</div>
+    <div class="hint">بعد رفع ملف الـ ZIP، التطبيق يحاول يتحول تلقائيًا للوضع الأفقي. لو جهازك لم يسمح بالقفل تلقائيًا، لفّ الموبايل Landscape.</div>
+    <div class="row">
+      <button class="btn" id="btnEnterLandscape">Enter Fullscreen + Landscape</button>
+      <button class="btn secondary" id="btnContinueNoLock">Continue بدون قفل</button>
+    </div>
+  </div>
+</div>
+<button class="sidebar-toggle" id="btnSidebarToggle">TOOLS</button>
+
+
+<header>
+  <div class="logo">RRZ</div>
+  <div style="flex:1"></div>
+  <button class="head-btn" id="btnDash" title="Back to Dashboard">Dashboard</button>
+  <button class="head-btn" id="btnReset" style="margin-right:5px; display:none;">Reset View</button>
+  <button class="head-btn" id="btnNew" style="color:var(--bad); border-color:var(--bad)">New Upload</button>
+</header>
+
+<div id="toast" style="position:fixed; left:50%; bottom:14px; transform:translateX(-50%); background:rgba(0,0,0,0.75); color:#fff; border:1px solid rgba(255,255,255,0.15); padding:8px 12px; border-radius:8px; font-size:12px; z-index:120; display:none; max-width:90vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+
+<!-- Report Modal -->
+<div id="reportModal">
+  <div class="repo-box">
+     <div class="repo-head">
+        <div class="repo-title">Generated Report</div>
+        <button class="repo-close" onclick="document.getElementById('reportModal').style.display='none'">✕</button>
+     </div>
+     <div class="repo-body" id="repoContent">
+        <div style="text-align:center; padding:20px; color:#666;">No snapshots taken yet.</div>
+     </div>
+     <!-- Footer with Download PDF Button -->
+     <div class="repo-foot">
+         <button class="btn-pdf" onclick="app.downloadPDF()">Download PDF</button>
+     </div>
+  </div>
+</div>
+
+<div class="layout">
+  
+  <div class="view-grid">
+    <!-- AXIAL -->
+    <div class="panel" id="panel-axial">
+      <div class="panel-header">
+          <span>Axial</span>
+          <div class="header-controls">
+              <div class="sharp-ctrl" title="Sharpness">
+                 <span class="sharp-label">SHRP</span>
+                 <input type="range" class="sharp-slider" data-view="axial" min="0" max="100" value="0">
+              </div>
+              <button class="btn-cam" onclick="app.capture('axial')" title="Snapshot">📷</button>
+              <span class="badge" id="idx-axial">0</span>
+          </div>
+      </div>
+      <div class="panel-body">
+        <div class="local-tools">
+           <!-- Auto-Pan is active by default now. Buttons removed/hidden to reduce clutter if preferred, but kept for mode locking -->
+           <div class="tool-btn" data-mode="wl" onclick="app.setMode('axial','wl')">◐</div>
+           <div class="tool-btn ref-active" onclick="app.toggleRef('axial', this)">#</div>
+           <div class="tool-btn" onclick="app.zoom('axial', 1.1)">+</div>
+           <div class="tool-btn" onclick="app.zoom('axial', 0.9)">-</div>
+           <div style="flex:1"></div>
+           <div class="tool-btn" onclick="app.fit('axial')">⛶</div>
+        </div>
+        <div class="canvas-wrap"><canvas id="cv-axial"></canvas><div class="overlay-info" id="inf-axial"></div><div class="orientation-mark">A</div></div>
+        <div class="slice-scroll"><input type="range" orient="vertical" id="sl-axial" min="0" max="100" /></div>
+      </div>
+    </div>
+
+    <!-- CORONAL -->
+    <div class="panel" id="panel-coronal">
+      <div class="panel-header">
+          <span>Coronal</span>
+          <div class="header-controls">
+              <div class="sharp-ctrl" title="Sharpness">
+                 <span class="sharp-label">SHRP</span>
+                 <input type="range" class="sharp-slider" data-view="coronal" min="0" max="100" value="0">
+              </div>
+              <button class="btn-cam" onclick="app.capture('coronal')" title="Snapshot">📷</button>
+              <span class="badge" id="idx-coronal">0</span>
+          </div>
+      </div>
+      <div class="panel-body">
+        <div class="local-tools">
+           <div class="tool-btn" data-mode="wl" onclick="app.setMode('coronal','wl')">◐</div>
+           <div class="tool-btn ref-active" onclick="app.toggleRef('coronal', this)">#</div>
+           <div class="tool-btn" onclick="app.zoom('coronal', 1.1)">+</div>
+           <div class="tool-btn" onclick="app.zoom('coronal', 0.9)">-</div>
+           <div style="flex:1"></div>
+           <div class="tool-btn" onclick="app.fit('coronal')">⛶</div>
+        </div>
+        <div class="canvas-wrap"><canvas id="cv-coronal"></canvas><div class="overlay-info" id="inf-coronal"></div><div class="orientation-mark">C</div></div>
+        <div class="slice-scroll"><input type="range" orient="vertical" id="sl-coronal" min="0" max="100" /></div>
+      </div>
+    </div>
+
+    <!-- CROSS SECTION (Sagittal) -->
+    <div class="panel" id="panel-sagittal">
+      <div class="panel-header">
+          <span style="color:var(--gold)">Cross Section</span>
+          <div class="header-controls">
+              <div class="sharp-ctrl" title="Sharpness">
+                 <span class="sharp-label">SHRP</span>
+                 <input type="range" class="sharp-slider" data-view="sagittal" min="0" max="100" value="0">
+              </div>
+              <button class="btn-cam" onclick="app.capture('sagittal')" title="Snapshot">📷</button>
+              <span class="badge" id="idx-sagittal">-</span>
+          </div>
+      </div>
+      <div class="panel-body">
+        <div class="local-tools">
+           <div class="tool-btn" data-mode="wl" onclick="app.setMode('sagittal','wl')">◐</div>
+           <div class="tool-btn ref-active" onclick="app.toggleRef('sagittal', this)">#</div>
+           <div class="tool-btn" onclick="app.zoom('sagittal', 1.1)">+</div>
+           <div class="tool-btn" onclick="app.zoom('sagittal', 0.9)">-</div>
+           <div style="flex:1"></div>
+           <div class="tool-btn" onclick="app.fit('sagittal')">⛶</div>
+        </div>
+        <div class="canvas-wrap"><canvas id="cv-sagittal"></canvas><div class="overlay-info" id="inf-sagittal"></div><div class="orientation-mark">CS</div></div>
+        <div class="slice-scroll"><input type="range" orient="vertical" id="sl-sagittal" min="0" max="100" /></div>
+      </div>
+    </div>
+
+    <!-- PANO -->
+    <div class="panel" id="panel-pano">
+      <div class="panel-header">
+          <span>Panorama</span>
+          <div class="header-controls">
+              <div class="sharp-ctrl" title="Sharpness">
+                 <span class="sharp-label">SHRP</span>
+                 <input type="range" class="sharp-slider" data-view="pano" min="0" max="100" value="0">
+              </div>
+              <button class="btn-cam" onclick="app.capture('pano')" title="Snapshot">📷</button>
+              <span class="badge" id="idx-pano">-</span>
+          </div>
+      </div>
+      <div class="panel-body">
+        <div class="local-tools">
+           <div class="tool-btn" data-mode="wl" onclick="app.setMode('pano','wl')">◐</div>
+           <div class="tool-btn" data-mode="pan" onclick="app.setMode('pano','pan')" title="Pan">✋</div>
+           <div class="tool-btn ref-active" onclick="app.toggleRef('pano', this)">#</div>
+           <div class="tool-btn" onclick="app.zoom('pano', 1.1)">+</div>
+           <div class="tool-btn" onclick="app.zoom('pano', 0.9)">-</div>
+           <div style="flex:1"></div>
+           <div class="tool-btn" onclick="app.clearCurve()" title="Clear" style="color:var(--bad)">✕</div>
+           <div class="tool-btn" onclick="app.fit('pano')">⛶</div>
+        </div>
+        <div class="canvas-wrap"><canvas id="cv-pano"></canvas><div class="overlay-info" id="inf-pano"></div></div>
+        <!-- PANO SIDE SLIDER for Vertical Line -->
+        <div class="slice-scroll"><input type="range" orient="vertical" id="sl-pano-scroll" min="0" max="100" /></div>
+      </div>
+    </div>
+  
+  </div>
+
+  <aside class="sidebar">
+    <!-- Group 1: Navigation, Pano & Curve (Blue) -->
+    <div class="tool-group grp-nav" id="globalTools">
+      <div class="big-tool active" data-tool="none">
+        <svg viewBox="0 0 24 24"><path d="M7 2l12 11.2-5.8.5 3.3 7.3-2.2.9-3.2-7.4-4.4 4V2z"/></svg> Pointer / Pan
+      </div>
+      
+      <!-- SCOUT -->
+      <div class="big-tool" data-tool="scout">
+        <svg viewBox="0 0 24 24"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c0 1.1-.9 2-2 2zm2 0h14v14H5V5zm4 4h6v6H9V9z" fill="currentColor"/></svg> Scout / Crop
+      </div>
+      <div class="action-row" id="scoutControls" style="display:none;">
+          <button class="action-btn" style="background:var(--ok); border-color:var(--ok); color:#000;" onclick="app.performCrop()">Done</button>
+          <button class="action-btn secondary" onclick="app.cancelCrop()">Cancel</button>
+      </div>
+
+      <!-- CURVE -->
+      <div class="big-tool" data-tool="curve">
+        <svg viewBox="0 0 24 24"><path d="M4 12c0-4.4 3.6-8 8-8s8 3.6 8 8" fill="none" stroke="currentColor" stroke-width="2"/></svg> Draw Curve
+      </div>
+      
+      <div class="action-row">
+        <button id="btnUndoPoint" class="action-btn secondary">Undo Pt</button>
+        <button id="btnPano" class="action-btn">Build Pano</button>
+        <button id="btnToggleCurve" class="action-btn secondary">Hide Curve</button>
+        <button id="btnDeleteCurve" class="action-btn secondary" style="border-color:var(--bad); color:var(--bad)">Del Curve</button>
+      </div>
+
+      <!-- THICKNESS SLIDER -->
+      <div class="thick-control">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size:10px; color:var(--muted);">THICK: <span id="panoThickVal" style="color:var(--gold); font-family:monospace;">40</span> mm</div>
+        </div>
+        <input id="panoThick" type="range" min="5" max="80" value="40" step="1" style="width:100%; height:4px; accent-color:var(--gold);" />
+      </div>
+    </div>
+
+    <!-- Group 2: Main Undo (Orange) -->
+    <div class="tool-group grp-undo">
+        <button id="btnUndo" class="btn-undo-main">↶ UNDO LAST ACTION</button>
+    </div>
+
+    <!-- Group 3: Measurements (Cyan/Light Blue) -->
+    <div class="tool-group grp-measure">
+      <div class="big-tool" data-tool="ruler">
+        <svg viewBox="0 0 24 24"><path d="M2 7h20v2H2V7zm2 4h16v2H4v-2zm-2 4h20v2H2v-2z" fill="currentColor"/></svg> Ruler
+      </div>
+      <div class="big-tool" data-tool="density">
+        <svg viewBox="0 0 24 24"><path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm3 3h8v2H8V8zm0 4h8v2H8v-2z" fill="currentColor"/></svg> Density
+      </div>
+    </div>
+
+    <!-- Group 4: Medical (Red) -->
+    <div class="tool-group grp-med">
+      <div class="big-tool" data-tool="nerve">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 12c0-3 2-5 5-5s5 2 5 5-2 5-5 5" fill="none" stroke="currentColor" stroke-width="2" transform="translate(1,1)"/></svg> Nerve
+      </div>
+      
+      <div class="big-tool" data-tool="implant">
+        <svg viewBox="0 0 24 24"><path d="M7 2v17h-2v2h14v-2h-2V2h-10zm2 2h6v13H9V4z" fill="currentColor"/></svg> Implant
+      </div>
+      
+      <!-- Implant Inputs -->
+      <div class="tool-inputs" id="implantParams">
+          <!-- Hidden default dims -->
+          <div id="impDefaultDims" style="display:none;">
+            <div class="inp-row">Cor W: <input type="number" id="impW" class="inp-sm" value="4.0" step="0.5"></div>
+            <div class="inp-row">Ap W: <input type="number" id="impWA" class="inp-sm" value="3.5" step="0.5"></div>
+            <div class="inp-row">L: <input type="number" id="impL" class="inp-sm" value="10.0" step="0.5"></div>
+          </div>
+          <div class="inp-row">Arch: <select id="impArch" class="inp-sm" style="width:100%"><option value="mandible" selected>Mandible</option><option value="maxilla">Maxilla</option></select></div>
+          <div class="inp-row">Cross (B/L): <input type="number" id="impAngCross" class="inp-sm" value="0" step="5">°</div>
+          <div class="inp-row">Pano (M/D): <input type="number" id="impAngPano" class="inp-sm" value="0" step="5">°</div>
+          <button class="action-btn" onclick="app.addImplant()">Place New</button>
+      </div>
+      <div id="implantListContainer"></div>
+    </div>
+
+    <!-- Group 5: Annotations (Grey) -->
+    <div class="tool-group grp-annot">
+      <div class="big-tool" data-tool="arrow">
+        <svg viewBox="0 0 24 24"><path d="M12 2L4 10h5v12h6V10h5L12 2z" fill="currentColor"/></svg> Arrow
+      </div>
+      <div class="big-tool" data-tool="text">
+        <svg viewBox="0 0 24 24"><path d="M5 5v14h14V5H5zm2 2h10v10H7V7zm3 2h4v2h-4V9z" fill="currentColor"/></svg> Text
+      </div>
+      <div class="big-tool" data-tool="angle">
+        <svg viewBox="0 0 24 24"><path d="M4 19h16v2H2V5h2v14zm3-3l5-10 2 1-4 9h7v2H7z" fill="currentColor"/></svg> Angle
+      </div>
+    </div>
+
+    <!-- Group 6: Volume & Area (Purple) -->
+    <div class="tool-group grp-vol">
+      <div class="big-tool" data-tool="area">
+        <svg viewBox="0 0 24 24"><path d="M7 7h10v10H7z" fill="none" stroke="currentColor" stroke-width="2"/></svg> Area
+      </div>
+      
+      <div class="big-tool" data-tool="volume">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4V4zm2 2v12h12V6H6zm4 2h4v8h-4V8z" fill="currentColor" fill-opacity="0.5"/></svg> <span id="volumeBtnText">Volume</span>
+      </div>
+      
+      <div class="tool-inputs" id="volumeParams">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+          <div style="font-size:11px; opacity:0.8;">Volumetric Masking</div>
+          <button id="btnDeleteVolume" class="action-btn secondary" style="border-color:var(--bad); color:var(--bad); padding:4px 8px;">Delete</button>
+        </div>
+        <div style="font-size:10px; color:rgba(255,212,0,0.6); line-height:1.2;">
+          Draw sparse areas on key slices. Masks are auto-interpolated.
+        </div>
+      </div>
+    </div>
+    
+    <!-- Show Report Button -->
+    <button class="btn-show-report" onclick="app.showReport()">Show Report</button>
+</aside>
+
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    (() => {
+      const candidates = ['/service-worker.js', './service-worker.js', './sw.js'];
+      (async () => {
+        for (const url of candidates) {
+          try { await navigator.serviceWorker.register(url); return; } catch (e) {}
+        }
+      })();
+    })();
+  });
+}
+
+const app = (() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const angleDeg = (a, b, c, viewKey) => {
+    // angle ABC in degrees (vertex at b), accounting for anisotropic scaling in coronal/sagittal
+    const sy = (viewKey === 'coronal' || viewKey === 'sagittal') ? state.ratio.z : 1;
+    const v1x = (a.x - b.x), v1y = (a.y - b.y) * sy;
+    const v2x = (c.x - b.x), v2y = (c.y - b.y) * sy;
+    const d1 = Math.hypot(v1x, v1y) || 1e-9;
+    const d2 = Math.hypot(v2x, v2y) || 1e-9;
+    let cos = (v1x*v2x + v1y*v2y) / (d1*d2);
+    cos = Math.max(-1, Math.min(1, cos));
+    return Math.acos(cos) * 180 / Math.PI;
+  };
+
+  const norm180 = (deg) => {
+    // normalize to [-180, 180)
+    let d = deg;
+    while(d >= 180) d -= 360;
+    while(d < -180) d += 360;
+    return d;
+  };
+  const clampAngDisp = (deg) => clamp(deg, -90, 90);
+  const archOf = (imp) => (imp && imp.arch) ? imp.arch : 'mandible';
+  const dispToInternal = (dispDeg, arch) => {
+    // Mandible: internal==disp; Maxilla: internal rotated around 180 and inverted (opposite direction)
+    return (arch === 'maxilla') ? (180 - dispDeg) : dispDeg;
+  };
+  const internalToDisp = (internalDeg, arch) => {
+    return (arch === 'maxilla') ? (180 - internalDeg) : internalDeg;
+  };
+
+  const lut = (v, w, l) => clamp(((v - (l - w/2)) / w) * 255, 0, 255);
+
+  function showToast(msg, ms=1800){
+    const t = document.getElementById('toast');
+    if(!t) return;
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(()=>{ t.style.display='none'; }, ms);
+  }
+
+  function spawnTextInput(k, measIdx) {
+      const m = state.meas[measIdx];
+      if(!m) return;
+
+      const cv = $(`cv-${k}`);
+      const parent = cv.parentElement; // panel-body
+      
+      // Calculate position
+      const textPt = m.points.length > 1 ? m.points[1] : m.points[0];
+      
+      const vp = state.vp[k];
+      const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
+      const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?100:state.dims.x);
+      const ih = (k==="pano" && state.pano.built)?state.pano.h : (k==="axial"?state.dims.y:state.dims.z);
+      
+      const sc = imgToScr(k, textPt.x, textPt.y, cv.width, cv.height, iw, ih, vp, arY);
+
+      // Create input
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'floating-input';
+      input.value = m.val || "";
+      input.placeholder = "Write here...";
+      
+      input.style.left = (sc.x + 10) + 'px'; 
+      input.style.top = (sc.y - 10) + 'px';
+
+      const finish = () => {
+          if(input.value.trim() === "") {
+              // remove if empty
+              state.meas.splice(measIdx, 1);
+          } else {
+              m.val = input.value;
+              // Ensure we have a second point if not already
+              if(m.points.length < 2) {
+                   m.points.push({x: m.points[0].x + (20/state.vp[k].s), y: m.points[0].y}); 
+              }
+          }
+          input.remove();
+          render(k);
+      };
+
+      input.onkeydown = (e) => {
+          if(e.key === 'Enter') { finish(); }
+      };
+      
+      input.onblur = () => { finish(); };
+
+      parent.appendChild(input);
+      
+      setTimeout(() => input.focus(), 10);
+  }
+
+  function calcDensity(k, pts){
+      const {dims} = state;
+      let minX=1e9, maxX=-1e9, minY=1e9, maxY=-1e9;
+      pts.forEach(p=>{
+          if(p.x<minX) minX=p.x; if(p.x>maxX) maxX=p.x;
+          if(p.y<minY) minY=p.y; if(p.y>maxY) maxY=p.y;
+      });
+      
+      let bxMax = dims.x-1, byMax = (k==='axial') ? (dims.y-1) : (dims.z-1);
+      if(k==='pano' && state.pano.built){ bxMax = state.pano.w-1; byMax = state.pano.h-1; }
+      if(k==='sagittal' && state.pano.built) { bxMax = 100-1; byMax = dims.z-1; }
+      else if(k==='sagittal' && !state.pano.built){ bxMax = dims.y-1; byMax = dims.z-1; }
+      
+      minX = clamp(Math.floor(minX), 0, bxMax); 
+      maxX = clamp(Math.ceil(maxX), 0, bxMax);
+      minY = clamp(Math.floor(minY), 0, byMax); 
+      maxY = clamp(Math.ceil(maxY), 0, byMax);
+
+      let sumRatio = 0, count = 0;
+      const wl = state.wl[k]; 
+      const winWidth = wl.w, winCenter = wl.l;
+      const lowestVisible = winCenter - (winWidth / 2);
+      const effectiveRange = winWidth; 
+
+      for(let y=minY; y<=maxY; y++){
+          for(let x=minX; x<=maxX; x++){
+              if(!isPointInPoly(x, y, pts)) continue;
+              
+              let rawPix = -1000;
+              if(k==='axial') rawPix = getVal(x, y, clamp(state.cursor.z, 0, dims.z-1));
+              else if(k==='coronal') rawPix = getVal(x, state.pos.coronal, (dims.z-1-y));
+              else if(k==='sagittal') {
+                  if(!state.pano.built) {
+                       rawPix = getVal(state.pos.sagittal, x, (dims.z-1-y));
+                  } else {
+                       const sliceW = 100; 
+                       const u = x - sliceW/2;
+                       const cIdx = clamp(Math.floor(state.cursor.idx), 0, state.pano.curvePoints.length-1);
+                       const pt = state.pano.curvePoints[cIdx];
+                       const nm = state.pano.curveNormals[cIdx]; 
+                       const cutVec = { x: nm.nx, y: nm.ny };
+                       const tan = { x: -nm.ny, y: nm.nx };
+                       const pivotZ = state.cursor.z;
+                       const realZ = (dims.z - 1 - y); 
+                       const dz = realZ - pivotZ;
+                       const shift = dz * Math.tan(state.cursor.tilt);
+                       const sX = pt.x + u * cutVec.x + shift * tan.x;
+                       const sY = pt.y + u * cutVec.y + shift * tan.y;
+                       rawPix = getVal(sX, sY, realZ);
+                  }
+              }
+              else if(k==='pano' && state.pano.built){
+                  const idx = clamp(Math.round(x), 0, state.pano.curvePoints.length-1);
+                  const p = state.pano.curvePoints[idx];
+                  rawPix = getVal(p.x, p.y, (dims.z-1-y));
+              }
+              
+              if(!Number.isFinite(rawPix) || rawPix < -2000) continue;
+              let ratio = (rawPix - lowestVisible) / effectiveRange;
+              if(state.meta.photometric === "MONOCHROME1") ratio = 1 - ratio;
+              ratio = Math.max(0, Math.min(1.2, ratio)); 
+              sumRatio += ratio; count++;
+          }
+      }
+
+      if(count===0) return { text: 'N/A', fill: 'rgba(0,0,0,0)', stroke: '#666' };
+      const avgRatio = sumRatio / count;
+      let cls = 'D4', col='rgba(255,80,80,0.2)', str='rgba(255,80,80,0.85)';
+      if(avgRatio >= 0.80) { cls='D1'; col='rgba(220,235,255,0.3)'; str='rgba(220,235,255,0.9)'; }
+      else if(avgRatio >= 0.55) { cls='D2'; col='rgba(32,201,151,0.25)'; str='rgba(32,201,151,0.9)'; }
+      else if(avgRatio >= 0.30) { cls='D3'; col='rgba(255,215,0,0.25)'; str='rgba(255,215,0,0.9)'; }
+
+      return { text: cls, fill: col, stroke: str };
+  }
+
+  const state = {
+    loaded: false, vol: null, dims: {x:0, y:0, z:0}, spacing: {x:1, y:1, z:1}, ratio: {z:1},
+    meta: { slope: 1, intercept: 0, hasHU: false, photometric: "MONOCHROME2" },
+    pos: { axial:0, coronal:0, sagittal:0 },
+    vp: {
+      axial:    {x:0,y:0,s:1,r:0,mode:'none', showRef:true},
+      coronal:  {x:0,y:0,s:1,r:0,mode:'none', showRef:true},
+      sagittal: {x:0,y:0,s:1.5,r:0,mode:'none', showRef:true}, 
+      pano:     {x:0,y:0,s:1,r:0,mode:'none', showRef:true}
+    },
+    wl: { axial:{w:2000,l:400}, coronal:{w:2000,l:400}, sagittal:{w:2000,l:400}, pano:{w:2000,l:400} },
+    sharpness: { axial:0, coronal:0, sagittal:0, pano:0 },
+    globalTool: "none",
+    showCurve: true,
+    volumeTotal: null,
+    curve: [], 
+    pano: {built:false, data:null, w:0, h:0, curvePoints:[], curveNormals:[]},
+    cursor: { idx: 0, z: 0, tilt: 0 }, 
+    meas: [], 
+    tempMeas: null, 
+    mouse: {x:0, y:0, down:false, dragIdx:-1, dragRef: null, editMeas: null, impDrag: null, impRotate: null}, 
+    activeView: 'axial',
+    reportList: [],
+    selectedReportType: 'Implant',
+    scout: { active: false, box: {x:0, y:0, w:0, h:0}, handle: null },
+    implants: [], // { id, x, y, z, w, h, ang, color, visible:true }
+    volumes: [], // { points: [], slices: [] }
+    selectedImplantIdx: -1,
+
+    // 3D ROI interpolation cache for volumetric masks (built from sparse 2D "volume_area" masks)
+    roiInterp: {
+      enabled: true,
+      mode: 'shape', // 'shape' (shape-based keyframe interpolation with contour alignment)
+      // cache[view].get(slice) => { poly:[{x,y}...], t:0..1 }
+      cache: { axial: new Map(), coronal: new Map(), sagittal: new Map() },
+      dirty: { axial: true, coronal: true, sagittal: true }
+    }
+  };
+
+  const views = ["axial", "coronal", "sagittal", "pano"];
+  const ctxs = {}, buffs = {};
+
+  function init(){
+    views.forEach(k => {
+      const cv = $(`cv-${k}`);
+      cv.width = cv.parentElement.offsetWidth; cv.height = cv.parentElement.offsetHeight;
+      ctxs[k] = cv.getContext("2d", {alpha:false});
+      ctxs[k].imageSmoothingEnabled = true;
+      buffs[k] = document.createElement("canvas");
+      
+      // Mouse (desktop)
+      cv.addEventListener("mousedown", e => onDown(k, e));
+      window.addEventListener("mousemove", e => onMove(k, e));
+      cv.addEventListener("dblclick", e => onDblClick(k, e));
+      cv.addEventListener("wheel", e => onWheel(k, e), {passive:false});
+
+      // Touch (mobile)
+      let pinch = {active:false, startDist:0, startScale:1};
+      cv.addEventListener('touchstart', (ev) => {
+        if(!ev.touches || !ev.touches.length) return;
+        ev.preventDefault();
+        const t0 = ev.touches[0];
+        if(ev.touches.length === 1){
+          onDown(k, { clientX:t0.clientX, clientY:t0.clientY, buttons:1 });
+        } else if(ev.touches.length === 2){
+          const t1 = ev.touches[1];
+          const dx = t1.clientX - t0.clientX; const dy = t1.clientY - t0.clientY;
+          pinch.active = true;
+          pinch.startDist = Math.hypot(dx, dy) || 1;
+          pinch.startScale = state.vp[k].s;
+          state.activeView = k;
+        }
+      }, {passive:false});
+
+      cv.addEventListener('touchmove', (ev) => {
+        if(!ev.touches || !ev.touches.length) return;
+        ev.preventDefault();
+        const t0 = ev.touches[0];
+        if(ev.touches.length === 1 && !pinch.active){
+          onMove(k, { clientX:t0.clientX, clientY:t0.clientY, buttons:1 });
+        } else if(ev.touches.length === 2){
+          const t1 = ev.touches[1];
+          const dx = t1.clientX - t0.clientX; const dy = t1.clientY - t0.clientY;
+          const dist = Math.hypot(dx, dy) || 1;
+          const scale = pinch.startScale * (dist / pinch.startDist);
+          state.vp[k].s = Math.max(0.1, Math.min(12, scale));
+          render(k);
+        }
+      }, {passive:false});
+
+      const endTouch = (ev) => {
+        if(pinch.active){ pinch.active = false; }
+        const t0 = (ev.changedTouches && ev.changedTouches[0]) ? ev.changedTouches[0] : null;
+        if(t0) onUp(k, { clientX:t0.clientX, clientY:t0.clientY, buttons:0 });
+      };
+      cv.addEventListener('touchend', endTouch, {passive:false});
+      cv.addEventListener('touchcancel', endTouch, {passive:false});
+
+      new ResizeObserver(() => {
+          cv.width = cv.parentElement.offsetWidth; cv.height = cv.parentElement.offsetHeight;
+          if(state.loaded) render(k); else renderEmpty(k);
+      }).observe(cv.parentElement);
+
+      renderEmpty(k);
+    });
+
+    // Sharpness listeners
+    document.querySelectorAll('.sharp-slider').forEach(el => {
+        el.oninput = (e) => {
+            const v = e.target.dataset.view;
+            state.sharpness[v] = +e.target.value;
+            render(v);
+        };
+    });
+    
+    // Arch preset (Mandible: 0° base, Maxilla: 180° base via internal mapping)
+    const archSel = $('impArch');
+    if(archSel){
+        archSel.onchange = () => {
+            // Keep display angles within [-90..+90]; internal mapping handles Maxilla base rotation.
+            $('impAngCross').value = clampAngDisp(+($('impAngCross').value||0));
+            $('impAngPano').value  = clampAngDisp(+($('impAngPano').value||0));
+        };
+    }
+
+    // Implant param inputs listener
+    ['impAngCross','impAngPano'].forEach(id => {
+        const el = $(id);
+        el.oninput = () => {
+             if(state.selectedImplantIdx >= 0 && state.implants[state.selectedImplantIdx]){
+                 const imp = state.implants[state.selectedImplantIdx];
+                 let v = +el.value;
+                 if(Number.isNaN(v)) return;
+                 v = clampAngDisp(v); // enforce [-90..+90] display range
+                 el.value = v;
+                 if(id==='impAngCross') { imp.angCross = v; imp.ang = v; }
+                 if(id==='impAngPano')  { imp.angPano  = v; }
+                 renderAll();
+             }
+        };
+    });
+
+    window.addEventListener("mouseup", e => { if(state.activeView) onUp(state.activeView, e); });
+    window.addEventListener("touchend", e => { if(state.activeView && e.changedTouches && e.changedTouches[0]) onUp(state.activeView, {clientX:e.changedTouches[0].clientX, clientY:e.changedTouches[0].clientY, buttons:0}); }, {passive:false});
+  }
+
+  function getVal(x, y, z) {
+      const {dims, vol} = state;
+      const x0=Math.floor(x), x1=Math.min(dims.x-1, x0+1);
+      const y0=Math.floor(y), y1=Math.min(dims.y-1, y0+1);
+      const z0=Math.floor(z), z1=Math.min(dims.z-1, z0+1); 
+      if(x0<0 || x1>=dims.x || y0<0 || y1>=dims.y || z0<0 || z1>=dims.z) return -1000;
+      const zOff = z0*dims.x*dims.y;
+      const v00 = vol[zOff + y0*dims.x + x0];
+      const v10 = vol[zOff + y0*dims.x + x1];
+      const v01 = vol[zOff + y1*dims.x + x0];
+      const v11 = vol[zOff + y1*dims.x + x1];
+      return (v00*(1-(x-x0))+v10*(x-x0))*(1-(y-y0)) + (v01*(1-(x-x0))+v11*(x-x0))*(y-y0);
+  }
+
+  function getSlice(k) {
+    if(!state.loaded) return null;
+    let w, h, data;
+    const {x:sx, y:sy, z:sz} = state.dims;
+    
+    if(k==="axial"){
+        w=sx; h=sy; data=new Float32Array(w*h);
+        const z = clamp(state.cursor.z, 0, sz-1);
+        const zInt = Math.floor(z);
+        const off=zInt*sx*sy;
+        for(let i=0;i<w*h;i++) data[i]=state.vol[off+i]; 
+    } else if(k==="coronal"){
+        w=sx; h=sz; data=new Float32Array(w*h);
+        const y=clamp(state.pos.coronal,0,sy-1);
+        for(let z=0; z<sz; z++){
+            const r=(sz-1-z), off=z*sx*sy + y*sx;
+            for(let x=0; x<sx; x++) data[r*w+x]=state.vol[off+x];
+        }
+    } else if(k==="sagittal"){
+        if(!state.pano.built) {
+             w=sy; h=sz; data=new Float32Array(w*h);
+             const x=clamp(state.pos.sagittal,0,sx-1);
+             for(let z=0; z<sz; z++){
+                const r=(sz-1-z), off=z*sx*sy + x;
+                for(let y=0; y<sy; y++) data[r*w+y]=state.vol[off+y*sx];
+             }
+        } else {
+             const sliceW = 100; const sliceH = sz;
+             data = new Float32Array(sliceW*sliceH);
+             w = sliceW; h = sliceH;
+             const idx = clamp(Math.floor(state.cursor.idx), 0, state.pano.curvePoints.length-1);
+             const pt = state.pano.curvePoints[idx];
+             const nm = state.pano.curveNormals[idx]; 
+             const cutVec = { x: nm.nx, y: nm.ny };
+             const tan = { x: -nm.ny, y: nm.nx };
+             for(let yS=0; yS<sliceH; yS++) { 
+                 for(let xS=0; xS<sliceW; xS++) { 
+                     const u = xS - sliceW/2; 
+                     const dz = (sz - 1 - yS) - state.cursor.z;
+                     const shift = dz * Math.tan(state.cursor.tilt);
+                     const sX = pt.x + u * cutVec.x + shift * tan.x;
+                     const sY = pt.y + u * cutVec.y + shift * tan.y;
+                     data[yS*w + xS] = getVal(sX, sY, (sz - 1 - yS));
+                 }
+             }
+        }
+    } else if(k==="pano" && state.pano.built){
+        return {data:state.pano.data, w:state.pano.w, h:state.pano.h};
+    }
+    return {data, w, h};
+  }
+
+  function render(k) {
+    const s = getSlice(k);
+    if(!s || !s.data) { if(k==="pano") renderEmpty(k, "Draw Curve -> Build Pano"); return; }
+    
+    const cvB = buffs[k];
+    if(cvB.width!==s.w || cvB.height!==s.h) { cvB.width=s.w; cvB.height=s.h; }
+    const ctxB = cvB.getContext("2d");
+    const imgD = ctxB.createImageData(s.w, s.h);
+    const d = imgD.data, set = state.wl[k];
+    const len = s.w*s.h;
+    
+    // Apply Level/Window
+    for(let i=0; i<len; i++){
+        const v = lut(s.data[i], set.w, set.l);
+        d[i*4]=v; d[i*4+1]=v; d[i*4+2]=v; d[i*4+3]=255;
+    }
+
+    // Apply Sharpness Convolution if active
+    if(state.sharpness[k] > 0) {
+       const w = s.w, h = s.h;
+       const amt = state.sharpness[k] / 50.0; // 0 to 2 range
+       const copy = new Uint8ClampedArray(d);
+       for(let y=1; y<h-1; y++){
+         for(let x=1; x<w-1; x++){
+           const i = (y*w + x)*4;
+           // Simple Kernel: 4*Center - neighbors
+           const c = copy[i];
+           const u = copy[((y-1)*w + x)*4];
+           const dn = copy[((y+1)*w + x)*4];
+           const l = copy[(y*w + x-1)*4];
+           const r = copy[(y*w + x+1)*4];
+           const lap = 4*c - u - dn - l - r;
+           const val = clamp(c + amt * lap, 0, 255);
+           d[i] = val; d[i+1] = val; d[i+2] = val; 
+         }
+       }
+    }
+
+    ctxB.putImageData(imgD, 0, 0);
+
+    const ctx = ctxs[k], cv = $(`cv-${k}`);
+    const w = cv.width, h = cv.height;
+    const vp = state.vp[k];
+    
+    ctx.fillStyle="#000"; ctx.fillRect(0,0,w,h);
+    let arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
+    
+    ctx.save();
+    ctx.translate(w/2 + vp.x, h/2 + vp.y);
+    ctx.rotate(vp.r);
+    ctx.scale(vp.s, vp.s * arY);
+    ctx.drawImage(cvB, -s.w/2, -s.h/2);
+    ctx.restore();
+
+    if(state.meas.length > 0){
+        state.meas.forEach(m => {
+            if(m.view === k && m.type === 'density'){
+                // Only calculate density if on visible slice
+                const visible = checkSliceVis(k, m);
+                if(visible){
+                   const res = calcDensity(k, m.points);
+                   m.val = res.text; m.fill = res.fill; m.stroke = res.stroke;
+                }
+            }
+        });
+    }
+
+    drawOverlays(k, ctx, w, h, s.w, s.h, vp, arY);
+    $(`inf-${k}`).innerHTML = `WL:${Math.round(set.w)}/${Math.round(set.l)} Z:${vp.s.toFixed(1)}`;
+  }
+  
+  function checkSliceVis(k, m) {
+      const tol = 1.0;
+      if(m.type === 'nerve') return true; 
+      if(k !== m.view) return false;
+      
+      let curr = 0;
+      if(k === 'axial') curr = state.pos.axial;
+      else if(k === 'coronal') curr = state.pos.coronal;
+      else if(k === 'sagittal') curr = state.pano.built ? state.cursor.idx : state.pos.sagittal;
+      else if(k === 'pano') curr = state.cursor.idx;
+      
+      if(m.type === 'volume_area') return Math.abs(m.slice - curr) < tol;
+      return (Math.abs(m.slice - curr) < tol);
+  }
+
+  function evtToLocal(k, e){
+      const cv = $(`cv-${k}`);
+      const r = cv.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function scrToImg(k, mx, my) {
+      const cv=$(`cv-${k}`), vp=state.vp[k];
+      const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?100:state.dims.x);
+      const ih = (k==="pano" && state.pano.built)?state.pano.h : (k==="axial"?state.dims.y:state.dims.z);
+      const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
+      let dx = mx - (cv.width/2 + vp.x);
+      let dy = my - (cv.height/2 + vp.y);
+      const cos=Math.cos(-vp.r), sin=Math.sin(-vp.r);
+      let rx = dx*cos - dy*sin;
+      let ry = dx*sin + dy*cos;
+      return {x: rx / vp.s + iw/2, y: ry / (vp.s * arY) + ih/2};
+  }
+
+  function imgToScr(k, ix, iy, cw, ch, iw, ih, vp, arY) {
+      let dx = (ix - iw/2) * vp.s;
+      let dy = (iy - ih/2) * (vp.s * arY);
+      const cos=Math.cos(vp.r), sin=Math.sin(vp.r);
+      return { x: (dx*cos - dy*sin) + cw/2 + vp.x, y: (dx*sin + dy*cos) + ch/2 + vp.y };
+  }
+
+  function getRefCenterImg(k){
+    const {dims} = state;
+    const z = clamp(state.cursor.z, 0, dims.z-1);
+    if(k === 'axial') return { ix: clamp(state.pos.sagittal, 0, dims.x-1), iy: clamp(state.pos.coronal, 0, dims.y-1) };
+    if(k === 'coronal') return { ix: clamp(state.pos.sagittal, 0, dims.x-1), iy: clamp((dims.z - 1 - z), 0, dims.z-1) };
+    if(k === 'pano') return state.pano.built ? { ix: clamp(state.cursor.idx, 0, state.pano.w-1), iy: clamp((dims.z - 1 - z), 0, state.pano.h-1) } : {ix:0,iy:0};
+    if(k === 'sagittal'){ const iw = state.pano.built ? 100 : state.dims.y; return { ix: iw/2, iy: clamp((dims.z - 1 - z), 0, dims.z-1) }; }
+    return { ix: 0, iy: 0 };
+  }
+
+  function hitTestRefLines(k, lp){
+    if(!state.vp[k].showRef) return null;
+    const cv = $(`cv-${k}`); const vp = state.vp[k];
+    const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
+    let iw = (k==="pano" && state.pano.built) ? state.pano.w : (k==="sagittal" ? (state.pano.built?100:state.dims.y) : state.dims.x);
+    let ih = (k==="axial") ? state.dims.y : state.dims.z; if(k==="pano" && state.pano.built) ih = state.pano.h;
+
+    // Special Pano Tilt Handle Hit Test
+    if(k === 'pano' && state.pano.built) {
+         const centerSc = imgToScr('pano', state.cursor.idx, state.dims.z - 1 - state.cursor.z, cv.width, cv.height, state.pano.w, state.pano.h, vp, arY);
+         const hLen = 60 * vp.s;
+         const handleX = centerSc.x + Math.sin(state.cursor.tilt) * -hLen; 
+         const handleY = centerSc.y - Math.cos(state.cursor.tilt) * hLen;
+
+         if(Math.hypot(lp.x - handleX, lp.y - handleY) < 15) return { kind: 'pano-tilt' };
+    }
+
+    const cImg = getRefCenterImg(k);
+    const cSc = imgToScr(k, cImg.ix, cImg.iy, cv.width, cv.height, iw, ih, vp, arY);
+    const tiltX = cSc.x, tiltY = cSc.y - 60; 
+    
+    if(Math.hypot(lp.x - cSc.x, lp.y - cSc.y) < 10) return { kind:'center' };
+    if(Math.hypot(lp.x - tiltX, lp.y - tiltY) < 10) return { kind:'tilt' };
+    return null; 
+  }
+
+  function drawOverlays(k, ctx, cw, ch, iw, ih, vp, arY) {
+    // 1. Implants (render on all panels, synced)
+    state.implants.forEach((imp, impIdx) => {
+        if(!imp.visible) return; // Requirement: Show/Hide capability
+
+        // Requirement: 3 Slice Interval Visibility Limit
+        // Note: For Axial/Coronal/Sagittal/Cross Section, check if implant is within Z/Y/X range.
+        let isVisibleInSlice = true;
+        const sliceThreshold = 3;
+
+        if (k === 'axial') {
+            if(Math.abs(state.pos.axial - imp.center.z) > sliceThreshold) isVisibleInSlice = false;
+        } else if (k === 'coronal') {
+            if(Math.abs(state.pos.coronal - imp.center.y) > sliceThreshold) isVisibleInSlice = false;
+        } else if (k === 'sagittal' && !state.pano.built) {
+            if(Math.abs(state.pos.sagittal - imp.center.x) > sliceThreshold) isVisibleInSlice = false;
+        } else if (k === 'sagittal' && state.pano.built) {
+            // Cross section mode:
+            // Requirement: keep implant visible in this panel for 5 consecutive slices starting from its placement slice.
+            if(imp.crossStartIdx != null && imp.crossSpan != null){
+                const s0 = Math.floor(imp.crossStartIdx);
+                const span = Math.max(1, Math.floor(imp.crossSpan));
+                const cur = Math.floor(state.cursor.idx);
+                if(cur < s0 || cur >= (s0 + span)) isVisibleInSlice = false;
+            } else {
+                // Fallback (legacy): show if near current cursor slice
+                let bestD = 1e18, bestIdx = 0;
+                if(state.pano.curvePoints && state.pano.curvePoints.length){
+                    for(let i=0;i<state.pano.curvePoints.length;i++){
+                        const cp = state.pano.curvePoints[i];
+                        const d2 = (imp.center.x-cp.x)**2 + (imp.center.y-cp.y)**2;
+                        if(d2 < bestD){ bestD=d2; bestIdx=i; }
+                    }
+                }
+                if(Math.abs(state.cursor.idx - bestIdx) > sliceThreshold) isVisibleInSlice = false;
+            }
+        }
+
+        if(!isVisibleInSlice && k !== 'pano') return; // Hide if out of slice range (except main Pano view usually shows all)
+
+        const center = imp.center;
+        const corW = (imp.corW != null) ? imp.corW : (imp.w != null ? imp.w : 4.0);
+        const apW  = (imp.apW  != null) ? imp.apW  : (imp.wa != null ? imp.wa : corW);
+        const Lmm  = (imp.h != null) ? imp.h : (imp.l != null ? imp.l : 10.0);
+        const angCross = (imp.angCross != null) ? imp.angCross : ((imp.ang != null) ? imp.ang : 0);
+        const angPano  = (imp.angPano  != null) ? imp.angPano  : ((imp.ang != null) ? imp.ang : 0);
+        const angFor = (view) => {
+            const arch = archOf(imp);
+            const disp = (view === 'pano' ? angPano : angCross);
+            return dispToInternal(disp, arch);
+        };
+
+        imp._hit = imp._hit || {};
+
+        const pulse = (state.selectedImplantIdx === impIdx) ? (0.55 + 0.45 * Math.sin(Date.now() / 180)) : 0;
+        const baseAlpha = 0.85;
+
+        const drawLabel = (x, y) => {
+            if(state.selectedImplantIdx !== impIdx) return;
+            ctx.save();
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = "rgba(0,255,120,0.95)";
+            ctx.font = "bold 10px sans-serif";
+            ctx.shadowColor = "black";
+            ctx.shadowBlur = 3;
+            ctx.textAlign = "left";
+
+            // Values
+            const vWc = corW.toFixed ? corW.toFixed(1) : corW;
+            const vWa = apW.toFixed ? apW.toFixed(1) : apW;
+            const vL  = Lmm.toFixed ? Lmm.toFixed(1) : Lmm; 
+            const vBL = typeof angCross === 'number' ? Math.round(angCross) : 0;
+            const vMD = typeof angPano === 'number' ? Math.round(angPano) : 0;
+
+            // Positioning
+            const xPos = x + 25; 
+            const step = 11; 
+            const yStart = y - (2 * step); 
+
+            // Connector
+            ctx.strokeStyle = "rgba(0,255,120,0.5)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + 10, y); 
+            ctx.lineTo(xPos - 3, y);
+            ctx.stroke();
+
+            ctx.fillText(`Wc: ${vWc}`, xPos, yStart);
+            ctx.fillText(`Wa: ${vWa}`, xPos, yStart + step);
+            ctx.fillText(`L:  ${vL}`,  xPos, yStart + step*2);
+            ctx.fillText(`BL: ${vBL}°`, xPos, yStart + step*3);
+            ctx.fillText(`MD: ${vMD}°`, xPos, yStart + step*4);
+
+            ctx.restore();
+        };
+
+        const drawAxisHandle = (x, y, rotationDeg, hLenPx) => {
+            // Requirement: Axis along implant to determine angulation
+            const rad = (rotationDeg + 90) * Math.PI / 180; // +90 because standard 0 is right, implant 0 is down usually, wait. 
+            // In Coronal: 0 deg is Vertical down. Canvas 0 is Right. So 90 deg is Down.
+            // Let's assume imp.ang 0 is Vertical Down.
+            // Canvas rotation: positive is clockwise.
+            const handleRad = (rotationDeg - 90) * Math.PI / 180; 
+            // Tip of implant (bottom)
+            const x2 = x + Math.cos(handleRad) * hLenPx;
+            const y2 = y + Math.sin(handleRad) * hLenPx;
+            
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = "rgba(255,255,0,0.6)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Handle Circle
+            ctx.beginPath();
+            ctx.arc(x2, y2, 5, 0, Math.PI*2);
+            ctx.fillStyle = "yellow";
+            ctx.fill();
+            
+            // Store hit for rotation
+            imp._hit[k].rotate = { x: x2, y: y2 };
+        };
+
+        if(k === 'axial') {
+            const cSc = imgToScr(k, center.x, center.y, cw, ch, iw, ih, vp, arY);
+            const r = ((corW / 2) / (state.spacing.x || 1)) * vp.s;
+            const dzVox = Math.abs(state.pos.axial - center.z);
+            const dzNorm = (Lmm / (2 * (state.spacing.z || 1))) + 2;
+            const alpha = Math.max(0.18, Math.min(1, 1 - (dzVox / dzNorm))) * baseAlpha;
+
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(cSc.x, cSc.y, r, 0, Math.PI*2);
+            ctx.strokeStyle = imp.color; ctx.lineWidth = 2;
+            if(pulse) { ctx.shadowColor = imp.color; ctx.shadowBlur = 10 * pulse; }
+            ctx.stroke();
+            ctx.fillStyle = `rgba(0,255,120,${0.08 + 0.06*pulse})`;
+            ctx.fill();
+            ctx.restore();
+
+            imp._hit.axial = { kind: 'circle', cx: cSc.x, cy: cSc.y, r: Math.max(10, r+6) };
+            drawLabel(cSc.x, cSc.y);
+        }
+
+        if(k === 'coronal' || (k === 'sagittal' && !state.pano.built)) {
+            let cx, cy;
+            if(k==='coronal') {
+                 const sc = imgToScr(k, center.x, state.dims.z - 1 - center.z, cw, ch, iw, ih, vp, arY);
+                 cx = sc.x; cy = sc.y;
+            } else {
+                 const sc = imgToScr(k, center.y, state.dims.z - 1 - center.z, cw, ch, iw, ih, vp, arY);
+                 cx = sc.x; cy = sc.y;
+            }
+
+            const spX = (k==='coronal') ? (state.spacing.x||1) : (state.spacing.y||1);
+            const topW = (corW / spX) * vp.s;
+            const botW = (apW  / spX) * vp.s;
+            const hPx  = (Lmm  / (state.spacing.z || 1)) * vp.s * arY;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angFor(k) * Math.PI / 180);
+            ctx.globalAlpha = baseAlpha;
+
+            // Tapered implant (trapezoid)
+            ctx.beginPath();
+            ctx.moveTo(-topW/2, -hPx/2);
+            ctx.lineTo( topW/2, -hPx/2);
+            ctx.lineTo( botW/2,  hPx/2);
+            ctx.lineTo(-botW/2,  hPx/2);
+            ctx.closePath();
+
+            ctx.strokeStyle = imp.color; ctx.lineWidth = 2;
+            if(pulse) { ctx.shadowColor = imp.color; ctx.shadowBlur = 10 * pulse; }
+            ctx.stroke();
+            ctx.fillStyle = `rgba(0,255,120,${0.06 + 0.05*pulse})`;
+            ctx.fill();
+
+            // Light "threads"
+            ctx.beginPath();
+            for(let i= -hPx/2 + 6; i < hPx/2; i+=6) { ctx.moveTo(-Math.max(topW,botW)/2, i); ctx.lineTo(Math.max(topW,botW)/2, i); }
+            ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 1; ctx.stroke();
+
+            ctx.restore();
+
+            imp._hit[k] = { kind: 'circle', cx: cx, cy: cy, r: Math.max(12, Math.max(topW, botW, hPx) / 2) };
+            drawLabel(cx, cy);
+            
+            // Axis Handle (only for Coronal/Sagittal usually)
+            drawAxisHandle(cx, cy, angFor(k), hPx/2 + 25);
+        }
+
+        if(k === 'pano' && state.pano.built) {
+            // Project implant to nearest curve index, render on pano
+            let idx = 0;
+            if(state.pano.curvePoints && state.pano.curvePoints.length){
+                let bestD = 1e18;
+                for(let i=0;i<state.pano.curvePoints.length;i++){
+                    const cp = state.pano.curvePoints[i];
+                    const dx = center.x - cp.x;
+                    const dy = center.y - cp.y;
+                    const d2 = dx*dx + dy*dy;
+                    if(d2 < bestD){ bestD = d2; idx = i; }
+                }
+            }
+            const cSc = imgToScr('pano', idx, state.dims.z - 1 - center.z, cw, ch, state.pano.w, state.pano.h, vp, arY);
+            
+            // Requirement: Make implant shape in panoramic panel is like coronal and sagittal (Trapezoidal)
+            const topW = (corW / (state.spacing.x || 1)) * vp.s; // Approximate using X spacing
+            const botW = (apW  / (state.spacing.x || 1)) * vp.s;
+            const hPx  = (Lmm  / (state.spacing.z || 1)) * vp.s * arY;
+
+            ctx.save();
+            ctx.translate(cSc.x, cSc.y);
+            // Apply rotation (Angulation)
+            ctx.rotate(angFor(k) * Math.PI / 180);
+            ctx.globalAlpha = baseAlpha;
+
+            // Draw Trapezoid
+            ctx.beginPath();
+            ctx.moveTo(-topW/2, -hPx/2);
+            ctx.lineTo( topW/2, -hPx/2);
+            ctx.lineTo( botW/2,  hPx/2);
+            ctx.lineTo(-botW/2,  hPx/2);
+            ctx.closePath();
+
+            ctx.strokeStyle = imp.color; ctx.lineWidth = 2;
+            if(pulse) { ctx.shadowColor = imp.color; ctx.shadowBlur = 10 * pulse; }
+            ctx.stroke();
+            ctx.fillStyle = `rgba(0,255,120,${0.06 + 0.05*pulse})`; ctx.fill();
+            
+             // Threads
+            ctx.beginPath();
+            for(let i= -hPx/2 + 6; i < hPx/2; i+=6) { ctx.moveTo(-Math.max(topW,botW)/2, i); ctx.lineTo(Math.max(topW,botW)/2, i); }
+            ctx.strokeStyle = "rgba(255,255,255,0.22)"; ctx.lineWidth = 1; ctx.stroke();
+
+            ctx.restore();
+
+            imp._hit.pano = { kind: 'circle', cx: cSc.x, cy: cSc.y, r: Math.max(10, Math.max(topW, hPx/2)) };
+            drawLabel(cSc.x, cSc.y);
+            // Draw axis handle on Pano too
+            drawAxisHandle(cSc.x, cSc.y, angFor(k), hPx/2 + 25);
+        }
+
+        if(k === 'sagittal' && state.pano.built) {
+            // Cross-section view uses a fixed slab width (iw==100). Place implant relative to current cursor idx
+            if(state.pano.curvePoints && state.pano.curvePoints.length){
+                const idx = Math.max(0, Math.min(state.pano.curvePoints.length-1, Math.round(state.cursor.idx)));
+                const cp = state.pano.curvePoints[idx];
+                const nm = state.pano.curveNormals[idx] || {nx:0, ny:1};
+                const dx = center.x - cp.x;
+                const dy = center.y - cp.y;
+                const u = dx*nm.nx + dy*nm.ny; // lateral offset along normal
+                const xC = 50 + u; // slice x center at 50
+                const yC = state.dims.z - 1 - center.z;
+
+                const cSc = imgToScr('sagittal', xC, yC, cw, ch, 100, state.dims.z, vp, arY);
+
+                const topW = (corW / (state.spacing.x || 1)) * vp.s;
+                const botW = (apW  / (state.spacing.x || 1)) * vp.s;
+                const hPx  = (Lmm  / (state.spacing.z || 1)) * vp.s * arY;
+
+                ctx.save();
+                ctx.translate(cSc.x, cSc.y);
+                ctx.rotate(angFor(k) * Math.PI / 180);
+                ctx.globalAlpha = baseAlpha;
+
+                ctx.beginPath();
+                ctx.moveTo(-topW/2, -hPx/2);
+                ctx.lineTo( topW/2, -hPx/2);
+                ctx.lineTo( botW/2,  hPx/2);
+                ctx.lineTo(-botW/2,  hPx/2);
+                ctx.closePath();
+
+                ctx.strokeStyle = imp.color; ctx.lineWidth = 2;
+                if(pulse) { ctx.shadowColor = imp.color; ctx.shadowBlur = 10 * pulse; }
+                ctx.stroke();
+                ctx.fillStyle = `rgba(0,255,120,${0.06 + 0.05*pulse})`;
+                ctx.fill();
+                ctx.restore();
+
+                // Store under sagittal hit too (pano mode)
+                imp._hit.sagittal = { kind: 'circle', cx: cSc.x, cy: cSc.y, r: Math.max(12, Math.max(topW, botW, hPx) / 2) };
+                drawLabel(cSc.x, cSc.y);
+                drawAxisHandle(cSc.x, cSc.y, angFor(k), hPx/2 + 25);
+            }
+        }
+    });
+
+    if(state.loaded && state.globalTool === 'none' && vp.showRef){
+      if(k === 'pano' && state.pano.built){
+         const cSc = imgToScr('pano', state.cursor.idx, state.dims.z - 1 - state.cursor.z, cw, ch, state.pano.w, state.pano.h, vp, arY);
+         
+         // 1. Horizontal Line (Axial)
+         ctx.save();
+         ctx.beginPath(); ctx.moveTo(0, cSc.y); ctx.lineTo(cw, cSc.y);
+         ctx.strokeStyle = "rgba(0, 255, 255, 0.6)"; ctx.lineWidth = 1; ctx.stroke();
+         
+         // 2. Vertical Line (Oblique/Cross Section)
+         // Calculate rotation based on tilt
+         const angle = state.cursor.tilt;
+         const bigLen = 2000;
+         const dx = Math.sin(angle) * bigLen;
+         const dy = Math.cos(angle) * bigLen;
+
+         ctx.beginPath(); 
+         ctx.moveTo(cSc.x + dx, cSc.y + dy); // Bottom point (approx)
+         ctx.lineTo(cSc.x - dx, cSc.y - dy); // Top point
+         ctx.strokeStyle = "#ffd400"; ctx.lineWidth = 1.5; ctx.setLineDash([5,2]); ctx.stroke();
+         ctx.setLineDash([]);
+
+         // 3. Yellow Dot Handle (Top)
+         const hLen = 60 * vp.s;
+         const hx = cSc.x + Math.sin(angle) * -hLen; // Negative because Y goes up
+         const hy = cSc.y - Math.cos(angle) * hLen;
+         
+         ctx.fillStyle = "#ffd400"; ctx.shadowColor="black"; ctx.shadowBlur=4;
+         ctx.beginPath(); ctx.arc(hx, hy, 6, 0, Math.PI*2); ctx.fill();
+         ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.beginPath(); ctx.arc(cSc.x, cSc.y, 3, 0, Math.PI*2); ctx.fill(); // Center dot
+         ctx.restore();
+      }
+
+      if(k !== 'pano' || !state.pano.built){
+         if(k === 'pano') return; 
+         const cImg = getRefCenterImg(k);
+         const cSc = imgToScr(k, cImg.ix, cImg.iy, cw, ch, iw, ih, vp, arY);
+         const dir = {dx: Math.sin(state.cursor.tilt||0), dy: Math.cos(state.cursor.tilt||0)};
+         const big = 10000;
+
+         ctx.save();
+         ctx.strokeStyle = "rgba(0, 255, 255, 0.85)"; ctx.lineWidth = 1.5;
+         ctx.beginPath(); ctx.moveTo(cSc.x - big*dir.dx, cSc.y - big*dir.dy); ctx.lineTo(cSc.x + big*dir.dx, cSc.y + big*dir.dy); ctx.stroke();
+         
+         const perp = { dx: -dir.dy, dy: dir.dx };
+         ctx.strokeStyle = "rgba(0, 255, 255, 0.45)"; ctx.lineWidth = 1.0;
+         ctx.beginPath(); ctx.moveTo(cSc.x - big*perp.dx, cSc.y - big*perp.dy); ctx.lineTo(cSc.x + big*perp.dx, cSc.y + big*perp.dy); ctx.stroke();
+
+         ctx.fillStyle = "cyan"; ctx.beginPath(); ctx.arc(cSc.x, cSc.y, 5, 0, Math.PI*2); ctx.fill();
+         ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(cSc.x - 60*dir.dx, cSc.y - 60*dir.dy, 5, 0, Math.PI*2); ctx.fill();
+         ctx.restore();
+      }
+    }
+
+    const drawMeas = (m, isTemp) => {
+        if(!isTemp && !checkSliceVis(k, m)) return;
+
+        if(m.type === 'nerve'){
+             if(k === 'sagittal' && m.view === 'sagittal' && state.pano.built){
+                 if(m.points.length < 1) return;
+                 ctx.save();
+                 const sortedPts = [...m.points].filter(p => p.slice !== undefined).sort((a, b) => a.slice - b.slice);
+                 const currentSlice = state.cursor.idx; 
+                 let pBefore = null, pAfter = null;
+                 for(let i = 0; i < sortedPts.length - 1; i++){
+                     if(currentSlice >= sortedPts[i].slice && currentSlice <= sortedPts[i+1].slice){
+                         pBefore = sortedPts[i]; pAfter = sortedPts[i+1]; break;
+                     }
+                 }
+                 let drawPt = null;
+                 if(pBefore && pAfter) {
+                     const t = (currentSlice - pBefore.slice) / (pAfter.slice - pBefore.slice);
+                     drawPt = { x: pBefore.x + (pAfter.x - pBefore.x) * t, y: pBefore.y + (pAfter.y - pBefore.y) * t };
+                 } else {
+                     const exactMatch = sortedPts.find(p => Math.abs(p.slice - currentSlice) < 0.5);
+                     if(exactMatch) drawPt = exactMatch;
+                 }
+
+                 if(drawPt){
+                     const scr = imgToScr(k, drawPt.x, drawPt.y, cw, ch, iw, ih, vp, arY);
+                     const radiusPx = (2.0 / 2 / state.spacing.x) * vp.s;
+                     ctx.beginPath(); ctx.arc(scr.x, scr.y, Math.max(2, radiusPx), 0, Math.PI*2);
+                     ctx.fillStyle = "#ff0000"; ctx.fill();
+                     ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(100, 0, 0, 0.5)"; ctx.stroke();
+                     ctx.beginPath(); ctx.arc(scr.x - radiusPx*0.3, scr.y - radiusPx*0.3, radiusPx*0.3, 0, Math.PI*2);
+                     ctx.fillStyle = "rgba(255, 255, 255, 0.4)"; ctx.fill();
+                 }
+                 if(isTemp && state.mouse.x !== 0){
+                    const lastPt = sortedPts[sortedPts.length-1];
+                    if(lastPt && Math.abs(lastPt.slice - currentSlice) < 20) {
+                        const scrLast = imgToScr(k, lastPt.x, lastPt.y, cw, ch, iw, ih, vp, arY);
+                        const lp = evtToLocal(k, {clientX:state.mouse.x, clientY:state.mouse.y});
+                        ctx.beginPath(); ctx.moveTo(scrLast.x, scrLast.y); ctx.lineTo(lp.x, lp.y); 
+                        ctx.strokeStyle = "#ff3333"; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+                    }
+                 }
+                 ctx.restore();
+                 return;
+             }
+             if(k === 'pano' && m.view === 'sagittal' && state.pano.built){
+                 if(m.points.length < 1) return;
+                 ctx.save();
+                 const panoPts = m.points.map(p => imgToScr('pano', p.slice, p.y, cw, ch, state.pano.w, state.pano.h, vp, arY));
+                 panoPts.sort((a,b) => a.x - b.x);
+                 ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+                 ctx.beginPath(); 
+                 if(panoPts.length > 0) ctx.moveTo(panoPts[0].x, panoPts[0].y);
+                 for(let i=1; i<panoPts.length; i++) ctx.lineTo(panoPts[i].x, panoPts[i].y);
+                 ctx.shadowBlur = 4; ctx.shadowColor = "#330000";
+                 ctx.strokeStyle = "#ff0033"; ctx.lineWidth = 3.5; ctx.stroke();
+                 ctx.shadowBlur = 0;
+                 ctx.strokeStyle = "#ff8888"; ctx.lineWidth = 1; ctx.stroke();
+                 ctx.fillStyle = "#ffcc00";
+                 panoPts.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill(); });
+                 ctx.restore();
+                 return;
+             }
+             if(m.view !== k) return;
+        }
+
+        if(m.view !== k) return;
+        ctx.save();
+        ctx.strokeStyle = isTemp ? 'yellow' : (m.stroke || '#0f0');
+        ctx.fillStyle   = isTemp ? 'rgba(255,255,0,0.2)' : (m.fill || 'rgba(0,255,0,0.2)');
+        // Thinner lines and smaller font
+        ctx.lineWidth = 1; ctx.font = "bold 12px sans-serif";
+
+        if(m.type === 'ruler' || m.type === 'arrow'){
+           if(m.points.length < 2) { ctx.restore(); return; }
+           const p0 = imgToScr(k, m.points[0].x, m.points[0].y, cw, ch, iw, ih, vp, arY);
+           const p1 = imgToScr(k, m.points[1].x, m.points[1].y, cw, ch, iw, ih, vp, arY);
+           
+           ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+           ctx.fillStyle="yellow"; 
+           // Smaller dots (radius 2.5)
+           ctx.beginPath(); ctx.arc(p0.x, p0.y, 2.5, 0, Math.PI*2); ctx.fill();
+           ctx.beginPath(); ctx.arc(p1.x, p1.y, 2.5, 0, Math.PI*2); ctx.fill();
+           
+           if(m.type === 'arrow'){
+               const angle = Math.atan2(p1.y-p0.y, p1.x-p0.x);
+               const head = 12;
+               ctx.fillStyle = isTemp ? 'yellow' : '#0f0';
+               ctx.beginPath();
+               ctx.moveTo(p1.x, p1.y);
+               ctx.lineTo(p1.x - head * Math.cos(angle-Math.PI/6), p1.y - head * Math.sin(angle-Math.PI/6));
+               ctx.lineTo(p1.x - head * Math.cos(angle+Math.PI/6), p1.y - head * Math.sin(angle+Math.PI/6));
+               ctx.fill();
+           } else {
+               const midX = (p0.x+p1.x)/2, midY = (p0.y+p1.y)/2;
+               ctx.fillStyle = "#ffd400"; ctx.shadowColor="black"; ctx.shadowBlur=4;
+               ctx.fillText(m.val || "", midX+5, midY-5);
+           }
+        }
+        else if(m.type === 'text'){
+            const anchor = m.points[0];
+            const textPos = m.points.length > 1 ? m.points[1] : {x: anchor.x + 10, y: anchor.y - 10};
+
+            const p0 = imgToScr(k, anchor.x, anchor.y, cw, ch, iw, ih, vp, arY);
+            const p1 = imgToScr(k, textPos.x, textPos.y, cw, ch, iw, ih, vp, arY);
+
+            ctx.beginPath();
+            ctx.moveTo(p0.x, p0.y);
+            ctx.lineTo(p1.x, p1.y);
+            ctx.strokeStyle = "#ffd400";
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            ctx.stroke();
+            ctx.setLineDash([]); 
+
+            ctx.fillStyle = "#ffd400";
+            ctx.beginPath(); ctx.arc(p0.x, p0.y, 3, 0, Math.PI*2); ctx.fill();
+
+            if(m.val){
+                ctx.fillStyle = "#ffd400"; 
+                ctx.font = "bold 14px sans-serif";
+                ctx.shadowColor="black"; ctx.shadowBlur=4;
+                ctx.fillText(m.val, p1.x + 4, p1.y + 4); 
+            }
+        }
+        else if(m.type === 'angle'){
+           if(m.points.length < 2) { ctx.restore(); return; }
+           const pA = imgToScr(k, m.points[0].x, m.points[0].y, cw, ch, iw, ih, vp, arY);
+           const pB = imgToScr(k, m.points[1].x, m.points[1].y, cw, ch, iw, ih, vp, arY);
+           const pC = imgToScr(k, m.points[Math.min(2, m.points.length-1)].x, m.points[Math.min(2, m.points.length-1)].y, cw, ch, iw, ih, vp, arY);
+
+           // lines
+           ctx.beginPath(); ctx.moveTo(pB.x, pB.y); ctx.lineTo(pA.x, pA.y); ctx.stroke();
+           ctx.beginPath(); ctx.moveTo(pB.x, pB.y); ctx.lineTo(pC.x, pC.y); ctx.stroke();
+
+           // points
+           ctx.fillStyle="yellow";
+           [pA,pB,pC].forEach(p=>{ ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI*2); ctx.fill(); });
+
+           // arc + label (only when 3 points)
+           if(m.points.length >= 3){
+               const v1 = {x: pA.x - pB.x, y: pA.y - pB.y};
+               const v2 = {x: pC.x - pB.x, y: pC.y - pB.y};
+               const a1 = Math.atan2(v1.y, v1.x);
+               const a2 = Math.atan2(v2.y, v2.x);
+               let da = a2 - a1;
+               while(da <= -Math.PI) da += Math.PI*2;
+               while(da > Math.PI) da -= Math.PI*2;
+               const r = 18;
+               ctx.beginPath();
+               ctx.arc(pB.x, pB.y, r, a1, a1 + da, da < 0);
+               ctx.stroke();
+
+               const label = m.val || (angleDeg(m.points[0], m.points[1], m.points[2], k).toFixed(1) + "°");
+               ctx.fillStyle="#ffd400"; ctx.shadowColor="black"; ctx.shadowBlur=4;
+               ctx.fillText(label, pB.x + 8, pB.y - 8);
+               ctx.shadowBlur=0;
+           }
+        }
+        else if(m.type === 'area' || m.type === 'density' || m.type === 'volume_area'){
+           if(m.points.length < 1) { ctx.restore(); return; }
+           ctx.beginPath();
+           const pts = m.points.map(p => imgToScr(k, p.x, p.y, cw, ch, iw, ih, vp, arY));
+           ctx.moveTo(pts[0].x, pts[0].y);
+           for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+           if(!isTemp && pts.length>2) ctx.closePath();
+           
+           if(isTemp) ctx.stroke(); else { ctx.stroke(); ctx.fill(); }
+           ctx.fillStyle = "yellow";
+           // Smaller dots (radius 2)
+           pts.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill(); });
+           
+           if(isTemp && state.mouse.x !== 0){
+               const lp = evtToLocal(k, {clientX:state.mouse.x, clientY:state.mouse.y});
+               ctx.beginPath(); ctx.moveTo(pts[pts.length-1].x, pts[pts.length-1].y); ctx.lineTo(lp.x, lp.y); ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]);
+           }
+           if(!isTemp && m.val && pts.length){
+               let cx=0, cy=0; pts.forEach(p=>{cx+=p.x;cy+=p.y}); cx/=pts.length; cy/=pts.length;
+               ctx.fillStyle="#ffd400"; ctx.shadowColor="black"; ctx.shadowBlur=4;
+               const lines = String(m.val).split('|');
+               lines.forEach((l,i) => ctx.fillText(l.trim(), cx, cy + i*16));
+           }
+        } 
+        ctx.restore();
+    };
+
+    state.meas.forEach(m => drawMeas(m, false));
+    if(state.tempMeas) drawMeas(state.tempMeas, true);
+
+    // Interpolated volume mask: 3D ROI interpolation (continuous volumetric overlay between sparse keyframes)
+    if(state.loaded){
+      let sl = null;
+      if(k === 'axial') sl = state.pos.axial;
+      else if(k === 'coronal') sl = state.pos.coronal;
+      else if(k === 'sagittal') sl = (state.pano && state.pano.built) ? Math.round(state.cursor.idx) : state.pos.sagittal;
+
+      if(sl != null){
+        const hit = getRoiInterpPoly(k, sl);
+        if(hit && hit.poly && hit.poly.length > 2){
+          // If this is an interpolated slice, draw a solid shaded overlay for continuity
+          if(!hit.exact){
+            const t = (typeof hit.t === 'number') ? hit.t : 0.5;
+            const shade = 1 - Math.abs(t - 0.5) * 2; // 0..1
+            const alpha = 0.12 + 0.18 * clamp(shade, 0, 1);
+            ctx.save();
+            ctx.beginPath();
+            for(let i=0;i<hit.poly.length;i++){
+              const p = hit.poly[i];
+              // IMPORTANT: points are stored in the same image-coordinate system returned by scrToImg()
+              // for each view (axial/coronal/sagittal). Do NOT flip Y here, otherwise the overlay drifts.
+              const spt = imgToScr(k, p.x, p.y, cw, ch, iw, ih, vp, arY);
+              if(i===0) ctx.moveTo(spt.x, spt.y); else ctx.lineTo(spt.x, spt.y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = `rgba(0,153,255,${alpha.toFixed(3)})`;
+            ctx.strokeStyle = "rgba(0,153,255,0.65)";
+            ctx.lineWidth = 1.6;
+            ctx.shadowColor = "rgba(0,153,255,0.25)";
+            ctx.shadowBlur = 6;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+      }
+    }
+
+
+
+    if(k === 'axial') {
+      if(state.showCurve && state.curve.length > 0){
+        if(state.curve.length > 1){
+          const spline = getCatmullRomSpline(state.curve, 6);
+          ctx.beginPath();
+          spline.forEach((p,i)=>{
+            const sc = imgToScr(k, p.x, p.y, cw, ch, state.dims.x, state.dims.y, vp, arY);
+            if(i===0) ctx.moveTo(sc.x, sc.y); else ctx.lineTo(sc.x, sc.y);
+          });
+          ctx.strokeStyle="rgba(255,165,0,0.9)"; ctx.lineWidth=2; ctx.stroke();
+        }
+        state.curve.forEach((p,i) => {
+          const sc = imgToScr(k, p.x, p.y, cw, ch, state.dims.x, state.dims.y, vp, arY);
+          ctx.fillStyle = (i === state.mouse.dragIdx) ? "#fff" : "orange";
+          ctx.beginPath(); ctx.arc(sc.x, sc.y, 4, 0, Math.PI*2); ctx.fill();
+        });
+      }
+      if(state.pano.built && state.pano.curvePoints && state.pano.curvePoints.length){
+          const idx = clamp(Math.floor(state.cursor.idx), 0, state.pano.curvePoints.length-1);
+          const pt = state.pano.curvePoints[idx];
+          const scPt = imgToScr(k, pt.x, pt.y, cw, ch, state.dims.x, state.dims.y, vp, arY);
+          ctx.fillStyle="cyan"; ctx.beginPath(); ctx.arc(scPt.x, scPt.y, 5, 0, Math.PI*2); ctx.fill();
+          const nm = state.pano.curveNormals[idx]; const lineLen = 30 * vp.s;
+          ctx.strokeStyle="rgba(0,255,255,0.5)"; ctx.beginPath();
+          ctx.moveTo(scPt.x - nm.nx*lineLen, scPt.y - nm.ny*lineLen); ctx.lineTo(scPt.x + nm.nx*lineLen, scPt.y + nm.ny*lineLen); ctx.stroke();
+      }
+    }
+
+    if(k==="sagittal") {
+      const cx = cw/2 + vp.x; const cy = ch/2 + vp.y; const len = 10;
+      ctx.strokeStyle="rgba(0,255,255,0.25)"; ctx.beginPath(); 
+      ctx.moveTo(cx-len, cy); ctx.lineTo(cx+len, cy); ctx.moveTo(cx, cy-len); ctx.lineTo(cx, cy+len); ctx.stroke();
+    }
+
+    if(state.globalTool === 'scout' && k === 'sagittal' && !state.pano.built) {
+        if(state.scout.box.w === 0) {
+            state.scout.box = { x: state.dims.y * 0.25, y: state.dims.z * 0.25, w: state.dims.y * 0.5, h: state.dims.z * 0.5 };
+        }
+        const box = state.scout.box;
+        const p1 = imgToScr(k, box.x, box.y, cw, ch, iw, ih, vp, arY); 
+        const p2 = imgToScr(k, box.x + box.w, box.y + box.h, cw, ch, iw, ih, vp, arY); 
+        
+        const bx = Math.min(p1.x, p2.x);
+        const by = Math.min(p1.y, p2.y);
+        const bw = Math.abs(p2.x - p1.x);
+        const bh = Math.abs(p2.y - p1.y);
+
+        ctx.save();
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(0, 0, cw, by); 
+        ctx.fillRect(0, by + bh, cw, ch - (by + bh)); 
+        ctx.fillRect(0, by, bx, bh); 
+        ctx.fillRect(bx + bw, by, cw - (bx + bw), bh); 
+
+        ctx.strokeStyle = "#0f0"; ctx.lineWidth = 2; ctx.setLineDash([5, 3]);
+        ctx.strokeRect(bx, by, bw, bh);
+        ctx.setLineDash([]);
+        ctx.fillStyle = "#fff";
+        const hSize = 8;
+        ctx.fillRect(bx - hSize/2, by - hSize/2, hSize, hSize);
+        ctx.fillRect(bx + bw - hSize/2, by - hSize/2, hSize, hSize);
+        ctx.fillRect(bx - hSize/2, by + bh - hSize/2, hSize, hSize);
+        ctx.fillRect(bx + bw - hSize/2, by + bh - hSize/2, hSize, hSize);
+        
+        ctx.font = "bold 12px sans-serif"; ctx.fillStyle = "#0f0";
+        ctx.fillText("SCOUT", bx + 5, by - 8);
+        ctx.restore();
+    }
+  }
+
+  function renderEmpty(k, txt){
+      const cv=$(`cv-${k}`), ctx=ctxs[k];
+      ctx.fillStyle="#000"; ctx.fillRect(0,0,cv.width,cv.height);
+      ctx.fillStyle="#333"; ctx.font="16px sans-serif"; ctx.textAlign="center";
+      ctx.fillText(txt || k.toUpperCase(), cv.width/2, cv.height/2);
+  }
+
+  function onDown(k, e){
+      if(!state.loaded) return;
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      $(`panel-${k}`).classList.add('active');
+      state.activeView = k;
+
+      const lp = evtToLocal(k, e);
+      const pt = scrToImg(k, lp.x, lp.y);
+
+      // Check for Implant Drag / Rotation
+      for(let i=state.implants.length-1; i>=0; i--){
+          const imp = state.implants[i];
+          if(!imp.visible) continue;
+          const hit = imp._hit && imp._hit[k];
+          if(!hit) continue;
+          
+          // Check for Rotation Handle Hit
+          if(hit.rotate && Math.hypot(lp.x - hit.rotate.x, lp.y - hit.rotate.y) < 10) {
+              state.mouse = {x:e.clientX, y:e.clientY, down:true, dragIdx:-1, dragRef:null, editMeas:null, impDrag:null, impRotate:{idx:i, view:k}};
+              state.selectedImplantIdx = i;
+              app.renderImplantList();
+              renderAll();
+              return;
+          }
+
+          if(hit.kind === 'circle'){
+              if(Math.hypot(lp.x - hit.cx, lp.y - hit.cy) <= hit.r){
+                  state.mouse = {x:e.clientX, y:e.clientY, down:true, dragIdx:-1, dragRef:null, editMeas:null, impDrag:{idx:i, view:k}};
+                  state.selectedImplantIdx = i;
+                  app.renderImplantList();
+                  renderAll(); // For pulse effect update
+                  return;
+              }
+          }
+      }
+
+      if(state.globalTool === 'none' || ['text','ruler','angle','area','density','nerve','volume','implant'].includes(state.globalTool)){
+          const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
+          const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?100:state.dims.x);
+          const ih = (k==="pano" && state.pano.built)?state.pano.h : (k==="axial"?state.dims.y:state.dims.z);
+          const cv = $(`cv-${k}`);
+          
+          for(let i=0; i<state.meas.length; i++){
+              const m = state.meas[i];
+              if(!checkSliceVis(k, m)) continue;
+
+              for(let j=0; j<m.points.length; j++){
+                  const sc = imgToScr(k, m.points[j].x, m.points[j].y, cv.width, cv.height, iw, ih, state.vp[k], arY);
+                  if(Math.hypot(sc.x - lp.x, sc.y - lp.y) < 10) {
+                      state.mouse = {x:e.clientX, y:e.clientY, down:true, dragIdx:-1, dragRef:null, editMeas: {idx:i, ptIdx:j}};
+                      return;
+                  }
+              }
+          }
+      }
+
+      if(state.globalTool === 'scout' && k === 'sagittal' && !state.pano.built) {
+           const lp = evtToLocal(k, e);
+           const pImg = scrToImg(k, lp.x, lp.y); 
+           const cv = $(`cv-${k}`);
+           const iw = state.dims.y; const ih = state.dims.z;
+           const arY = state.ratio.z;
+           const s1 = imgToScr(k, state.scout.box.x, state.scout.box.y, cv.width, cv.height, iw, ih, state.vp[k], arY);
+           const s2 = imgToScr(k, state.scout.box.x + state.scout.box.w, state.scout.box.y + state.scout.box.h, cv.width, cv.height, iw, ih, state.vp[k], arY);
+           
+           const bx = Math.min(s1.x, s2.x), by = Math.min(s1.y, s2.y);
+           const bw = Math.abs(s2.x - s1.x), bh = Math.abs(s2.y - s1.y);
+           const mx = lp.x, my = lp.y;
+           const tol = 10;
+
+           if(Math.hypot(mx - bx, my - by) < tol) state.scout.handle = 'TL';
+           else if(Math.hypot(mx - (bx+bw), my - by) < tol) state.scout.handle = 'TR';
+           else if(Math.hypot(mx - bx, my - (by+bh)) < tol) state.scout.handle = 'BL';
+           else if(Math.hypot(mx - (bx+bw), my - (by+bh)) < tol) state.scout.handle = 'BR';
+           else if(mx > bx && mx < bx+bw && my > by && my < by+bh) state.scout.handle = 'MOVE';
+           
+           if(state.scout.handle) {
+               state.mouse = {x:e.clientX, y:e.clientY, down:true, lastImg: pImg};
+               return; 
+           }
+      }
+
+      const tool = state.globalTool;
+      if(tool !== 'none' && tool !== 'curve' && tool !== 'scout'){
+          // Capture Slice Information for this measurement
+          let slice = 0;
+          if(k === 'axial') slice = state.pos.axial;
+          else if(k === 'coronal') slice = state.pos.coronal;
+          else if(k === 'sagittal') slice = state.pano.built ? state.cursor.idx : state.pos.sagittal;
+          else if(k === 'pano') slice = state.cursor.idx;
+
+          if(tool === 'implant') {
+               // Place implant
+               // Needs 3D coord. Map 2D click to 3D center.
+               let cx=0, cy=0, cz=0;
+
+               if(k==='axial'){
+                   cx=pt.x; cy=pt.y; cz=state.pos.axial;
+               }
+               else if(k==='coronal'){
+                   cx=pt.x; cy=state.pos.coronal; cz=clamp(state.dims.z - 1 - pt.y, 0, state.dims.z-1);
+               }
+               else if(k==='pano'){
+                   if(!state.pano.built){ showToast("Build panorama first"); return; }
+                   const idx = clamp(Math.floor(pt.x), 0, state.pano.curvePoints.length-1);
+                   const base = state.pano.curvePoints[idx];
+                   cx = base.x;
+                   cy = base.y;
+                   cz = clamp(state.dims.z - 1 - pt.y, 0, state.dims.z-1);
+               }
+               else if(k==='sagittal'){
+                   const z = clamp(state.dims.z - 1 - pt.y, 0, state.dims.z-1);
+                   if(state.pano.built){
+                       // Cross-section mode (perpendicular to curve): match the exact sampling geometry used in getSlice('sagittal')
+                       const sliceW = 100;
+                       const idx = clamp(Math.floor(state.cursor.idx), 0, state.pano.curvePoints.length-1);
+                       const base = state.pano.curvePoints[idx];
+                       const nm = state.pano.curveNormals[idx] || {nx:0, ny:1};
+                       const cutVec = { x: nm.nx, y: nm.ny };
+                       const tan = { x: -nm.ny, y: nm.nx };
+                       const u = (pt.x - sliceW/2);
+                       const dz = z - state.cursor.z;
+                       const shift = dz * Math.tan(state.cursor.tilt || 0);
+                       cx = base.x + u * cutVec.x + shift * tan.x;
+                       cy = base.y + u * cutVec.y + shift * tan.y;
+                       cz = z;
+                   } else {
+                       // Legacy sagittal: pt.x is in a 0..100 helper coordinate (UI), map it back to volume Y (0..dims.y)
+                       cx = state.pos.sagittal;
+                       cy = clamp((pt.x/100) * state.dims.y, 0, state.dims.y-1);
+                       cz = z;
+                   }
+               }
+
+               const arch = ($('impArch') && $('impArch').value) ? $('impArch').value : 'mandible';
+               const aCrossDisp = clampAngDisp(+$('impAngCross').value || 0);
+               const aPanoDisp  = clampAngDisp(+$('impAngPano').value || 0);
+                // Keep implant visible in Cross section/Sagittal for 5 consecutive slices starting from placement slice
+                let crossStartIdx = null;
+                const crossSpan = 5;
+                if(state.pano && state.pano.built && state.pano.curvePoints && state.pano.curvePoints.length){
+                    if(k==='pano'){
+                        crossStartIdx = clamp(Math.floor(pt.x), 0, state.pano.curvePoints.length-1);
+                    } else {
+                        crossStartIdx = clamp(Math.floor(state.cursor.idx), 0, state.pano.curvePoints.length-1);
+                    }
+                }
+
+               const newImp = {
+                   arch: arch,
+                   center: {x:cx, y:cy, z:cz},
+                   w: +$('impW').value,
+                   corW: +$('impW').value,
+                   apW: +($('impWA') ? $('impWA').value : $('impW').value),
+                   h: +$('impL').value,
+                   angCross: aCrossDisp,   // display value [-90..+90] (B/L)
+                   angPano:  aPanoDisp,    // display value [-90..+90] (M/D)
+                   ang: aCrossDisp,        // legacy compatibility
+                   color: '#00ff00',
+                   visible: true,
+                   crossStartIdx: crossStartIdx,
+                   crossSpan: crossSpan
+               };
+               state.implants.push(newImp);
+               state.selectedImplantIdx = state.implants.length - 1;
+               app.renderImplantList();
+               renderAll();
+               return;
+          }
+
+          if(tool === 'text'){
+              const offsetVal = 40 / state.vp[k].s; 
+              const textPt = {x: pt.x + offsetVal, y: pt.y - (offsetVal/2)};
+
+              state.meas.push({ 
+                  type:'text', 
+                  points:[pt, textPt],
+                  view:k, 
+                  val:"", 
+                  slice: slice 
+              });
+              
+              const newIdx = state.meas.length - 1;
+              render(k); 
+              spawnTextInput(k, newIdx);
+              return;
+          }
+
+          if(tool === 'ruler' || tool === 'arrow'){
+              state.tempMeas = { type: tool, points: [pt, pt], view: k, slice: slice }; 
+              state.mouse = {x:e.clientX, y:e.clientY, down:true, dragIdx:-1, dragRef:null, editMeas:null}; // Fixed dragRef here to avoid immediate snap
+              state.mouse.dragRef = 'measure';
+              render(k); return;
+          }
+          
+          if(tool === 'angle'){
+              const type = 'angle';
+              if(!state.tempMeas || state.tempMeas.type !== type || state.tempMeas.view !== k || state.tempMeas.slice !== slice){
+                  state.tempMeas = { type:type, points:[pt], view:k, slice:slice };
+              } else {
+                  state.tempMeas.points.push(pt);
+                  if(state.tempMeas.points.length >= 3){
+                      // finalize
+                      recalcMeas(state.tempMeas, k, false);
+                      state.meas.push({...state.tempMeas});
+                      state.tempMeas = null;
+                  }
+              }
+              render(k); 
+              return;
+          }
+
+          if(tool === 'area' || tool === 'density' || tool === 'nerve' || tool === 'volume'){
+              if(k === 'sagittal' && state.pano.built) pt.slice = state.cursor.idx;
+              else if(k === 'axial') pt.slice = state.pos.axial;
+              
+              const type = (tool === 'volume') ? 'volume_area' : tool;
+
+              if(!state.tempMeas || state.tempMeas.type !== type || state.tempMeas.view !== k){
+                  state.tempMeas = { type: type, points: [pt], view: k, slice: slice }; 
+              } else { state.tempMeas.points.push(pt); }
+              
+              state.mouse = {x:e.clientX, y:e.clientY, down:true, editMeas:null};
+              if(tool==='nerve') renderAll(); else render(k);
+              return; 
+          }
+      }
+
+      state.mouse = {x:e.clientX, y:e.clientY, down:true, dragIdx:-1, dragRef:null, editMeas:null};
+
+      if(state.globalTool === "none"){
+          if(k !== 'pano' || state.pano.built){
+              const hit = hitTestRefLines(k, lp);
+              if(hit){ state.mouse.dragRef = hit.kind; return; }
+          }
+      }
+
+      if(state.globalTool === "curve" && k==="axial") {
+          const hitIdx = state.curve.findIndex(p => Math.hypot(p.x-pt.x, p.y-pt.y) < 10/state.vp[k].s);
+          if(hitIdx !== -1) { state.mouse.dragIdx = hitIdx; render(k); return; }
+          state.curve.push(pt); render(k); return;
+      }
+
+      if(k==="pano" && state.pano.built && state.globalTool === "none" && state.vp[k].mode === "none"){
+          state.cursor.idx = clamp(pt.x, 0, state.pano.w-1);
+          state.cursor.z   = clamp(state.dims.z - 1 - pt.y, 0, state.dims.z-1);
+          updateSync(); renderAll(); return;
+      }
+      
+      // Auto-Pan Logic (keep explicit WL mode if user enabled Contrast)
+      if(state.globalTool === "none" && !state.mouse.dragRef) {
+          if(state.vp[k].mode !== "wl") state.vp[k].mode = "pan";
+      }
+  }
+
+  function onMove(k, e){
+      if(k !== state.activeView) return;
+      if(!state.loaded) return;
+      
+      const dx = e.clientX - state.mouse.x;
+      const dy = e.clientY - state.mouse.y;
+
+      if(state.globalTool === 'scout' && k === 'sagittal' && state.mouse.down && state.scout.handle) {
+          const lp = evtToLocal(k, e);
+          const currImg = scrToImg(k, lp.x, lp.y);
+          const dxS = currImg.x - state.mouse.lastImg.x;
+          const dyS = currImg.y - state.mouse.lastImg.y;
+          const b = state.scout.box;
+          if(state.scout.handle === 'MOVE') { b.x += dxS; b.y += dyS; } else {
+              if(state.scout.handle.includes('L')) { b.x += dxS; b.w -= dxS; }
+              if(state.scout.handle.includes('R')) { b.w += dxS; }
+              if(state.scout.handle.includes('T')) { b.y += dyS; b.h -= dyS; }
+              if(state.scout.handle.includes('B')) { b.h += dyS; }
+          }
+          state.mouse.lastImg = currImg;
+          render(k);
+          state.mouse.x = e.clientX; state.mouse.y = e.clientY;
+          return;
+      }
+
+      state.mouse.x = e.clientX; state.mouse.y = e.clientY;
+
+      // Implant Rotation
+      if(state.mouse.down && state.mouse.impRotate){
+          const lp = evtToLocal(k, e);
+          const imp = state.implants[state.mouse.impRotate.idx];
+          if(imp){
+              // Calculate angle relative to implant center
+              let cx, cy;
+              const center = imp.center;
+              const cw = $(`cv-${k}`).width; const ch = $(`cv-${k}`).height;
+              const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?100:state.dims.x);
+              const ih = (k==="pano" && state.pano.built)?state.pano.h : (k==="axial"?state.dims.y:state.dims.z);
+              const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
+
+              if(k === 'coronal') {
+                  const sc = imgToScr(k, center.x, state.dims.z - 1 - center.z, cw, ch, iw, ih, state.vp[k], arY);
+                  cx = sc.x; cy = sc.y;
+              } else if(k === 'sagittal' && !state.pano.built) {
+                  const sc = imgToScr(k, center.y, state.dims.z - 1 - center.z, cw, ch, iw, ih, state.vp[k], arY);
+                  cx = sc.x; cy = sc.y;
+              } else if(k === 'pano' && state.pano.built) {
+                  // Find index... (simplification: use center x if already computed, or recompute)
+                   let idx = 0;
+                   if(state.pano.curvePoints && state.pano.curvePoints.length){
+                        let bestD = 1e18;
+                        for(let i=0;i<state.pano.curvePoints.length;i++){
+                            const cp = state.pano.curvePoints[i];
+                            const d2 = (center.x-cp.x)**2 + (center.y-cp.y)**2;
+                            if(d2 < bestD){ bestD=d2; idx=i; }
+                        }
+                   }
+                   const sc = imgToScr('pano', idx, state.dims.z - 1 - center.z, cw, ch, state.pano.w, state.pano.h, state.vp[k], arY);
+                   cx = sc.x; cy = sc.y;
+              } else if(k === 'sagittal' && state.pano.built) {
+                  // Recompute center screen pos
+                  const idx = Math.max(0, Math.min(state.pano.curvePoints.length-1, Math.round(state.cursor.idx)));
+                  const cp = state.pano.curvePoints[idx];
+                  const nm = state.pano.curveNormals[idx] || {nx:0, ny:1};
+                  const u = (center.x - cp.x)*nm.nx + (center.y - cp.y)*nm.ny;
+                  const xC = 50 + u;
+                  const sc = imgToScr('sagittal', xC, state.dims.z - 1 - center.z, cw, ch, 100, state.dims.z, state.vp[k], arY);
+                  cx = sc.x; cy = sc.y;
+              }
+
+              if(cx !== undefined) {
+                  const rad = Math.atan2(lp.y - cy, lp.x - cx);
+                  let deg = rad * 180 / Math.PI;
+                  deg += 90; // Correction for handle being at bottom
+                  const newDeg = Math.round(deg);
+                  // Separate angulations:
+                  // - Cross section (buccal/lingual): sagittal when pano is built (and also coronal/non-pano sagittal for consistency)
+                  // - Panorama (mesial/distal): pano view
+                  if(k === 'pano' && state.pano.built){
+                      let disp = internalToDisp(newDeg, archOf(imp));
+                      disp = clampAngDisp(norm180(disp));
+                      imp.angPano = disp;
+                      const elP = $('impAngPano'); if(elP) elP.value = imp.angPano;
+                  } else {
+                      let disp = internalToDisp(newDeg, archOf(imp));
+                      disp = clampAngDisp(norm180(disp));
+                      imp.angCross = disp;
+                      imp.ang = imp.angCross; // legacy compatibility
+                      const elC = $('impAngCross'); if(elC) elC.value = imp.angCross;
+                  }
+                  renderAll();
+}
+          }
+          return;
+      }
+
+      // Implant drag (updates all panels automatically)
+      if(state.mouse.down && state.mouse.impDrag){
+          const lp = evtToLocal(k, e);
+          const pt = scrToImg(k, lp.x, lp.y);
+          const imp = state.implants[state.mouse.impDrag.idx];
+          if(imp){
+              if(k === 'axial'){
+                  imp.center.x = pt.x; imp.center.y = pt.y; imp.center.z = Math.round(state.cursor.z);
+              } else if(k === 'coronal'){
+                  imp.center.x = pt.x; imp.center.y = state.pos.coronal; imp.center.z = state.dims.z - 1 - pt.y;
+              } else if(k === 'sagittal' && !state.pano.built){
+                  imp.center.y = pt.x; imp.center.x = state.pos.sagittal; imp.center.z = state.dims.z - 1 - pt.y;
+              } else if(k === 'pano' && state.pano.built){
+                  const idx = clamp(Math.round(pt.x), 0, state.pano.curvePoints.length-1);
+                  const cp = state.pano.curvePoints[idx];
+                  if(cp){ imp.center.x = cp.x; imp.center.y = cp.y; }
+                  if(imp){ imp.crossStartIdx = idx; imp.crossSpan = (imp.crossSpan != null ? imp.crossSpan : 5); }
+                  imp.center.z = state.dims.z - 1 - pt.y;
+              } else if(k === 'sagittal' && state.pano.built){
+                  // Cross-section: x is in [0..100], centered at 50
+                  const idx = clamp(Math.round(state.cursor.idx), 0, state.pano.curvePoints.length-1);
+                  const cp = state.pano.curvePoints[idx];
+                  const nm = state.pano.curveNormals[idx] || {nx:0, ny:1};
+                  const u = pt.x - 50;
+                  if(cp){ imp.center.x = cp.x + u*nm.nx; imp.center.y = cp.y + u*nm.ny; }
+                  if(imp){ imp.crossStartIdx = idx; imp.crossSpan = (imp.crossSpan != null ? imp.crossSpan : 5); }
+                  imp.center.z = state.dims.z - 1 - pt.y;
+              }
+              renderAll();
+          }
+          state.mouse.x = e.clientX; state.mouse.y = e.clientY;
+          return;
+      }
+
+      if(state.mouse.down && state.mouse.editMeas){
+          const lp = evtToLocal(k, e);
+          const pt = scrToImg(k, lp.x, lp.y);
+          const {idx, ptIdx} = state.mouse.editMeas;
+          if(state.meas[idx].type==='nerve' && state.meas[idx].points[ptIdx].slice !== undefined) pt.slice = state.meas[idx].points[ptIdx].slice;
+          state.meas[idx].points[ptIdx] = pt;
+          recalcMeas(state.meas[idx], k, false);
+          if(state.meas[idx].type==='volume_area'){
+            if(state.roiInterp && state.roiInterp.dirty) state.roiInterp.dirty[k]=true;
+            rebuildRoiInterpCache(k);
+            calculateTotalVolume(true);
+          }
+          render(k); return;
+      }
+
+      if(state.tempMeas && (state.tempMeas.type === 'ruler' || state.tempMeas.type === 'arrow') && state.mouse.dragRef === 'measure'){
+          const lp = evtToLocal(k, e);
+          state.tempMeas.points[1] = scrToImg(k, lp.x, lp.y);
+          render(k); return;
+      }
+      
+      if(state.tempMeas && (state.tempMeas.type === 'area' || state.tempMeas.type === 'density' || state.tempMeas.type === 'nerve' || state.tempMeas.type === 'volume_area')){
+          render(k); return;
+      }
+
+      if(state.globalTool === "none" && state.mouse.dragRef && state.mouse.down){
+          const lp = evtToLocal(k, e);
+          const pImg = scrToImg(k, lp.x, lp.y);
+          
+          if(state.mouse.dragRef === 'pano-tilt'){
+             const cv = $(`cv-${k}`); const vp = state.vp[k];
+             const arY = state.ratio.z;
+             const centerSc = imgToScr('pano', state.cursor.idx, state.dims.z - 1 - state.cursor.z, cv.width, cv.height, state.pano.w, state.pano.h, vp, arY);
+             const dx = lp.x - centerSc.x;
+             const dy = lp.y - centerSc.y;
+             state.cursor.tilt = -Math.atan2(dx, -dy);
+             renderAll(); 
+             return;
+          }
+          
+          if(state.mouse.dragRef === 'tilt'){
+             const cv = $(`cv-${k}`); const vp = state.vp[k];
+             const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
+             let iw = (k==="pano" && state.pano.built)?state.pano.w:(k==="sagittal"?(state.pano.built?100:state.dims.y):state.dims.x);
+             let ih = (k==="axial")?state.dims.y:(k==="pano" && state.pano.built?state.pano.h:state.dims.z);
+             const cImg = getRefCenterImg(k);
+             const cSc = imgToScr(k, cImg.ix, cImg.iy, cv.width, cv.height, iw, ih, vp, arY);
+             state.cursor.tilt = Math.atan2(-(lp.x - cSc.x), -(lp.y - cSc.y));
+          } else if(state.mouse.dragRef === 'center'){
+              if(k==='axial'){ state.pos.sagittal = pImg.x; state.pos.coronal = pImg.y; }
+              else if(k==='coronal'){ state.pos.sagittal = pImg.x; state.cursor.z = state.dims.z - 1 - pImg.y; }
+              else if(k==='pano'){ state.cursor.idx = pImg.x; state.cursor.z = state.dims.z - 1 - pImg.y; }
+              else if(k==='sagittal'){ state.cursor.z = state.dims.z - 1 - pImg.y; if(state.pano.built) state.cursor.idx += (pImg.x - 50); }
+          }
+          updateSync(); renderAll(); return;
+      }
+
+      if(state.mouse.dragIdx !== -1 && state.globalTool === "curve"){
+          state.curve[state.mouse.dragIdx] = scrToImg(k, evtToLocal(k, e).x, evtToLocal(k, e).y);
+          render('axial'); return;
+      }
+
+      // Explicit or Implicit Pan
+      const mode = state.vp[k].mode;
+      if(state.mouse.down) {
+          if(mode === "pan"){ state.vp[k].x += dx; state.vp[k].y += dy; render(k); }
+          else if(mode === "wl" || e.buttons===2){ state.wl[k].w += dx * 2; state.wl[k].l += dy * 2; render(k); }
+      }
+  }
+
+  function onUp(k, e){
+      state.mouse.down = false;
+      state.mouse.dragIdx = -1;
+      state.mouse.dragRef = null;
+      state.mouse.impDrag = null;
+      state.mouse.impRotate = null;
+      state.scout.handle = null; 
+      
+      // Reset implicit pan (do NOT cancel explicit WL mode)
+      if(state.globalTool === 'none' && state.vp[k].mode === 'pan') state.vp[k].mode = 'none';
+
+      if(state.mouse.editMeas){
+          const m = state.meas[state.mouse.editMeas.idx];
+          recalcMeas(m, k, true); state.mouse.editMeas = null;
+          render(k); return;
+      }
+      if(state.tempMeas && (state.tempMeas.type === 'ruler' || state.tempMeas.type === 'arrow')){
+          if(Math.hypot(state.tempMeas.points[1].x-state.tempMeas.points[0].x, state.tempMeas.points[1].y-state.tempMeas.points[0].y) > 0.5) {
+             recalcMeas(state.tempMeas, k, true); state.meas.push(state.tempMeas);
+          }
+          state.tempMeas = null; render(k);
+      }
+  }
+
+  function onDblClick(k, e){
+      if(state.tempMeas && (state.tempMeas.type === 'area' || state.tempMeas.type === 'density' || state.tempMeas.type === 'nerve' || state.tempMeas.type === 'volume_area')){
+          if(state.tempMeas.points.length > 1){
+              recalcMeas(state.tempMeas, k, true);
+              state.meas.push(state.tempMeas);
+              
+              if(state.tempMeas.type === 'volume_area') {
+                  calculateTotalVolume();
+                  if(state.roiInterp && state.roiInterp.dirty) { state.roiInterp.dirty[state.tempMeas.view||'axial'] = true; }
+                  rebuildRoiInterpCache(state.tempMeas.view||'axial');
+              }
+          }
+          state.tempMeas = null;
+          renderAll();
+      } else {
+          // Double click to edit Text Note
+          const lp = evtToLocal(k, e);
+          const cv = $(`cv-${k}`);
+          const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
+          const iw = (k==="pano" && state.pano.built)?state.pano.w : (k==="sagittal"?100:state.dims.x);
+          const ih = (k==="pano" && state.pano.built)?state.pano.h : (k==="axial"?state.dims.y:state.dims.z);
+          
+          for(let i=state.meas.length-1; i>=0; i--){
+              const m = state.meas[i];
+              if(m.type !== 'text' || !checkSliceVis(k, m)) continue;
+
+              const ptIdx = m.points.length > 1 ? 1 : 0;
+              const p = m.points[ptIdx]; 
+              
+              const sc = imgToScr(k, p.x, p.y, cv.width, cv.height, iw, ih, state.vp[k], arY);
+              
+              // Hit detection for text
+              if(Math.hypot(sc.x - lp.x, sc.y - lp.y) < 30) {
+                  spawnTextInput(k, i);
+                  return;
+              }
+          }
+      }
+  }
+
+  function onWheel(k, e){
+      e.preventDefault();
+      if(!e.ctrlKey) {
+          const f = e.deltaY > 0 ? 0.9 : 1.1; 
+          state.vp[k].s *= f; 
+          render(k);
+      } else {
+         if(k==="axial") {
+             state.cursor.z = clamp(state.cursor.z - (e.deltaY>0?1:-1), 0, state.dims.z-1);
+             renderAll();
+         } else if(k==="coronal"){
+             state.pos.coronal = clamp(state.pos.coronal - (e.deltaY>0?1:-1), 0, state.dims.y-1);
+             renderAll();
+         }
+      }
+  }
+
+  function recalcMeas(m, k, heavyCalc){
+      if(m.type === 'ruler'){
+          const p0 = m.points[0], p1 = m.points[1];
+          const dist = Math.hypot(p1.x-p0.x, p1.y-p0.y);
+          let sp = state.spacing.x; 
+          if(k==='coronal' || k==='sagittal') sp = (state.spacing.x + state.spacing.z)/2; 
+          let dMm = dist * sp;
+          if(k==='coronal' || k==='sagittal') {
+             const dy = (p1.y-p0.y)*state.ratio.z; const dx = p1.x-p0.x;
+             dMm = Math.sqrt(dx*dx + dy*dy) * state.spacing.x;
+          }
+          m.val = dMm.toFixed(2) + " mm";
+      } else if(m.type === 'area' || m.type === 'volume_area'){
+          const areaMm = polygonArea(m.points) * state.spacing.x * (k!=='axial'?state.spacing.z:state.spacing.x);
+          m.val = areaMm.toFixed(1) + " mm²";
+          if(m.type === 'volume_area') { m.areaValue = areaMm; calculateTotalVolume(true); }
+      } else if(m.type === 'angle'){
+          if(m.points && m.points.length >= 3){
+              const deg = angleDeg(m.points[0], m.points[1], m.points[2], k);
+              m.val = deg.toFixed(1) + "°";
+          } else {
+              m.val = "";
+          }
+      } else if(m.type === 'density' && heavyCalc){
+          const res = calcDensity(k, m.points);
+          m.val = res.text; if(res.fill) m.fill = res.fill; if(res.stroke) m.stroke = res.stroke;
+      }
+  }
+  
+    function setVolumeButton(volMm3){
+      const el = $("volumeBtnText");
+      if(!el) return;
+      if(volMm3 == null || !isFinite(volMm3) || volMm3 <= 0){
+          el.textContent = "Volume";
+      } else {
+          el.textContent = `Volume (${volMm3.toFixed(1)} mm³)`;
+      }
+  }
+
+  function calculateTotalVolume(silent=false) {
+      const volsByView = {};
+      for(const m of state.meas){
+          if(m.type !== 'volume_area') continue;
+          const v = m.view || 'axial';
+          if(!volsByView[v]) volsByView[v] = [];
+          volsByView[v].push(m);
+      }
+
+      let grandTotal = 0;
+
+      for(const v in volsByView){
+          const vols = volsByView[v].slice().sort((a,b)=>a.slice-b.slice);
+          if(vols.length < 2) continue;
+
+          const minS = vols[0].slice;
+          const maxS = vols[vols.length-1].slice;
+
+          const areaAt = (s)=>{
+              for(const m of vols){ if(m.slice === s) return (m.areaValue || 0); }
+              let a=null, b=null;
+              for(let i=0;i<vols.length-1;i++){
+                  if(vols[i].slice < s && s < vols[i+1].slice){
+                      a = vols[i]; b = vols[i+1];
+                      break;
+                  }
+              }
+              if(!a || !b) return 0;
+              const t = (s - a.slice) / (b.slice - a.slice);
+              return (a.areaValue || 0) * (1 - t) + (b.areaValue || 0) * t;
+          };
+
+          const dz = (state.spacing && state.spacing.z) ? state.spacing.z : 1;
+
+          let totalVol = 0;
+          for(let s=minS; s<maxS; s++){
+              const a1 = areaAt(s);
+              const a2 = areaAt(s+1);
+              totalVol += ((a1 + a2) * 0.5) * dz;
+          }
+          grandTotal += totalVol;
+      }
+
+      state.volumeTotal = grandTotal;
+      setVolumeButton(grandTotal);
+
+      const lastVol = state.meas.slice().reverse().find(m => m.type === 'volume_area');
+      if(lastVol) lastVol.val = `Vol: ${grandTotal.toFixed(1)} mm³`;
+
+      if(!silent) showToast(`Total Volume: ${grandTotal.toFixed(1)} mm³`);
+  }
+
+  function polygonArea(pts){
+      let area = 0;
+      for (let i = 0; i < pts.length; i++) {
+        let j = (i + 1) % pts.length;
+        area += pts[i].x * pts[j].y; area -= pts[j].x * pts[i].y;
+      }
+      return Math.abs(area) / 2;
+  }
+
+  function resampleClosedPolyline(pts, n=64){
+      if(!pts || pts.length < 3) return [];
+      const p = pts.map(q=>({x:q.x, y:q.y}));
+      const segLen = [];
+      let total = 0;
+      for(let i=0;i<p.length;i++){
+          const a = p[i], b = p[(i+1)%p.length];
+          const d = Math.hypot(b.x-a.x, b.y-a.y);
+          segLen.push(d);
+          total += d;
+      }
+      if(total === 0) return p.slice(0, n);
+
+      const out = [];
+      let target = 0;
+      let si = 0;
+      let acc = 0;
+
+      for(let k=0;k<n;k++){
+          target = (k * total) / n;
+          while(si < segLen.length && acc + segLen[si] < target){
+              acc += segLen[si];
+              si++;
+          }
+          const a = p[si % p.length];
+          const b = p[(si+1) % p.length];
+          const d = segLen[si % segLen.length] || 1;
+          const t = (target - acc) / d;
+          out.push({x: a.x + (b.x-a.x)*t, y: a.y + (b.y-a.y)*t});
+      }
+      return out;
+  }
+
+  function interpPolygon(pa, pb, t){
+      const a = resampleClosedPolyline(pa, 96);
+      let b = resampleClosedPolyline(pb, 96);
+      if(a.length !== b.length || a.length < 3) return [];
+
+      // Ensure consistent winding + best circular shift alignment (prevents "twisting")
+      const polyAreaSigned = (pts)=>{
+        let s=0;
+        for(let i=0;i<pts.length;i++){
+          const j=(i+1)%pts.length;
+          s += (pts[i].x*pts[j].y - pts[j].x*pts[i].y);
+        }
+        return s/2;
+      };
+      const sameWinding = (polyAreaSigned(a) >= 0) === (polyAreaSigned(b) >= 0);
+      if(!sameWinding) b = b.slice().reverse();
+
+      const bestShift = (A,B)=>{ 
+        const n=A.length;
+        // Stable anchor: right-most point (max x, then max y) to keep border position consistent slice-to-slice
+        const anchorIndex = (pts)=>{ 
+          let idx=0;
+          for(let i=1;i<pts.length;i++){
+            const p=pts[i], q=pts[idx];
+            if(p.x>q.x || (p.x===q.x && p.y>q.y)) idx=i;
+          }
+          return idx;
+        };
+        const ia = anchorIndex(A);
+        const ib = anchorIndex(B);
+
+        const baseShift = (ib - ia + n) % n;
+        let best = baseShift, bestErr = Infinity;
+
+        const errAt = (shift)=>{
+          let e=0;
+          for(let i=0;i<n;i++){
+            const p=A[i], q=B[(i+shift)%n];
+            const dx=p.x-q.x, dy=p.y-q.y;
+            e += dx*dx + dy*dy;
+          }
+          return e;
+        };
+
+        // Refine around the anchor shift to prevent twisting while keeping absolute position
+        for(let ds=-16; ds<=16; ds++){
+          const s=(baseShift + ds + n) % n;
+          const e=errAt(s);
+          if(e<bestErr){bestErr=e; best=s;}
+        }
+        return best;
+      };
+
+      const shift = bestShift(a,b);
+      const out = [];
+      for(let i=0;i<a.length;i++){
+        const q = b[(i+shift)%b.length];
+        out.push({x: a[i].x*(1-t) + q.x*t, y: a[i].y*(1-t) + q.y*t});
+      }
+      return out;
+  }
+
+  function getInterpolatedVolumePolyForSlice(view, slice){
+      const vols = state.meas.filter(m => m.type==='volume_area' && (m.view||'axial')===view).sort((a,b)=>a.slice-b.slice);
+      if(vols.length < 2) return null;
+
+      for(const m of vols){
+          if(m.slice === slice) return m.points;
+      }
+      let a=null, b=null;
+      for(let i=0;i<vols.length-1;i++){
+          if(vols[i].slice < slice && slice < vols[i+1].slice){
+              a = vols[i]; b = vols[i+1];
+              break;
+          }
+      }
+      if(!a || !b) return null;
+      const t = (slice - a.slice) / (b.slice - a.slice);
+      return interpPolygon(a.points, b.points, t);
+  }
+
+
+  // --- 3D ROI interpolation cache (precomputes intermediate masks between keyframe slices) ---
+  function rebuildRoiInterpCache(view){
+      if(!state.roiInterp || !state.roiInterp.enabled) return;
+      if(!state.roiInterp.cache[view]) return;
+      const cache = state.roiInterp.cache[view];
+      cache.clear();
+
+      const keyframes = state.meas
+        .filter(m => m.type==='volume_area' && (m.view||'axial')===view)
+        .slice()
+        .sort((a,b)=>a.slice-b.slice);
+
+      if(keyframes.length < 2){
+        if(state.roiInterp.dirty) state.roiInterp.dirty[view] = false;
+        return;
+      }
+
+      for(let i=0;i<keyframes.length-1;i++){
+        const a = keyframes[i], b = keyframes[i+1];
+        const gap = b.slice - a.slice;
+        if(gap <= 1) continue;
+
+        for(let s=a.slice+1; s<=b.slice-1; s++){
+          const t = (s - a.slice) / (b.slice - a.slice);
+          const poly = interpPolygon(a.points, b.points, t);
+          if(poly && poly.length > 2){
+            cache.set(s, { poly, t, aSlice:a.slice, bSlice:b.slice });
+          }
+        }
+      }
+
+      state.roiInterp.dirty[view] = false;
+  }
+
+  function getRoiInterpPoly(view, slice){
+      // Exact keyframe wins
+      for(const m of state.meas){
+        if(m.type==='volume_area' && (m.view||'axial')===view && m.slice===slice) return { poly:m.points, exact:true, t:0 };
+      }
+
+      // Constrain interpolation strictly between the FIRST and LAST keyframe slices for this view.
+      // خارج نطاق أول وآخر Slice تم عليه رسم Volume Area -> لا نعرض أي Mask.
+      const kfs = state.meas
+        .filter(m => m.type==='volume_area' && (m.view||'axial')===view)
+        .slice()
+        .sort((a,b)=>a.slice-b.slice);
+      if(kfs.length < 2) return null;
+      const minS = kfs[0].slice;
+      const maxS = kfs[kfs.length-1].slice;
+      if(slice < minS || slice > maxS) return null;
+
+      if(state.roiInterp && state.roiInterp.enabled && state.roiInterp.cache[view]){
+        if(state.roiInterp.dirty[view]) rebuildRoiInterpCache(view);
+        const hit = state.roiInterp.cache[view].get(slice);
+        if(hit) return { poly: hit.poly, exact:false, t: hit.t };
+      }
+      // Fallback (non-cached)
+      const poly = getInterpolatedVolumePolyForSlice(view, slice);
+      return poly ? { poly, exact:false, t:0.5 } : null;
+  }
+
+  function isPointInPoly(x, y, pts) {
+      let inside = false;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+          const xi = pts[i].x, yi = pts[i].y; const xj = pts[j].x, yj = pts[j].y;
+          if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+      }
+      return inside;
+  }
+
+  function updateSync(){
+      if(!state.loaded) return;
+      if(state.pano.built && state.pano.curvePoints && state.pano.curvePoints.length){
+          const idx = clamp(Math.floor(state.cursor.idx), 0, state.pano.curvePoints.length-1);
+          const pt = state.pano.curvePoints[idx];
+          state.pos.sagittal = clamp(Math.round(pt.x), 0, state.dims.x-1);
+          state.pos.coronal  = clamp(Math.round(pt.y), 0, state.dims.y-1);
+      }
+      const z = clamp(Math.round(state.cursor.z), 0, state.dims.z-1);
+      state.pos.axial = z;
+      $("sl-axial").value = z; $("idx-axial").innerText = z;
+      $("sl-coronal").value = state.pos.coronal; $("idx-coronal").innerText = state.pos.coronal;
+      if(state.pano.built){
+          const idxVal = clamp(Math.round(state.cursor.idx), 0, state.pano.w-1);
+          $("sl-sagittal").value = idxVal;
+          $("sl-pano-scroll").value = idxVal; // Update new Pano slider
+          $("idx-sagittal").innerText = idxVal;
+          $("idx-pano").innerText = `${idxVal} | z:${z}`;
+      } else {
+          $("sl-sagittal").value = state.pos.sagittal;
+          $("idx-sagittal").innerText = state.pos.sagittal;
+      }
+  }
+
+  function renderAll(){ views.forEach(k => { if(state.loaded) render(k); }); }
+
+  function getFitScale(k) {
+      if(!state.loaded) return 1;
+      const cv = $(`cv-${k}`);
+      let iw = (k==="pano" && state.pano.built) ? state.pano.w : (k==="sagittal" ? (state.pano.built?100:state.dims.y) : state.dims.x);
+      let ih = (k==="pano" && state.pano.built) ? state.pano.h : (k==="axial" ? state.dims.y : state.dims.z);
+      const arY = (k==="coronal" || k==="sagittal" || k==="pano") ? state.ratio.z : 1;
+      return Math.min(cv.width / iw, cv.height / (ih * arY)) * 0.9;
+  }
+  
+  function getCatmullRomSpline(points, segments) {
+     if(points.length < 2) return points;
+     const res = [];
+     const p = [points[0], ...points, points[points.length-1]];
+     for(let i=0; i<p.length-3; i++) {
+        for(let j=0; j<segments; j++) {
+           res.push(interpolateCatmullRom(p[i], p[i+1], p[i+2], p[i+3], j/segments));
+        }
+     }
+     res.push(points[points.length-1]);
+     return res;
+  }
+
+  function interpolateCatmullRom(p0, p1, p2, p3, t) {
+     const t2 = t*t; const t3 = t2*t;
+     const f1 = -0.5*t3 + t2 - 0.5*t;
+     const f2 =  1.5*t3 - 2.5*t2 + 1.0;
+     const f3 = -1.5*t3 + 2.0*t2 + 0.5*t;
+     const f4 =  0.5*t3 - 0.5*t2;
+     return { x: p0.x*f1 + p1.x*f2 + p2.x*f3 + p3.x*f4, y: p0.y*f1 + p1.y*f2 + p2.y*f3 + p3.y*f4 };
+  }
+
+  function isPortrait(){ return window.matchMedia && window.matchMedia('(orientation: portrait)').matches; }
+  
+  async function tryLandscapeLock(){
+      try{
+          const root = document.documentElement;
+          if(root.requestFullscreen && !document.fullscreenElement){
+              await root.requestFullscreen({ navigationUI: 'hide' }).catch(()=>{});
+          }
+      }catch(e){}
+      try{
+          if(screen.orientation && screen.orientation.lock){
+              await screen.orientation.lock('landscape').catch(()=>{});
+          }
+      }catch(e){}
+  }
+
+  function setRotateOverlayVisible(v){
+      const o = $('rotateOverlay');
+      if(!o) return;
+      o.style.display = v ? 'flex' : 'none';
+  }
+
+  function refreshMobileLayoutState(){
+      if(!document.body.classList.contains('viewer-mode')) return;
+      setRotateOverlayVisible(isPortrait());
+  }
+
+  async function enterViewerMode(){
+      document.body.classList.add('viewer-mode');
+      await tryLandscapeLock();
+      refreshMobileLayoutState();
+  }
+
+  function toggleSidebar(){
+      document.body.classList.toggle('sidebar-open');
+  }
+
+  window.addEventListener('resize', refreshMobileLayoutState, {passive:true});
+  window.addEventListener('orientationchange', refreshMobileLayoutState, {passive:true});
+
+  if($('btnEnterLandscape')) $('btnEnterLandscape').onclick = async () => { await tryLandscapeLock(); refreshMobileLayoutState(); setRotateOverlayVisible(false); };
+  if($('btnContinueNoLock')) $('btnContinueNoLock').onclick = () => { setRotateOverlayVisible(false); };
+  if($('btnSidebarToggle')) $('btnSidebarToggle').onclick = () => { toggleSidebar(); };
+
+
+  $("zipInputStart").addEventListener("change", async () => {
+      if($("zipInputStart").files && $("zipInputStart").files[0]) await doLoadZip($("zipInputStart").files[0]);
+  });
+  $("btnUndo").onclick = () => { app.undo(); };
+  $("btnUndoPoint").onclick = () => { if(state.curve.length > 0) { state.curve.pop(); render('axial'); } };
+  
+  async function doLoadZip(fileObj){
+        if(!fileObj) return;
+        $("loader").style.display="flex"; $("loadText").innerText = "Unzipping...";
+        try {
+            const zip = await JSZip.loadAsync(fileObj);
+            const imgs = [];
+            for(let k in zip.files){
+               if(!zip.files[k].dir && !k.includes("__MAC")) {
+                   try {
+                       const buf = await zip.files[k].async("arraybuffer");
+                       const img = daikon.Series.parseImage(new DataView(buf));
+                       // CHECK: Ensure image has pixel data AND position data before pushing
+                       if(img && img.hasPixelData() && img.getImagePosition()) imgs.push(img);
+                   } catch(e){}
+               }
+            }
+            if(!imgs.length) throw "No valid DICOM images found (Check position data)";
+            
+            $("loadText").innerText = "Ordering Slices...";
+            imgs.sort((a,b)=> a.getImagePosition()[2] - b.getImagePosition()[2]);
+            const ref=imgs[0];
+            state.meta.photometric = (ref.getPhotometricInterpretation ? ref.getPhotometricInterpretation() : "MONOCHROME2") || "MONOCHROME2";
+            state.dims = {x:ref.getCols(), y:ref.getRows(), z:imgs.length};
+            const sp = ref.getPixelSpacing();
+            
+            let zSp = ref.getSliceThickness() || 1;
+            // Robust slice thickness check
+            if(imgs.length > 1) {
+                const pos0 = imgs[0].getImagePosition();
+                const pos1 = imgs[1].getImagePosition();
+                if(pos0 && pos1) zSp = Math.abs(pos1[2] - pos0[2]);
+            }
+
+            state.spacing = {x:sp[1], y:sp[0], z:zSp};
+            state.ratio = {z:state.spacing.z / state.spacing.x};
+
+            if(ref.getRescaleSlope !== undefined) {
+                state.meta.slope = ref.getRescaleSlope() || 1;
+                state.meta.intercept = ref.getRescaleIntercept() || 0;
+                state.meta.hasHU = true;
+            }
+  
+            $("loadText").innerText = "Building 3D Volume...";
+            state.vol = new Float32Array(state.dims.x*state.dims.y*state.dims.z);
+            for(let i=0; i<imgs.length; i++) state.vol.set(imgs[i].getInterpretedData(false,false), i*state.dims.x*state.dims.y);
+
+            state.pos = {axial:Math.floor(state.dims.z/2), coronal:Math.floor(state.dims.y/2), sagittal:Math.floor(state.dims.x/2)};
+            state.cursor.z = state.pos.axial;
+            state.loaded=true;
+
+            // Build initial 3D ROI interpolation caches (if any keyframes exist)
+            try{ if(state.roiInterp){ ['axial','coronal','sagittal'].forEach(v=>{ state.roiInterp.dirty[v]=true; rebuildRoiInterpCache(v); }); } }catch(e){}
+
+            await enterViewerMode();
+            
+            $("sl-axial").max=state.dims.z-1; 
+            $("sl-coronal").max=state.dims.y-1;
+            
+            // Activate Cross Section (Sagittal) Slider immediately
+            $("sl-sagittal").max=state.dims.x-1; 
+
+            views.forEach(v => { state.vp[v] = {x:0, y:0, s: getFitScale(v), r:0, mode:'none', showRef:true}; render(v); });
+            $("startScreen").style.display = "none";
+        } catch(e){ console.error(e); alert("Error: "+e); }
+        $("loader").style.display="none";
+  }
+
+  function buildThickPano(thickMm, proj){
+      if(state.curve.length < 3) return alert("Draw at least 3 points");
+      const rawPoints = getCatmullRomSpline(state.curve, 20); 
+      const samps = []; samps.push(rawPoints[0]);
+      for(let i=0; i<rawPoints.length-1; i++){
+          const p1 = rawPoints[i]; const p2 = rawPoints[i+1];
+          const dist = Math.hypot(p2.x-p1.x, p2.y-p1.y);
+          const steps = Math.ceil(dist);
+          for(let j=1; j<=steps; j++){
+              samps.push({ x: p1.x + (p2.x-p1.x)*j/steps, y: p1.y + (p2.y-p1.y)*j/steps });
+          }
+      }
+
+      const normals = samps.map((p,i)=>{
+          const pPrev = samps[Math.max(0, i-1)]; const pNext = samps[Math.min(samps.length-1, i+1)];
+          let tx = pNext.x - pPrev.x; let ty = pNext.y - pPrev.y;
+          const len = Math.hypot(tx,ty) || 1;
+          return {nx: -ty/len, ny: tx/len};
+      });
+
+      const sp = (state.spacing.x + state.spacing.y) / 2;
+      const halfPix = Math.max(1, Math.round((thickMm/2) / sp));
+      const w = samps.length; const h = state.dims.z; 
+      const out = new Float32Array(w*h);
+      
+      for(let z=0; z<h; z++){
+          const r = (h-1-z);
+          for(let xi=0; xi<w; xi++){
+              const p = samps[xi]; const nrm = normals[xi];
+              let acc = 0; let cnt = 0; let mx = -1e30;
+              for(let t=-halfPix; t<=halfPix; t+=0.5){ 
+                  const val = getVal(p.x + nrm.nx * t, p.y + nrm.ny * t, z);
+                  if(proj === 'mip') { if(val > mx) mx = val; } else { acc += val; cnt++; }
+              }
+              out[r*w + xi] = (proj === 'mip') ? (mx>-1e20 ? mx : 0) : (cnt ? acc/cnt : 0);
+          }
+      }
+
+      state.pano = { built:true, data:out, w, h, thickMm, proj, curvePoints: samps, curveNormals: normals };
+      
+      // Update Sliders for Pano Mode
+      $("sl-sagittal").max = w - 1;
+      $("sl-pano-scroll").max = w - 1;
+
+      state.cursor.idx = Math.floor(w/2); state.cursor.z = Math.floor(h/2); state.cursor.tilt = 0;
+      state.vp['pano'] = {x:0, y:0, s:getFitScale('pano'), r:0, mode:'none', showRef:true};
+      updateSync(); renderAll();
+  }
+
+  $("btnPano").onclick = () => { buildThickPano(+( $("panoThick")?.value || 40 ), 'avg'); };
+  
+  $("btnToggleCurve").onclick = () => {
+      state.showCurve = !state.showCurve;
+      $("btnToggleCurve").textContent = state.showCurve ? "Hide Curve" : "Show Curve";
+      renderAll();
+  };
+  
+  // Listen to the whole sidebar to catch clicks in all groups
+  document.querySelector('.sidebar').onclick = e => {
+     // Find the closest .big-tool clicked
+     const t = e.target.closest('.big-tool');
+     if(t) {
+         // Remove active class from ALL big-tools in ALL groups
+         document.querySelectorAll('.big-tool').forEach(b=>b.classList.remove('active'));
+         
+         t.classList.add('active');
+         state.globalTool = t.dataset.tool;
+         
+         // Logic for toggling inputs display
+         const scoutCtrl = $("scoutControls");
+         if(scoutCtrl) scoutCtrl.style.display = (state.globalTool === 'scout') ? "flex" : "none";
+         
+         const impParams = $("implantParams");
+         if(impParams) impParams.classList.toggle('show', state.globalTool === 'implant');
+         
+         const volParams = $("volumeParams");
+         if(volParams) volParams.classList.toggle('show', state.globalTool === 'volume');
+         
+         if(state.globalTool === 'scout') {
+             showToast("Adjust box in Sagittal view");
+             if(state.pano.built) { app.clearCurve(); }
+             render('sagittal');
+         } else if(state.globalTool === 'implant') {
+             showToast("Click on panels to place new implant");
+             state.selectedImplantIdx = -1; 
+             app.renderImplantList();
+         }
+         else {
+             state.scout.box = {x:0, y:0, w:0, h:0};
+             renderAll();
+         }
+     }
+  };
+
+  
+  // Delete all Volume masks + reset volume calculation
+  $("btnDeleteVolume").onclick = () => {
+      app.deleteVolumeAll();
+  };
+
+$("btnDeleteCurve").onclick = () => {
+      // Delete drawn curve and reset panels back to the initial viewing state (without reloading / losing the loaded volume)
+      app.deleteCurveAndReset();
+      showToast("Curve deleted");
+  };
+
+
+  $("sl-axial").oninput = e => {state.pos.axial=+e.target.value; state.cursor.z = state.pos.axial; renderAll();};
+  $("sl-coronal").oninput = e => {state.pos.coronal=+e.target.value; renderAll();};
+  
+  $("sl-sagittal").oninput = e => {
+      if(state.pano.built){
+          state.cursor.idx = +e.target.value;
+      } else {
+          state.pos.sagittal = +e.target.value;
+      }
+      updateSync(); renderAll();
+  };
+
+  $("sl-pano-scroll").oninput = e => {
+      state.cursor.idx = +e.target.value;
+      updateSync(); renderAll();
+  };
+
+  // NEW BUTTONS EVENT LISTENERS
+  
+  // Back to dashboard (harmonize with RRZ app navigation)
+  if ($("btnDash")) {
+    $("btnDash").onclick = () => {
+      try { sessionStorage.setItem("rrz_nav_from", "cbct"); } catch(e) {}
+      window.location.href = "dashboard.html";
+    };
+  }
+
+$("btnNew").onclick = () => {
+      if(confirm("Load new file? Current data will be lost.")) location.reload();
+  };
+  $("btnReset").onclick = () => {
+      if(confirm("Reset all views and annotations?")) app.deleteCurveAndReset();
+  };
+
+  init();
+
+  return {
+      setMode: (k, m) => {
+          const isSame = state.vp[k].mode === m;
+          state.vp[k].mode = isSame ? "none" : m;
+          const tools = $(`panel-${k}`).querySelector('.local-tools');
+          Array.from(tools.children).forEach(b => { if(!b.title.includes("Ref")) b.classList.remove('active'); });
+          if(!isSame) tools.querySelector(`[data-mode="${m}"]`)?.classList.add('active');
+      },
+      toggleRef: (k, btn) => {
+          state.vp[k].showRef = !state.vp[k].showRef;
+          btn.classList.toggle('ref-active', state.vp[k].showRef); render(k);
+      },
+      zoom: (k, f) => { state.vp[k].s *= f; render(k); },
+      fit: (k) => { state.vp[k] = {x:0, y:0, s: getFitScale(k), r:0, mode:'none', showRef:true}; state.wl[k] = {w:2000, l:400}; render(k); },
+      capture: (k) => {
+          const cv = $(`cv-${k}`);
+          state.reportList.push({ view: k, img: cv.toDataURL('image/png'), type: state.selectedReportType, date: new Date().toLocaleTimeString() });
+          showToast(`Snapshot added to ${state.selectedReportType} report!`);
+      },
+      clearCurve: () => { state.curve=[]; state.pano.built=false; render('axial'); render('pano'); },
+      deleteVolumeAll: () => {
+          // Remove all volumetric ROI masks (volume_area) and reset volume UI + interpolation cache
+          const before = state.meas.length;
+          state.meas = state.meas.filter(m => m.type !== 'volume_area');
+          // Clear temp drawing state if currently drawing volume ROI
+          if(state.tempMeas && state.tempMeas.type === 'volume_area') state.tempMeas = null;
+
+          // Reset per-slice cached ROI interpolation overlays
+          if(state.roiInterp && state.roiInterp.cache){
+              for(const k of Object.keys(state.roiInterp.cache)){
+                  try { state.roiInterp.cache[k].clear(); } catch(e){}
+              }
+          }
+          if(state.roiInterp && state.roiInterp.dirty){
+              for(const k of Object.keys(state.roiInterp.dirty)) state.roiInterp.dirty[k] = false;
+          }
+
+          // Reset volume button label
+          try { setVolumeButton(null); } catch(e){}
+
+          renderAll();
+          showToast(before !== state.meas.length ? "Volume deleted" : "No volume to delete");
+      },
+
+      deleteCurveAndReset: () => {
+          // 1. Clear Data
+          state.curve = [];
+          state.meas = [];
+          state.implants = [];
+          state.reportList = [];
+          state.volumeTotal = null;
+          state.tempMeas = null;
+          
+          // 2. Clear Pano
+          state.pano = {built:false, data:null, w:0, h:0, curvePoints:[], curveNormals:[]};
+          state.showCurve = true;
+
+          // 3. Reset ROI Cache
+          if(state.roiInterp){
+             for(let k in state.roiInterp.cache) state.roiInterp.cache[k].clear();
+             for(let k in state.roiInterp.dirty) state.roiInterp.dirty[k] = false;
+          }
+
+          // 4. UI Reset
+          $("implantListContainer").innerHTML = ""; 
+          $("implantListContainer").style.display = "none";
+          try{ setVolumeButton(null); }catch(e){}
+
+          // 5. Pos Reset
+          if(state.dims && state.dims.x){
+              state.pos.sagittal = Math.floor(state.dims.x/2);
+              state.pos.coronal  = Math.floor(state.dims.y/2);
+              state.pos.axial    = Math.floor(state.dims.z/2);
+              state.cursor.z = state.pos.axial;
+              state.cursor.idx = 0;
+              state.cursor.tilt = 0;
+          }
+
+          // 6. VP/WL Reset
+          ['axial','coronal','sagittal','pano'].forEach(k=>{
+              state.vp[k] = {x:0, y:0, s:getFitScale(k), r:0, mode:'none', showRef:true};
+              state.wl[k] = {w:2000, l:400};
+              state.sharpness[k] = 0; // Reset sharpness
+              const sl = document.querySelector(`.sharp-slider[data-view="${k}"]`);
+              if(sl) sl.value = 0;
+          });
+
+          // 7. Update DOM elements
+          if($('sl-axial'))   { $('sl-axial').value = state.pos.axial; $('idx-axial').innerText = state.pos.axial; }
+          if($('sl-coronal')) { $('sl-coronal').value = state.pos.coronal; $('idx-coronal').innerText = state.pos.coronal; }
+          if($('sl-sagittal')){ $('sl-sagittal').value = state.pos.sagittal; $('idx-sagittal').innerText = state.pos.sagittal; }
+
+          // 8. Tool Reset
+          document.querySelectorAll('.big-tool').forEach(b=>b.classList.remove('active'));
+          state.globalTool = 'none';
+          document.querySelector('.big-tool[data-tool="none"]').classList.add('active'); // Activate pointer
+          
+          if($('scoutControls')) $('scoutControls').style.display = 'none';
+          if($('implantParams')) $('implantParams').classList.remove('show');
+          if($('volumeParams')) $('volumeParams').classList.remove('show');
+
+          updateSync();
+          renderAll();
+          showToast("View Reset to default");
+      },
+      undo: () => {
+          if(state.tempMeas){ if(state.tempMeas.points.length>1) state.tempMeas.points.pop(); else state.tempMeas = null; renderAll(); return; }
+          if(state.meas.length){ state.meas.pop(); showToast('Undo: annotation removed'); renderAll(); return; }
+          if(state.curve.length){ state.curve.pop(); showToast('Undo: curve point removed'); render('axial'); return; }
+          if(state.implants.length){ state.implants.pop(); showToast('Undo: Implant removed'); app.renderImplantList(); renderAll(); return; }
+          showToast('Nothing to undo');
+      },
+      addImplant: () => {
+          // Toggle tool state for placing new
+          state.globalTool = (state.globalTool === 'implant') ? 'none' : 'implant';
+          document.querySelectorAll('.big-tool').forEach(b=>b.classList.remove('active'));
+          const btn = document.querySelector('.big-tool[data-tool="implant"]');
+          if(state.globalTool === 'implant') btn?.classList.add('active');
+          if(state.globalTool === 'implant') {
+               state.selectedImplantIdx = -1; 
+               app.renderImplantList();
+          }
+          showToast(state.globalTool === 'implant' ? "Click on any panel to place implant" : "Implant tool off");
+      },
+      renderImplantList: () => {
+          const el = $('implantListContainer');
+          el.innerHTML = "";
+          if(state.implants.length === 0) { el.style.display = 'none'; return; }
+          el.style.display = 'flex';
+
+          state.implants.forEach((imp, i) => {
+              const isSel = (state.selectedImplantIdx === i);
+              const corW = (imp.corW != null) ? imp.corW : 4.0;
+              const apW  = (imp.apW  != null) ? imp.apW  : 3.5;
+              const h    = (imp.h    != null) ? imp.h    : 10.0;
+
+              const div = document.createElement('div');
+              div.className = `imp-item ${isSel ? 'active' : ''}`;
+              div.innerHTML = `
+                <div class="imp-head" onclick="app.selectImp(${i})">
+                   <span>Implant #${i+1}</span>
+                   <span style="font-weight:normal; color:${imp.visible?'#ccc':'#666'}">${imp.visible?'👁':'✕'}</span>
+                </div>
+                <div class="imp-actions">
+                   <button class="imp-btn" onclick="event.stopPropagation(); app.toggleImp(${i})">${imp.visible ? 'Hide' : 'Show'}</button>
+                   <button class="imp-btn delete" onclick="event.stopPropagation(); app.delImp(${i})">Del</button>
+                </div>
+
+                <div class="imp-edit" style="display:${isSel ? 'block' : 'none'}; margin-top:6px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.08);">
+                  <div class="inp-row">Cor W: <input type="number" class="inp-sm" value="${corW}" step="0.5"
+                        oninput="app.updateImpDim(${i}, 'corW', this.value)"> mm</div>
+                  <div class="inp-row">Ap W: <input type="number" class="inp-sm" value="${apW}" step="0.5"
+                        oninput="app.updateImpDim(${i}, 'apW', this.value)"> mm</div>
+                  <div class="inp-row">L: <input type="number" class="inp-sm" value="${h}" step="0.5"
+                        oninput="app.updateImpDim(${i}, 'h', this.value)"> mm</div>
+                </div>
+              `;
+              el.appendChild(div);
+          });
+
+          // Show angulations in the main implant panel only when something is selected
+          const showParams = state.selectedImplantIdx >= 0 && state.implants[state.selectedImplantIdx];
+          $("implantParams").classList.toggle('show', !!showParams);
+
+          if(showParams) {
+              const imp = state.implants[state.selectedImplantIdx];
+              const aC = (imp.angCross != null) ? imp.angCross : (imp.ang != null ? imp.ang : 0);
+              const aP = (imp.angPano  != null) ? imp.angPano  : (imp.ang != null ? imp.ang : 0);
+              $('impAngCross').value = aC;
+              $('impAngPano').value  = aP;
+          }
+      },
+      updateImpDim: (i, key, v) => {
+          if(!state.implants[i]) return;
+          const val = +v;
+          if(Number.isNaN(val)) return;
+          const imp = state.implants[i];
+          if(key === 'corW') imp.corW = val;
+          if(key === 'apW')  imp.apW  = val;
+          if(key === 'h')    imp.h    = val;
+          // Instant update on all panels
+          renderAll();
+      },
+      selectImp: (i) => {
+          state.selectedImplantIdx = i;
+          state.globalTool = 'none'; // Deselect placement tool when editing existing
+          document.querySelectorAll('.big-tool').forEach(b=>b.classList.remove('active'));
+          app.renderImplantList();
+          renderAll();
+      },
+      toggleImp: (i) => {
+          state.implants[i].visible = !state.implants[i].visible;
+          app.renderImplantList();
+          renderAll();
+      },
+      delImp: (i) => {
+          if(!confirm("Delete Implant #" + (i+1) + "?")) return;
+          state.implants.splice(i, 1);
+          state.selectedImplantIdx = -1;
+          app.renderImplantList();
+          renderAll();
+      },
+      showReport: () => {
+          const r = document.getElementById('reportModal');
+          const b = document.getElementById('repoContent');
+          b.innerHTML = "";
+          if(state.reportList.length === 0){
+             b.innerHTML = '<div style="text-align:center; padding:20px; color:#666;">No snapshots taken yet.</div>';
+          } else {
+             state.reportList.forEach((item, idx) => {
+                 const div = document.createElement('div');
+                 div.className = 'repo-item';
+                 div.innerHTML = `<img src="${item.img}" class="repo-img" />
+                 <div class="repo-info">
+                   <div style="color:var(--gold); font-weight:bold;">${item.view.toUpperCase()} View</div>
+                   <div>Time: ${item.date}</div>
+                   <button class="action-btn secondary" style="padding:4px; margin-top:5px;" onclick="app.delReport(${idx})">Delete</button>
+                 </div>`;
+                 b.appendChild(div);
+             });
+          }
+          r.style.display = 'flex';
+      },
+      delReport: (idx) => {
+          state.reportList.splice(idx, 1);
+          app.showReport();
+      },
+      downloadPDF: async () => {
+          if(state.reportList.length === 0) return showToast("No images to generate PDF");
+          if(!window.jspdf) return alert("PDF Library not loaded. Check internet connection.");
+          
+          showToast("Generating PDF...", 3000);
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF();
+          
+          let y = 20;
+
+          // Header
+          doc.setFontSize(18);
+          doc.text("RRZ CBCT Report", 105, y, { align: "center" });
+          y += 10;
+          doc.setFontSize(10);
+          doc.text(`Generated: ${new Date().toLocaleString()}`, 105, y, { align: "center" });
+          y += 15;
+          doc.line(20, y, 190, y);
+          y += 10;
+
+          for(let i=0; i<state.reportList.length; i++){
+              const item = state.reportList[i];
+              
+              if(y > 250) { doc.addPage(); y = 20; }
+
+              doc.setFontSize(12);
+              doc.setTextColor(0, 0, 0);
+              doc.text(`Image ${i+1}: ${item.view.toUpperCase()} View`, 20, y);
+              y += 7;
+
+              try {
+                  const imgProps = doc.getImageProperties(item.img);
+                  const pdfWidth = 170; 
+                  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                  if(y + pdfHeight > 280) { doc.addPage(); y = 20; }
+                  
+                  doc.addImage(item.img, 'PNG', 20, y, pdfWidth, pdfHeight);
+                  y += pdfHeight + 15;
+              } catch(e) {
+                  console.error("Error adding image to PDF", e);
+              }
+          }
+
+          doc.save("RRZ_Report.pdf");
+      },
+      performCrop: () => {
+        if(!state.loaded) return;
+        const b = state.scout.box;
+        let minY = Math.floor(b.x), maxY = Math.floor(b.x + b.w);
+        let minZ = Math.floor(state.dims.z - 1 - (b.y + b.h)), maxZ = Math.floor(state.dims.z - 1 - b.y);
+        if(minY > maxY) [minY, maxY] = [maxY, minY];
+        if(minZ > maxZ) [minZ, maxZ] = [maxZ, minZ];
+        minY = clamp(minY, 0, state.dims.y-1); maxY = clamp(maxY, 0, state.dims.y-1);
+        minZ = clamp(minZ, 0, state.dims.z-1); maxZ = clamp(maxZ, 0, state.dims.z-1);
+        const newW = state.dims.x, newH = (maxY - minY + 1), newD = (maxZ - minZ + 1);
+        if(newH <= 0 || newD <= 0) { alert("Invalid selection"); return; }
+        if(!confirm(`Crop to size: ${newW} x ${newH} x ${newD} ?`)) return;
+        $("loader").style.display = "flex"; $("loadText").innerText = "Cropping...";
+        setTimeout(() => {
+            try {
+                const newVol = new Float32Array(newW * newH * newD);
+                const oldW = state.dims.x, oldH = state.dims.y; 
+                for(let z = 0; z < newD; z++) {
+                    const oldZ = z + minZ;
+                    for(let y = 0; y < newH; y++) {
+                        const startOld = oldZ*oldW*oldH + (y+minY)*oldW;
+                        newVol.set(state.vol.subarray(startOld, startOld + newW), z*newW*newH + y*newW);
+                    }
+                }
+                state.vol = newVol; state.dims = { x: newW, y: newH, z: newD };
+                state.pos = { axial: Math.floor(newD/2), coronal: Math.floor(newH/2), sagittal: Math.floor(newW/2) };
+                state.cursor.z = state.pos.axial;
+                $("sl-axial").max = newD - 1; $("sl-coronal").max = newH - 1; $("sl-sagittal").max = newW - 1;
+                app.cancelCrop(); app.fit('axial'); app.fit('coronal'); app.fit('sagittal'); renderAll();
+                showToast("Cropped Successfully!");
+            } catch(e) { console.error(e); alert("Error: " + e); }
+            $("loader").style.display = "none";
+        }, 100);
+    },
+    cancelCrop: () => {
+        state.globalTool = 'none'; state.scout.box = {x:0, y:0, w:0, h:0};
+        document.querySelectorAll('.big-tool').forEach(b => b.classList.remove('active'));
+        document.querySelector('[data-tool="none"]').classList.add('active');
+        $("scoutControls").style.display = "none"; renderAll();
+    }
+  };
+})();
+</script>
+</body>
+</html>

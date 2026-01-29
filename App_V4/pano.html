@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Royal Ray Zone — Panoramic AI</title>
+
+  <link rel="stylesheet" href="panorama/style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+
+  <!-- Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark" id="rrzBrandMark"><i class="fa-solid fa-tooth"></i></div>
+        <div class="brand-text">
+          <h1>محلل البانوراما الذكي</h1>
+          <p>رفع صورة بانوراما → Mask + JSON → تقرير طبي احترافي</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" type="button" onclick="window.location.href='dashboard.html'">
+          <i class="fa-solid fa-arrow-right"></i>
+          العودة للـ Dashboard
+        </button>
+
+        <button class="btn btn-ghost" id="toggleSettingsBtn" type="button">
+          <i class="fa-solid fa-sliders"></i>
+          إعدادات الاتصال
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Connection Settings (collapsible) -->
+    <section class="card settings" id="settingsCard">
+      <div class="settings-row">
+        <div class="field">
+          <label for="apiUrl">رابط الـ AI Endpoint</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-link"></i>
+            <input
+              type="text"
+              id="apiUrl"
+              placeholder="مثال: https://gpu-api.yourdomain.com"
+              inputmode="url"
+              autocomplete="off"
+            />
+          </div>
+          <div class="field-hint">
+            يفضل رابط دائم (Supervisely GPU أو Server ثابت). رابط Cloudflare/Colab مؤقت.
+          </div>
+        </div>
+        <div class="field">
+          <label for="apiMode">وضع الـ API</label>
+          <select id="apiMode" class="select">
+            <option value="auto" selected>Auto (مُوصى به)</option>
+            <option value="infer">/infer (Multipart)</option>
+            <option value="analyze">/analyze (Base64 Legacy)</option>
+          </select>
+          <div class="field-hint">Auto سيجرّب /infer ثم يعمل fallback إلى /analyze إذا لزم.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Upload -->
+    <section class="grid">
+      <div class="card">
+        <div class="card-title">
+          <h2><i class="fa-solid fa-cloud-arrow-up"></i> رفع صورة البانوراما</h2>
+          <p class="muted">JPG/PNG/WebP • يُفضل صورة واضحة بدقة عالية.</p>
+        </div>
+
+        <div class="upload-area" id="dropZone" role="button" tabindex="0" aria-label="Upload Panoramic X-ray">
+          <input type="file" id="fileInput" accept="image/*" hidden />
+
+          <div class="upload-inner">
+            <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <div class="upload-text">
+              <p class="upload-head">اضغط لاختيار صورة أو اسحبها هنا</p>
+              <p class="upload-sub">سيتم حفظ الصورة محليًا، وسيتم إرسالها للتحليل فقط عند الضغط على “تحليل”.</p>
+            </div>
+            <div class="upload-actions">
+              <button class="btn" id="chooseBtn" type="button">اختيار صورة</button>
+              <button class="btn btn-success" id="analyzeBtn" type="button" disabled>
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                تحليل
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="file-meta" id="fileMeta" style="display:none;">
+          <div class="meta-left">
+            <i class="fa-solid fa-file-image"></i>
+            <div>
+              <div class="meta-name" id="fileName">—</div>
+              <div class="meta-sub" id="fileSize">—</div>
+            </div>
+          </div>
+          <div class="meta-right">
+            <button class="btn btn-ghost" id="clearBtn" type="button">
+              <i class="fa-solid fa-xmark"></i>
+              إزالة
+            </button>
+          </div>
+        </div>
+
+        <div class="preview" id="previewWrap" style="display:none;">
+          <img id="previewImage" alt="Preview" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <h2><i class="fa-solid fa-circle-info"></i> ملاحظات مهمة</h2>
+          <p class="muted">حتى لا نعيد العمل عند الانتقال إلى Supervisely GPU.</p>
+        </div>
+        <ol class="notes">
+          <li>
+            <strong>ثبات عقد البيانات (API Contract):</strong> سنثبت شكل الاستجابة داخل التطبيق.
+            عند تغيير مزود الـAI (Colab → Supervisely GPU) لن تغيّر الواجهة، فقط الـURL/التوثيق.
+          </li>
+          <li>
+            <strong>Auto API Mode:</strong> التطبيق سيجرّب /infer (Multipart) ثم fallback إلى /analyze.
+            عند تجهيز Supervisely سنجعل السيرفر يعيد نفس الـJSON.
+          </li>
+          <li>
+            <strong>PWA + Mobile:</strong> الرفع والمعالجة تتم مع مؤشرات تحميل واضحة وتخزين إعداد الرابط محليًا.
+          </li>
+          <li><strong>التقرير الطبي النصّي:</strong> سيتم تحسينه تلقائيًا عبر RRZ AI Gateway (Netlify + Gemma). إذا تعذر الاتصال، سيبقى التقرير المحلي كبديل.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Loader -->
+    <div class="loader" id="loader" aria-live="polite">
+      <div class="spinner"></div>
+      <p id="loaderText">جاري التحليل...</p>
+    </div>
+
+    <!-- Results -->
+    <section class="results-container" id="resultsArea" style="display:none;">
+      <div class="card">
+        <div class="report-header">
+          <h3><i class="fa-solid fa-image"></i> الصورة + الـMask</h3>
+          <div class="pill">Overlay</div>
+        </div>
+        <div class="image-wrapper">
+          <img id="processedImage" src="" alt="Processed X-Ray" />
+        </div>
+        <p class="hint">* هذه الصورة ناتجة من دمج الصورة الأصلية مع الماسك (Overlay) محليًا داخل المتصفح.</p>
+      </div>
+
+      <div class="card">
+        <div class="report-header">
+          <h3><i class="fa-solid fa-file-medical"></i> التقرير الطبي</h3>
+          <button class="btn-small" type="button" onclick="printReport()">
+            <i class="fa-solid fa-print"></i>
+            طباعة / PDF
+          </button>
+        </div>
+        <textarea id="reportText" class="report-editor"></textarea>
+        <p class="hint">* يمكنك تعديل التقرير قبل الطباعة.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="shared/aiClient.js"></script>
+  <script src="panorama/app.js"></script>
+  <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').then(() => console.log('Service Worker Registered'));
+    }
+  </script>
+</body>
+</html>

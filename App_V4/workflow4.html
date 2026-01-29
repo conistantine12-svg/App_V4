@@ -1,0 +1,3956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+(function(){
+  try{
+    var qs = new URLSearchParams(location.search);
+    var from = qs.get('from') || '';
+    var slot = qs.get('slot') || '';
+    if (from === 'photo' || slot){
+      document.documentElement.classList.add('from-photo');
+      document.addEventListener('DOMContentLoaded', function(){
+        var ov = document.getElementById('auto-load-overlay');
+        if (ov) ov.style.display = 'flex';
+      });
+    }
+  }catch(e){}
+})();
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1220">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    
+    <title>Occlusal Analysis Pro - Cant & Midline Measurement</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: 320px;
+            background: linear-gradient(180deg, #2c3e50 0%, #1a2530 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 5px 0 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .sidebar-header {
+            padding: 25px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .sidebar-header h2 i {
+            color: #3498db;
+        }
+        
+        .sidebar-subtitle {
+            color: #bdc3c7;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .points-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ecf0f1;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .points-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        
+        .point-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .point-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(5px);
+        }
+        
+        .point-card.active {
+            background: rgba(52, 152, 219, 0.2);
+            border-color: #3498db;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
+        }
+        
+        .point-card.placed {
+            background: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid #2ecc71;
+        }
+        
+        .point-number {
+            width: 32px;
+            height: 32px;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .point-card.active .point-number {
+            background: #fff;
+            color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+        }
+        
+        .point-card.placed .point-number {
+            background: #2ecc71;
+        }
+        
+        .point-info {
+            flex: 1;
+        }
+        
+        .point-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        
+        .point-desc {
+            font-size: 12px;
+            color: #bdc3c7;
+            line-height: 1.4;
+        }
+        
+        .point-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e74c3c;
+            flex-shrink: 0;
+        }
+        
+        .point-card.placed .point-status {
+            background: #2ecc71;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+        
+        .sidebar-controls {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-reference {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            margin-top: 10px;
+        }
+        
+        .btn-reference:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(155, 89, 182, 0.3);
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .main-header {
+            padding: 25px 30px;
+            background: white;
+            border-bottom: 1px solid #eaeaea;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .main-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .main-header-subtitle {
+            color: #7f8c8d;
+            margin-top: 8px;
+            font-size: 16px;
+        }
+        
+        .analysis-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .image-section {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            position: relative;
+        }
+        
+        /* Enhanced Upload Area */
+        .upload-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.65);
+            z-index: 10;
+            display: none;
+        }
+        
+        .upload-area.active {
+            display: block;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+        
+        .upload-card {
+            background: white;
+            border-radius: 20px;
+            padding: 50px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            border: 2px dashed #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-card:hover {
+            border-color: #3498db;
+            box-shadow: 0 25px 70px rgba(52, 152, 219, 0.2);
+        }
+        
+        .upload-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            color: white;
+            font-size: 40px;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
+        }
+        
+        .upload-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .upload-subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(46, 204, 113, 0.3);
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(46, 204, 113, 0.4);
+        }
+        
+        .upload-note {
+            margin-top: 25px;
+            color: #95a5a6;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .canvas-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            flex: 0 0 auto;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            min-height: 260px;
+            max-height: 520px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .canvas-container.active {
+            opacity: 1;
+        }
+
+        #face-canvas {
+            max-width: 100%;
+            max-height: 496px;
+            width: auto;
+            height: auto;
+            display: block;
+        }
+
+        .image-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .image-controls.active {
+            opacity: 1;
+        }
+        
+        .btn-upload {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+        
+        .btn-reset {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .btn-upload:hover, .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .analysis-section {
+            width: 500px;
+            padding: 30px;
+            overflow-y: auto;
+            background: white;
+            border-left: 1px solid #eaeaea;
+        }
+        
+        .analysis-tabs {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 25px;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .metric-card.good {
+            border-left-color: #2ecc71;
+        }
+        
+        .metric-card.warning {
+            border-left-color: #f39c12;
+        }
+        
+        .metric-card.alert {
+            border-left-color: #e74c3c;
+        }
+        
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .metric-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .metric-value {
+            font-weight: 700;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .metric-value.good {
+            color: #2ecc71;
+        }
+        
+        .metric-value.warning {
+            color: #f39c12;
+        }
+        
+        .metric-value.alert {
+            color: #e74c3c;
+        }
+        
+        .metric-description {
+            color: #7f8c8d;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .progress-container {
+            margin-top: 10px;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #3498db);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            animation: modalSlideIn 0.4s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        
+        .close-modal {
+            font-size: 28px;
+            font-weight: bold;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .close-modal:hover {
+            color: #e74c3c;
+        }
+        
+        .reference-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .reference-image-container {
+            text-align: center;
+        }
+        
+        .reference-image {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .reference-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .reference-list ol {
+            padding-left: 20px;
+        }
+        
+        .reference-list li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: white;
+            border-top: 1px solid #eaeaea;
+            font-size: 14px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e74c3c;
+        }
+        
+        .status-dot.active {
+            background: #2ecc71;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+        
+        .points-progress {
+            width: 200px;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .points-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Results Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .results-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .results-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .results-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .results-table .ideal {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        
+        .results-table .actual {
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .results-table .deviation {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        /* Calibration Modal */
+        .calibration-options {
+            display: flex;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .calibration-option {
+            flex: 1;
+            text-align: center;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .calibration-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .calibration-option.selected {
+            border-color: #3498db;
+            background: #e8f4fc;
+        }
+        
+        .calibration-icon {
+            font-size: 40px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        
+        .calibration-icon svg{ width:44px; height:44px; display:inline-block; }
+        
+        .calibration-input {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .calibration-input.active {
+            display: block;
+        }
+        
+        .calibration-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .calibration-input input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        /* Export Button */
+        .btn-export {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            margin-top: 15px;
+        }
+        
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(243, 156, 18, 0.3);
+        }
+        
+        /* Enhanced Measurement Labels */
+        .measurement-label {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.0);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            pointer-events: none;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.0);
+            box-shadow: none;
+            backdrop-filter: none;
+            min-width: 120px;
+            text-align: center;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.65);
+        }
+        
+        .measurement-label .value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #3498db;
+            margin-left: 4px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .analysis-container {
+                flex-direction: column;
+            }
+            
+            .analysis-section {
+                width: 100%;
+                height: 400px;
+            }
+            
+            .sidebar {
+                width: 280px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .points-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .upload-area {
+                width: 95%;
+            }
+            
+            .upload-card {
+                padding: 30px 20px;
+            }
+            
+            .calibration-options {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .points-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .reference-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .upload-title {
+                font-size: 24px;
+            }
+            
+            .upload-btn {
+                padding: 15px 30px;
+                font-size: 16px;
+            }
+        }
+    
+        .image-section{ position: relative; }
+
+        /* Auto-load overlay (when arriving from photo.html) */
+        html.from-photo #upload-area{ display:none !important; }
+        .image-section{ position: relative; }
+        .auto-load-overlay{
+            position:absolute;
+            inset:0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            z-index:50;
+            background:rgba(0,0,0,0.35);
+            backdrop-filter: blur(2px);
+        }
+        .auto-load-card{
+            background:rgba(15,23,42,0.92);
+            border:1px solid rgba(255,255,255,0.10);
+            border-radius:18px;
+            padding:22px 26px;
+            text-align:center;
+            color:#fff;
+            min-width:240px;
+            box-shadow:0 18px 50px rgba(0,0,0,0.35);
+        }
+        .spinner{
+            width:34px; height:34px;
+            border-radius:50%;
+            border:4px solid rgba(255,255,255,0.25);
+            border-top-color: rgba(255,255,255,0.95);
+            margin:0 auto;
+            animation:spin 0.85s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Undo button under points list */
+        .undo-wrap{
+            display:flex;
+            justify-content:center;
+            margin-top: 14px;
+        }
+        #undo-point-btn{
+            width: 100%;
+            max-width: 260px;
+        }
+        #undo-point-btn:disabled{
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+/* === Modern Sidebar Skin (RRZ) - START === */
+:root{
+  --rrz-sb-bg1:#0b1220;
+  --rrz-sb-bg2:#0f1a2a;
+  --rrz-sb-card:rgba(255,255,255,0.06);
+  --rrz-sb-card2:rgba(255,255,255,0.08);
+  --rrz-sb-border:rgba(255,255,255,0.10);
+  --rrz-sb-border2:rgba(255,255,255,0.14);
+  --rrz-sb-text:rgba(255,255,255,0.92);
+  --rrz-sb-muted:rgba(255,255,255,0.62);
+  --rrz-sb-accent:#6ea8ff;
+  --rrz-sb-accent2:#2ecc71;
+}
+
+.sidebar{
+  width: 292px;
+  background: radial-gradient(1200px 500px at 20% 0%, rgba(110,168,255,0.18), transparent 55%),
+              linear-gradient(180deg, var(--rrz-sb-bg1) 0%, var(--rrz-sb-bg2) 100%);
+  color: var(--rrz-sb-text);
+  box-shadow: 8px 0 24px rgba(0,0,0,0.18);
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+.sidebar-header{
+  padding: 18px 18px 14px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.sidebar-header h2{
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin: 0;
+  color: var(--rrz-sb-text);
+}
+
+.sidebar-header h2 i{
+  color: var(--rrz-sb-accent);
+  filter: drop-shadow(0 6px 10px rgba(110,168,255,0.22));
+}
+
+.sidebar-subtitle{
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--rrz-sb-muted);
+  line-height: 1.35;
+}
+
+.points-section{
+  padding: 14px 14px 10px;
+}
+
+.section-title{
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.86);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+#points-count{
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.points-wheel{
+  background: linear-gradient(180deg, var(--rrz-sb-card2), var(--rrz-sb-card));
+  border: 1px solid var(--rrz-sb-border);
+  border-radius: 16px;
+  padding: 10px 10px;
+  min-height: 340px;
+  color: rgba(255,255,255,0.92);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+.points-wheel:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(110,168,255,0.28), inset 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+.points-wheel option{
+  padding: 10px 10px;
+  margin: 2px 0;
+  border-radius: 10px;
+  background: rgba(8, 13, 23, 0.98);
+  color: rgba(255,255,255,0.92);
+}
+
+.points-wheel option:checked{
+  background: rgba(110,168,255,0.22);
+}
+
+.points-wheel::-webkit-scrollbar{
+  width: 10px;
+}
+.points-wheel::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,0.14);
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,0.35);
+}
+.points-wheel::-webkit-scrollbar-track{
+  background: rgba(0,0,0,0.12);
+  border-radius: 999px;
+}
+
+.sidebar-controls{
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.10);
+  gap: 10px;
+}
+
+.btn{
+  border-radius: 14px;
+  padding: 12px 12px;
+  font-size: 14px;
+  letter-spacing: 0.1px;
+}
+
+.btn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(110,168,255,0.26);
+}
+
+.btn-secondary{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+}
+
+.btn-secondary:hover{
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.18);
+}
+
+.btn-primary{
+  background: linear-gradient(135deg, rgba(110,168,255,1) 0%, rgba(52,152,219,1) 55%, rgba(41,128,185,1) 100%);
+  box-shadow: 0 14px 26px rgba(52,152,219,0.22);
+}
+
+.btn-primary:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(52,152,219,0.28);
+}
+
+.btn-reference{
+  background: linear-gradient(135deg, rgba(170,120,255,1) 0%, rgba(142,68,173,1) 100%);
+  box-shadow: 0 14px 26px rgba(142,68,173,0.20);
+  margin-top: 2px;
+}
+
+.btn-reference:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(142,68,173,0.26);
+}
+
+.btn-export{
+  background: linear-gradient(135deg, rgba(255,187,92,1) 0%, rgba(230,126,34,1) 100%);
+  box-shadow: 0 14px 26px rgba(230,126,34,0.20);
+  margin-top: 4px;
+}
+
+.btn-export:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(230,126,34,0.26);
+}
+
+@media (max-width: 1200px){
+  .sidebar{ width: 270px; }
+}
+@media (max-width: 900px){
+  .sidebar{
+    width: 100%;
+    box-shadow: none;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+  }
+  .points-wheel{ min-height: 240px; }
+}
+/* === Modern Sidebar Skin (RRZ) - END === */
+
+
+
+/* Unified Calibration Modal Theme */
+#calibration-modal.modal, #calib-settings-modal.modal{
+  display:none;
+  position:fixed;
+  z-index:1000;
+  left:0; top:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.80);
+  backdrop-filter: blur(5px);
+  overflow:auto;
+}
+#calibration-modal .calib-unified, #calib-settings-modal .calib-unified{
+  background:#ffffff !important;
+  margin:50px auto !important;
+  padding:0 !important;
+  border-radius:20px !important;
+  width:90% !important;
+  max-width:600px !important;
+  box-shadow:0 20px 40px rgba(0,0,0,0.20) !important;
+  overflow:hidden !important;
+  position:relative !important;
+}
+.calib-unified .modal-header{
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d) !important;
+  color:#ffffff !important;
+  padding:20px 30px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:16px !important;
+}
+.calib-unified .modal-header h2,
+.calib-unified .modal-header h3{
+  margin:0 !important;
+  font-size:20px !important;
+  font-weight:700 !important;
+  color:#ffffff !important;
+}
+.calib-unified .close-modal,
+.calib-unified .close-calib{
+  color:#ffffff !important;
+  font-size:28px !important;
+  font-weight:700 !important;
+  cursor:pointer !important;
+  background:transparent !important;
+  border:0 !important;
+  line-height:1 !important;
+}
+.calib-unified .modal-body{
+  padding:25px 30px !important;
+}
+.calib-unified .modal-subtitle{
+  margin:0 0 10px 0 !important;
+  color:#475569 !important;
+  font-size:13px !important;
+}
+.calib-unified .calibration-options,
+.calib-unified .calib-grid{
+  display:flex !important;
+  gap:20px !important;
+  margin:18px 0 0 0 !important;
+  flex-wrap:wrap !important;
+}
+.calib-unified .calibration-option,
+.calib-unified .calib-card{
+  flex:1 1 240px !important;
+  background:#f8f9fa !important;
+  border-radius:15px !important;
+  padding:20px !important;
+  cursor:pointer !important;
+  border:2px solid transparent !important;
+  transition: all 0.25s ease !important;
+  box-shadow:0 10px 20px rgba(0,0,0,0.06) !important;
+}
+.calib-unified .calibration-option:hover,
+.calib-unified .calib-card:hover{
+  transform: translateY(-3px) !important;
+  box-shadow:0 15px 30px rgba(0,0,0,0.10) !important;
+}
+.calib-unified .calibration-option.selected,
+.calib-unified .calib-card.selected{
+  border-color:#b21f1f !important;
+  background:#fff4f4 !important;
+}
+.calib-unified .calibration-icon,
+.calib-unified .calib-icon{
+  width:60px !important;
+  height:60px !important;
+  border-radius:50% !important;
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f) !important;
+  color:#ffffff !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin:0 auto 15px auto !important;
+  font-size:24px !important;
+}
+.calib-unified h3, .calib-unified .calib-card-title{
+  margin:0 0 8px 0 !important;
+  text-align:center !important;
+  font-size:16px !important;
+  color:#0f172a !important;
+}
+.calib-unified p, .calib-unified .calib-card-desc{
+  margin:0 !important;
+  text-align:center !important;
+  color:#475569 !important;
+  font-size:13px !important;
+}
+.calib-unified .calibration-input,
+.calib-unified .calib-manual-input,
+.calib-unified .calib-fields{
+  margin-top:14px !important;
+  background:#ffffff !important;
+  border-radius:12px !important;
+  padding:14px !important;
+  border:1px solid #e2e8f0 !important;
+}
+.calib-unified label{
+  display:block !important;
+  font-size:13px !important;
+  color:#334155 !important;
+  margin-bottom:6px !important;
+}
+.calib-unified input[type="number"],
+.calib-unified input[type="text"]{
+  width:100% !important;
+  padding:12px !important;
+  border:2px solid #e2e8f0 !important;
+  border-radius:10px !important;
+  font-size:14px !important;
+}
+.calib-unified .calib-inline{
+  display:flex !important;
+  gap:10px !important;
+  align-items:center !important;
+}
+.calib-unified .calib-help{
+  margin-top:8px !important;
+  font-size:12px !important;
+  color:#64748b !important;
+}
+.calib-unified .modal-footer,
+.calib-unified .modal-actions,
+.calib-unified .calib-actions{
+  display:flex !important;
+  justify-content:flex-end !important;
+  gap:12px !important;
+  padding:0 30px 25px 30px !important;
+}
+.calib-unified .btn{
+  border-radius:12px !important;
+}
+.calib-unified .calib-radio-row{
+  display:flex !important;
+  gap:8px !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin-top:12px !important;
+  font-size:13px !important;
+  color:#334155 !important;
+}
+
+
+/* === RRZ User Notes Panel (added) === */
+.user-notes-panel{
+  max-width: 900px;
+  margin: 12px auto 0;
+  background: #fff;
+  border: 3px solid #111;
+  border-radius: 18px;
+  padding: 18px 18px 12px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+}
+.user-notes-panel .notes-title{
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0 0 12px;
+  color:#111;
+}
+.user-notes-panel .note-row{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  margin: 14px 0;
+}
+.user-notes-panel .note-label{
+  min-width: 170px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #7b7b7b;
+}
+.user-notes-panel input,
+.user-notes-panel textarea{
+  flex:1;
+  font-size: 16px;
+  border: none;
+  border-bottom: 2px dashed #777;
+  padding: 6px 6px;
+  outline: none;
+  background: transparent;
+}
+.user-notes-panel textarea{
+  border: 2px dashed #777;
+  border-radius: 10px;
+  min-height: 70px;
+  resize: vertical;
+}
+.user-notes-panel .notes-hint{
+  margin-top: 10px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+</style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-ruler-combined"></i> Dental Analysis Engine</h2>
+                <div class="sidebar-subtitle">Dental Landmark Analysis & Clinical Metrics</div>
+            </div>
+            
+            <div class="points-section">
+                <div class="section-title">
+                    <span>Dental Landmarks</span>
+                    <span id="points-count">0/12</span>
+                </div>
+                <select aria-label="Points List" class="points-wheel" id="points-list" size="12"></select>
+                <div class="undo-wrap">
+                    <button class="btn btn-secondary" id="undo-point-btn" type="button">
+                        Undo Point Placement
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-controls">
+                <button class="btn btn-primary" id="start-analysis-btn">
+                    <i class="fas fa-calculator"></i> Analyze Dental Image
+                </button>
+                <button class="btn btn-secondary" id="calibration-btn">
+                    <i class="fas fa-ruler"></i> Calibration
+                </button>
+                <button class="btn btn-reference" id="reference-btn">
+                    <i class="fas fa-question-circle"></i> Reference Guide
+                </button>
+                <button class="btn btn-export" id="export-btn">
+                    <i class="fas fa-download"></i> Export Analysis
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <h1><i class="fas fa-tooth"></i> Dental Image Analysis Engine</h1>
+                <div class="main-header-subtitle">Analysis of dental canting, midline deviation, and bite relationships</div>
+            </div>
+            
+            <div class="analysis-container">
+                <div class="image-section">
+                    <div id="auto-load-overlay" class="auto-load-overlay" style="display:none;">
+                        <div class="auto-load-card">
+                            <div class="spinner"></div>
+                            <div style="font-weight:800; margin-top:10px;">Loading image…</div>
+                            <div style="opacity:.75; font-size:13px; margin-top:6px;">Preparing workflow</div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Area -->
+                    <div class="upload-area active" id="upload-area">
+                        <div class="upload-card">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h2 class="upload-title">Upload Dental Frontal Photo</h2>
+                            <p class="upload-subtitle">Upload a clear frontal dental photo with teeth visible. Ensure proper lighting and natural head position.</p>
+                            
+                            <button class="upload-btn" id="main-upload-btn">
+                                <i class="fas fa-camera"></i> Select Image
+                            </button>
+                            
+                            <div class="upload-note">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Supported formats: JPG, PNG, WebP. Max file size: 5MB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Canvas Area -->
+                    <div class="canvas-container" id="canvas-container">
+                        <canvas id="face-canvas" width="800" height="600"></canvas>
+                    </div>
+                    
+                    <!-- Image Controls -->
+
+                    <!-- RRZ_USER_NOTES_PANEL_START -->
+                    <div class="user-notes-panel" id="user-notes-panel" style="display:none;">
+                        <div class="notes-title">Notes:</div>
+                        <div class="note-row">
+                            <div class="note-label">Crowding</div>
+                            <input id="note-crowding" type="text" placeholder="">
+                        </div>
+                        <div class="note-row">
+                            <div class="note-label">Gingival Margin</div>
+                            <input id="note-gingival-margin" type="text" placeholder="">
+                        </div>
+                        <div class="note-row">
+                            <div class="note-label">Gingival color</div>
+                            <input id="note-gingival-color" type="text" placeholder="">
+                        </div>
+                        <div class="note-row" style="align-items:flex-start;">
+                            <div class="note-label" style="padding-top:6px;">Other Findings</div>
+                            <textarea id="note-other-findings" placeholder=""></textarea>
+                        </div>
+                        <div class="notes-hint">These notes will be appended automatically at the end of the final report.</div>
+                    </div>
+                    <!-- RRZ_USER_NOTES_PANEL_END -->
+
+                    <div class="image-controls" id="image-controls">
+                        <button class="btn btn-upload" onclick="document.getElementById('image-upload').click()">
+                            <i class="fas fa-sync-alt"></i> Change Image
+                        </button>
+                        <button class="btn btn-reset" onclick="resetAll()">
+                            <i class="fas fa-redo"></i> Reset All Points
+                        </button>
+                        <div style="margin-left: auto; color: #7f8c8d; font-size: 14px;">
+                            <i class="fas fa-mouse-pointer"></i> Click to place, drag to adjust points
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analysis-section">
+                    <div class="analysis-tabs">
+                        <div class="tab active" data-tab="cant">Dental Canting</div>
+                        <div class="tab" data-tab="midline">Midline Deviation</div>
+                        <div class="tab" data-tab="bite">Bite Relationships</div>
+                        <div class="tab" data-tab="summary">Summary</div>
+                    </div>
+                    
+                    <div id="cant-tab" class="tab-content active">
+                        <h3 style="margin-top: 0; color: #2c3e50;">Dental Canting Analysis</h3>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Reference Plane (Upper Incisors)</div>
+                                <div class="metric-value" id="reference-plane-status">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Line connecting upper right and left central incisor edges.
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Plane Construction</span>
+                                    <span id="plane-status">--</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="plane-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Dental Canting</div>
+                                <div class="metric-value" id="cant-status">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Difference in premolar heights relative to reference plane.
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Canting Magnitude</span>
+                                    <span id="canting-value">--</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="canting-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <table class="results-table" id="cant-table">
+                            <thead>
+                                <tr>
+                                    <th>Measurement</th>
+                                    <th>Value</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Cant measurements will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="midline-tab" class="tab-content">
+                        <h3 style="margin-top: 0; color: #2c3e50;">Midline Deviation Analysis</h3>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Midline Shift</div>
+                                <div class="metric-value" id="midline-shift-status">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Horizontal deviation between upper and lower dental midlines.
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Shift Magnitude</span>
+                                    <span id="shift-value">--</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="shift-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <table class="results-table" id="midline-table">
+                            <thead>
+                                <tr>
+                                    <th>Measurement</th>
+                                    <th>Value</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Midline measurements will be populated here -->
+                            </tbody>
+                        </table>
+                        
+                        <div class="metric-card" style="margin-top: 20px;">
+                            <div class="metric-header">
+                                <div class="metric-title">Mandibular Shift Direction</div>
+                                <div class="metric-value" id="shift-direction">--</div>
+                            </div>
+                            <div class="metric-description" id="shift-direction-info">
+                                Direction of lower midline relative to upper midline.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="bite-tab" class="tab-content">
+                        <h3 style="margin-top: 0; color: #2c3e50;">Vertical Bite Relationships</h3>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Anterior Vertical Relationship</div>
+                                <div class="metric-value" id="anterior-bite-status">--</div>
+                            </div>
+                            <div class="metric-description" id="anterior-bite-description">
+                                Vertical relationship between upper and lower central incisors.
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Posterior Vertical Relationship</div>
+                                <div class="metric-value" id="posterior-bite-status">--</div>
+                            </div>
+                            <div class="metric-description" id="posterior-bite-description">
+                                Vertical relationship between upper and lower molars.
+                            </div>
+                        </div>
+                        
+                        <table class="results-table" id="bite-table">
+                            <thead>
+                                <tr>
+                                    <th>Measurement</th>
+                                    <th>Value</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Bite measurements will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="summary-tab" class="tab-content">
+                        <h3 style="margin-top: 0; color: #2c3e50;">Analysis Summary</h3>
+                        
+                        <div class="metric-card good">
+                            <div class="metric-header">
+                                <div class="metric-title">Overall Assessment</div>
+                                <div class="metric-value" id="overall-assessment">Pending</div>
+                            </div>
+                            <div class="metric-description" id="overall-description">
+                                Complete all measurements for assessment
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Dental Canting</div>
+                                <div class="metric-value" id="summary-cant">--</div>
+                            </div>
+                            <div class="metric-description">
+                                <span id="cant-clinical">Measure to view clinical significance</span>
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Midline Deviation</div>
+                                <div class="metric-value" id="summary-midline">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Horizontal shift between dental midlines
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Anterior Bite</div>
+                                <div class="metric-value" id="summary-anterior">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Incisor vertical relationship
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Calibration Status</div>
+                                <div class="metric-value" id="calibration-status">Pixels</div>
+                            </div>
+                            <div class="metric-description" id="calibration-info">
+                                Currently using pixel measurements. Click "Calibration" to set millimeter conversion.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-dot" id="image-status-dot"></div>
+                    <span id="image-status">No image loaded</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="points-status-dot"></div>
+                    <span id="points-status">0 points placed</span>
+                </div>
+                <div class="status-item">
+                    <div class="points-progress">
+                        <div class="points-progress-fill" id="points-progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Calibration Modal -->
+    <div id="calibration-modal" class="modal">
+        <div class="modal-content calib-unified">
+            <div class="modal-header">
+                <h2><i class="fas fa-ruler"></i> Calibration Settings</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <p>Choose calibration method to convert pixels to real-world measurements.</p>
+            
+            <div class="calibration-options">
+                <div class="calibration-option" id="manual-calibration">
+                    <div class="calibration-icon">
+                        <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false" style="width:44px;height:44px;display:inline-block;" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="10" y="14" width="44" height="36" rx="6"></rect>
+  <path d="M18 22v8M24 22v6M30 22v8M36 22v6M42 22v8M48 22v6"></path>
+  <path d="M18 42v6M24 42v4M30 42v6M36 42v4M42 42v6M48 42v4"></path>
+</svg>
+                    </div>
+                    <h3>Manual (mm)</h3>
+                    <p>Enter a known measurement in millimeters for accurate conversion</p>
+                </div>
+                
+                <div class="calibration-option" id="pixel-calibration">
+                    <div class="calibration-icon">
+                        <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false" style="width:44px;height:44px;display:inline-block;" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="12" y="12" width="40" height="40" rx="6"></rect>
+  <path d="M24 12v40M40 12v40M12 24h40M12 40h40"></path>
+  <path d="M18 58h28" stroke-width="0"></path>
+</svg>
+                    </div>
+                    <h3>Continue with Pixels</h3>
+                    <p>Use pixel measurements without conversion to real units</p>
+                </div>
+            </div>
+            
+            <div class="calibration-input" id="manual-input">
+                <label for="known-distance">Enter known distance in mm (e.g., width between central incisors):</label>
+                <input type="number" id="known-distance" step="0.1" min="1" placeholder="e.g., 8.5">
+                <p style="margin-top: 10px; font-size: 13px; color: #7f8c8d;">
+                    <i class="fas fa-info-circle"></i> Measure a known distance on the teeth in mm and enter it above
+                </p>
+            </div>
+            
+            <div style="text-align: right; margin-top: 25px;">
+                <button class="btn btn-secondary" id="cancel-calibration">Cancel</button>
+                <button class="btn btn-primary" id="apply-calibration">Apply Calibration</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reference Modal -->
+    <div id="reference-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-map-marker-alt"></i> Dental Analysis Reference Guide</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <p>Place these dental landmarks accurately for precise analysis. <strong>Mandatory points</strong> are required for basic analysis. <strong>Optional points</strong> ("If Seen") provide additional insights if visible.</p>
+            
+            <div class="reference-grid">
+                <div class="reference-image-container">
+                    <img src="referance image4.png" alt="Dental landmarks reference" class="reference-image"
+                         onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;800&quot; height=&quot;600&quot; viewBox=&quot;0 0 800 600&quot;><rect width=&quot;800&quot; height=&quot;600&quot; fill=&quot;%23f0f0f0&quot;/><text x=&quot;400&quot; y=&quot;300&quot; font-family=&quot;Arial&quot; font-size=&quot;24&quot; text-anchor=&quot;middle&quot; fill=&quot;%23333&quot;>Dental Reference</text></svg>';">
+                </div>
+
+                <div class="reference-list">
+                    <ol>
+                        <li><strong>Upper Right Central Edge (Mandatory):</strong> Edge of upper right central incisor</li>
+                        <li><strong>Upper Left Central Edge (Mandatory):</strong> Edge of upper left central incisor</li>
+                        <li><strong>Upper Right Premolar Cusp (Mandatory):</strong> Cusp tip of upper right premolar</li>
+                        <li><strong>Upper Left Premolar Cusp (Mandatory):</strong> Cusp tip of upper left premolar</li>
+                        <li><strong>Upper Dental Midline (Mandatory):</strong> Midpoint between upper central incisors</li>
+                        <li><strong>Lower Dental Midline (Mandatory):</strong> Midpoint between lower central incisors</li>
+                        <li><strong>Upper Mid-Incisal Point (Mandatory):</strong> Incisal edge midpoint of upper central incisors</li>
+                        <li><strong>Lower Mid-Incisal Point (If Seen):</strong> Incisal edge midpoint of lower central incisors (if visible)</li>
+                        <li><strong>Right Upper Molar Mesial Cusp (If Seen):</strong> Mesial cusp tip of upper first molar (right)</li>
+                        <li><strong>Right Lower Molar Mesial Cusp (If Seen):</strong> Mesial cusp tip of lower first molar (right)</li>
+                        <li><strong>Left Upper Molar Mesial Cusp (If Seen):</strong> Mesial cusp tip of upper first molar (left)</li>
+                        <li><strong>Left Lower Molar Mesial Cusp (If Seen):</strong> Mesial cusp tip of lower first molar (left)</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <input type="file" id="image-upload" accept="image/*" style="display: none;">
+
+    <script>
+        // Application state - Updated for Dental Analysis
+        let state = {
+            analysisActive: false,
+            imageLoaded: false,
+            points: [],
+            placementHistory: [],
+            currentPointIndex: null,
+            image: null,
+            ctx: null,
+            canvas: null,
+            isDragging: false,
+            dragPointIndex: null,
+            calibration: {
+                method: 'pixels',
+                pixelsPerMM: 1,
+                knownDistanceMM: null
+            },
+            measurements: {},
+            angles: {},
+            // Updated point labels for dental landmarks
+            pointLabels: [
+                "Upper Right Central Edge - Mandatory",
+                "Upper Left Central Edge - Mandatory",
+                "Upper Right Premolar Cusp - Mandatory",
+                "Upper Left Premolar Cusp - Mandatory",
+                "Upper Dental Midline - Mandatory",
+                "Lower Dental Midline - Mandatory",
+                "Upper Mid-Incisal Point - Mandatory",
+                "Lower Mid-Incisal Point - If Seen (Optional)",
+                "Right Upper Molar Mesial Cusp - If Seen (Optional)",
+                "Right Lower Molar Mesial Cusp - If Seen (Optional)",
+                "Left Upper Molar Mesial Cusp - If Seen (Optional)",
+                "Left Lower Molar Mesial Cusp - If Seen (Optional)"
+            ],
+            // Tolerance for canting detection (1.0 mm default)
+            toleranceMM: 1.0
+        };
+
+        // Canvas globals
+        let canvas = null;
+        let ctx = null;
+        let measurementLabels = [];
+
+        // Initialize the application
+        function initApp() {
+            canvas = document.getElementById('face-canvas');
+            ctx = canvas.getContext('2d');
+            state.canvas = canvas;
+            state.ctx = ctx;
+            
+            // Set up event listeners
+            document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+            
+            // Canvas mouse events
+            canvas.addEventListener('mousedown', handleCanvasMouseDown);
+            canvas.addEventListener('mousemove', handleCanvasMouseMove);
+            canvas.addEventListener('mouseup', handleCanvasMouseUp);
+            canvas.addEventListener('mouseleave', handleCanvasMouseUp);
+            
+            // Set up main upload button
+            document.getElementById('main-upload-btn').addEventListener('click', function() {
+                document.getElementById('image-upload').click();
+            });
+            
+            // Set up calibration modal
+            const calibrationBtn = document.getElementById('calibration-btn');
+            const calibrationModal = document.getElementById('calibration-modal');
+            const closeCalibration = document.querySelector('#calibration-modal .close-modal');
+            const cancelCalibration = document.getElementById('cancel-calibration');
+            const applyCalibration = document.getElementById('apply-calibration');
+            const manualCalibration = document.getElementById('manual-calibration');
+            const pixelCalibration = document.getElementById('pixel-calibration');
+            
+            calibrationBtn.addEventListener('click', function() {
+                if (!state.imageLoaded) {
+                    alert("Please upload an image first");
+                    return;
+                }
+                calibrationModal.style.display = 'block';
+            });
+            
+            closeCalibration.addEventListener('click', function() {
+                calibrationModal.style.display = 'none';
+            });
+            
+            cancelCalibration.addEventListener('click', function() {
+                calibrationModal.style.display = 'none';
+            });
+            
+            manualCalibration.addEventListener('click', function() {
+                manualCalibration.classList.add('selected');
+                pixelCalibration.classList.remove('selected');
+                document.getElementById('manual-input').classList.add('active');
+            });
+            
+            pixelCalibration.addEventListener('click', function() {
+                pixelCalibration.classList.add('selected');
+                manualCalibration.classList.remove('selected');
+                document.getElementById('manual-input').classList.remove('active');
+            });
+            
+            applyCalibration.addEventListener('click', function() {
+                if (manualCalibration.classList.contains('selected')) {
+                    const knownDistance = parseFloat(document.getElementById('known-distance').value);
+                    if (!knownDistance || knownDistance <= 0) {
+                        alert("Please enter a valid distance in mm");
+                        return;
+                    }
+                    
+                    // Calculate pixels per mm based on a known distance
+                    if (state.points[0] && state.points[1]) {
+                        const incisorWidthPixels = calculateDistance(state.points[0], state.points[1]);
+                        state.calibration.pixelsPerMM = incisorWidthPixels / knownDistance;
+                        state.calibration.method = 'mm';
+                        state.calibration.knownDistanceMM = knownDistance;
+                        
+                        document.getElementById('calibration-status').textContent = 'Millimeters';
+                        document.getElementById('calibration-info').textContent = 
+                            `Calibrated: ${state.calibration.pixelsPerMM.toFixed(2)} pixels/mm (based on ${knownDistance}mm incisor width)`;
+                    } else {
+                        alert("Please place upper incisor points first for accurate calibration");
+                        return;
+                    }
+                } else {
+                    state.calibration.method = 'pixels';
+                    state.calibration.pixelsPerMM = 1;
+                    document.getElementById('calibration-status').textContent = 'Pixels';
+                    document.getElementById('calibration-info').textContent = 
+                        'Using pixel measurements without conversion';
+                }
+                
+                calibrationModal.style.display = 'none';
+                
+                // Calibration change invalidates analysis; press Analyze Dental Image to recalculate
+                invalidateAnalysisState();
+            });
+            
+            // Set up reference modal
+            const referenceBtn = document.getElementById('reference-btn');
+            const closeModal = document.querySelector('#reference-modal .close-modal');
+            const modal = document.getElementById('reference-modal');
+            
+            referenceBtn.addEventListener('click', function() {
+                modal.style.display = 'block';
+            });
+            
+            closeModal.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+                if (event.target === calibrationModal) {
+                    calibrationModal.style.display = 'none';
+                }
+            });
+            
+            // Set up tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            // Set up analysis button
+            document.getElementById('start-analysis-btn').addEventListener('click', function() {
+                if (!state.imageLoaded) {
+                    alert("Please upload an image first");
+                    return;
+                }
+                
+                // Check if mandatory points are placed (first 7 points are mandatory)
+                const mandatoryPoints = state.points.slice(0, 7);
+                const allMandatoryPlaced = mandatoryPoints.every(p => p !== null && p !== undefined);
+                
+                if (!allMandatoryPlaced) {
+                    alert("Please place all mandatory points (first 7 points) before analysis.");
+                    return;
+                }
+                
+                performAnalysis();
+            });
+            
+            // Set up export button
+            document.getElementById('export-btn').addEventListener('click', function() {
+                exportAnalysis();
+            });
+            
+            // Initialize points list
+            initializePointsList();
+
+            // Undo point placement
+            const undoBtn = document.getElementById('undo-point-btn');
+            if (undoBtn) {
+                undoBtn.addEventListener('click', undoPointPlacement);
+            }
+
+            
+            // Update status
+            updateStatus();
+            updateUndoButton();
+        
+            // Auto-load image if coming from photo.html
+            rrzAutoLoadFromPhoto();
+            // Safety: never leave overlay stuck (e.g. IndexedDB blocked on some browsers)
+            const RRZ_AUTOLOAD_TIMEOUT_MS = 2500;
+            setTimeout(() => {
+                try{
+                    const ov = document.getElementById('auto-load-overlay');
+                    if (!ov) return;
+                    if (ov.style.display !== 'none' && !state.imageLoaded){
+                        ov.style.display = 'none';
+                        document.documentElement.classList.remove('from-photo');
+                        const ua = document.getElementById('upload-area');
+                        if (ua) ua.classList.add('active');
+                    }
+                }catch(e){}
+            }, RRZ_AUTOLOAD_TIMEOUT_MS);
+
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+
+        // Initialize points list in sidebar
+        function initializePointsList() {
+            const pointsList = document.getElementById('points-list');
+            if (!pointsList) return;
+
+            pointsList.innerHTML = '';
+
+            // Scroll wheel selection (native <select>)
+            pointsList.onchange = function() {
+                const idx = parseInt(this.value, 10);
+                if (!Number.isNaN(idx)) selectPoint(idx);
+            };
+
+            state.pointLabels.forEach((label, index) => {
+                const parts = label.split(' - ');
+                const clean = (s) => String(s || '')
+                    .replace(/[()]/g, '')
+                    .replace(/\boptional\b/ig, '')
+                    .replace(/\s{2,}/g, ' ')
+                    .trim();
+                const name = clean(parts[0] || '');
+                const status = clean(parts.slice(1).join(' - ') || '');
+
+                // Display: remove any parentheses characters "()" in list text while keeping content
+                const baseText = `${index + 1}. ${name}${status ? ' - ' + status : ''}`;
+
+                const opt = document.createElement('option');
+                opt.value = String(index);
+                opt.id = `point-option-${index}`;
+                opt.dataset.baseText = baseText;
+                opt.textContent = baseText;
+
+                pointsList.appendChild(opt);
+            });
+        }
+
+        // Select a point from the sidebar
+        function selectPoint(index) {
+            if (!state.imageLoaded) {
+                alert("Please upload an image first");
+                return;
+            }
+
+            // Update UI (scroll wheel)
+            const pointsList = document.getElementById('points-list');
+            if (pointsList) {
+                pointsList.value = String(index);
+            }
+
+            // Update state
+            state.currentPointIndex = index;
+
+            // Change cursor
+            state.canvas.style.cursor = 'crosshair';
+        }
+
+        // Handle image upload
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Check file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File size exceeds 5MB limit. Please choose a smaller image.");
+                return;
+            }
+            
+            // Check file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert("Please upload a valid image file (JPG, PNG, or WebP).");
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Calculate dimensions to fit canvas while maintaining aspect ratio
+                    const maxWidth = 800;
+                    const maxHeight = 600;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                        height = (maxWidth / width) * height;
+                        width = maxWidth;
+                    }
+                    
+                    if (height > maxHeight) {
+                        width = (maxHeight / height) * width;
+                        height = maxHeight;
+                    }
+                    
+                    state.canvas.width = width;
+                    state.canvas.height = height;
+                    
+                    // Draw image
+                    state.ctx.drawImage(img, 0, 0, width, height);
+                    state.image = img;
+                    state.imageLoaded = true;
+                    
+                    // Hide upload area and show canvas
+                    document.getElementById('upload-area').classList.remove('active');
+                    document.getElementById('canvas-container').classList.add('active');
+                    document.getElementById('image-controls').classList.add('active');
+                    
+                    // Reset points
+                    state.points = [];
+                    state.placementHistory = [];
+                    updateUndoButton();
+            state.placementHistory = [];
+            updateUndoButton();
+                    state.currentPointIndex = null;
+                    measurementLabels = [];
+                    
+                    // Reset UI
+                    resetPointListUI();
+                    resetAnalysis();
+                    
+                    // Update status
+                    updateStatus();
+                    
+                    // Auto-select first point
+                    setTimeout(() => selectPoint(0), 500);
+                
+
+                    // Show calibration modal (same behavior as workflow.html)
+                    setTimeout(() => {
+                        const m = document.getElementById('calibration-modal');
+                        if (m) m.style.display = 'block';
+                    }, 800);
+};
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                alert("Error reading file. Please try again.");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /* ---------- Auto-load from photo.html (IndexedDB) ---------- */
+        const RRZ_DB_NAME = "rrz_clinical_photos_db";
+        const RRZ_DB_STORE = "images";
+        const RRZ_DB_VER = 1;
+
+        function rrzOpenDB(){
+            return new Promise((resolve, reject)=>{
+                const req = indexedDB.open(RRZ_DB_NAME, RRZ_DB_VER);
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains(RRZ_DB_STORE)){
+                        db.createObjectStore(RRZ_DB_STORE, { keyPath:"id" });
+                    }
+                };
+                req.onsuccess = ()=> resolve(req.result);
+                req.onerror = ()=> reject(req.error);
+            });
+        }
+
+        async function rrzGetImageRecord(id){
+            const db = await rrzOpenDB();
+            return new Promise((resolve, reject)=>{
+                const tx = db.transaction(RRZ_DB_STORE, "readonly");
+                const req = tx.objectStore(RRZ_DB_STORE).get(String(id||""));
+                req.onsuccess = ()=> { const r = req.result; db.close(); resolve(r || null); };
+                req.onerror = ()=> { db.close(); reject(req.error); };
+            });
+        }
+
+        function rrzGetSlotId(){
+            try{
+                const qs = new URLSearchParams(location.search);
+                return qs.get("slot") || sessionStorage.getItem("rrz_workflow_slot") || "";
+            }catch(e){ return ""; }
+        }
+
+        function rrzLoadImageFromBlob(blob){
+            return new Promise((resolve, reject)=>{
+                try{
+                    const reader = new FileReader();
+                    reader.onload = function(e){
+                        const img = new Image();
+                        img.onload = function(){
+                            const maxWidth = 800;
+                            const maxHeight = 600;
+                            let width = img.width;
+                            let height = img.height;
+                            if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+                            if (height > maxHeight){ width = (maxHeight / height) * width; height = maxHeight; }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.clearRect(0,0,width,height);
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            state.image = img;
+                            state.imageLoaded = true;
+
+                            const ua = document.getElementById('upload-area');
+                            if (ua) ua.classList.remove('active');
+                            const cc = document.getElementById('canvas-container');
+                            if (cc) cc.classList.add('active');
+                            const ic = document.getElementById('image-controls');
+                            if (ic) ic.classList.add('active');
+
+                            state.points = [];
+                            state.placementHistory = [];
+                            updateUndoButton();
+                            state.currentPointIndex = null;
+                            measurementLabels = [];
+                            resetPointListUI();
+                            resetAnalysis();
+
+                            if (typeof updateStatus === "function") updateStatus();
+
+                            
+
+                            // Auto-select first point and open Calibration Settings (same as workflow.html)
+                            setTimeout(() => { 
+                                try{ if (typeof selectPoint === "function") selectPoint(0); }catch(e){} 
+                            }, 500);
+                            setTimeout(() => { 
+                                try{ const m = document.getElementById('calibration-modal'); if (m) m.style.display = 'block'; }catch(e){} 
+                            }, 800);
+resolve(true);
+                        };
+                        img.onerror = ()=> reject(new Error("Image decode failed"));
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = ()=> reject(reader.error || new Error("File read failed"));
+                    reader.readAsDataURL(blob);
+                }catch(err){ reject(err); }
+            });
+        }
+
+        async function rrzAutoLoadFromPhoto(){
+            let qs;
+            try{ qs = new URLSearchParams(location.search); }catch(e){ qs = null; }
+            const from = qs ? (qs.get("from")||"") : "";
+            const slot = rrzGetSlotId();
+            if (!slot) { 
+                const ov = document.getElementById('auto-load-overlay');
+                if (ov) ov.style.display = 'none';
+                document.documentElement.classList.remove('from-photo');
+                return;
+            }
+
+            if (from === "photo") document.documentElement.classList.add('from-photo');
+
+            try{
+                const rec = await rrzGetImageRecord(slot);
+                let blob = (rec && rec.blob) ? rec.blob : null;
+
+                // Fallback: try sessionStorage dataURL set by photo.html
+                if (!blob){
+                    try{
+                        const keys = [
+                            `rrz_${slot}_image_dataurl`,
+                            `rrz_${slot}_image`,
+                            'rrz_uploaded_image',
+                            'uploadedImageDataUrl',
+                            'selectedImageDataUrl'
+                        ];
+                        let dataUrl = null;
+                        for(const k of keys){
+                            const v = (sessionStorage.getItem(k) || '').trim();
+                            if (v && v.startsWith('data:image')) { dataUrl = v; break; }
+                        }
+                        if (dataUrl){
+                            blob = await (await fetch(dataUrl)).blob();
+                        }
+                    }catch(e){}
+                }
+
+                if (!blob){
+                    document.documentElement.classList.remove('from-photo');
+                    const ov = document.getElementById('auto-load-overlay');
+                    if (ov) ov.style.display = 'none';
+                    const ua = document.getElementById('upload-area');
+                    if (ua) ua.classList.add('active');
+                    return;
+                }
+
+                await rrzLoadImageFromBlob(blob);
+
+                const ov = document.getElementById('auto-load-overlay');
+                if (ov) ov.style.display = 'none';
+            }catch(err){
+                document.documentElement.classList.remove('from-photo');
+                const ov = document.getElementById('auto-load-overlay');
+                if (ov) ov.style.display = 'none';
+                const ua = document.getElementById('upload-area');
+                if (ua) ua.classList.add('active');
+                console.warn(err);
+            }
+        }
+
+        // Handle canvas mouse down
+
+
+// Convert pointer coordinates from CSS pixels to canvas pixels (handles CSS scaling).
+function getCanvasPointerPos(evt) {
+    const rect = state.canvas.getBoundingClientRect();
+    const e = (evt && evt.touches && evt.touches[0]) ? evt.touches[0] : evt;
+    const scaleX = state.canvas.width / rect.width;
+    const scaleY = state.canvas.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+    };
+}
+
+        function handleCanvasMouseDown(event) {
+            if (!state.imageLoaded) return;
+            
+            const { x, y } = getCanvasPointerPos(event);
+            
+            // Check if clicking on an existing point to drag
+            for (let i = 0; i < state.points.length; i++) {
+                if (state.points[i]) {
+                    const point = state.points[i];
+                    const distance = Math.sqrt(Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2));
+                    
+                    if (distance < 7) {
+                        state.isDragging = true;
+                        state.dragPointIndex = i;
+                        state.canvas.style.cursor = 'grabbing';
+                        // Any point edit invalidates prior analysis; user must re-run Analyze Dental Image
+                        invalidateAnalysisState();
+                        
+                        // Select this point in sidebar
+                        selectPoint(i);
+                        return;
+                    }
+                }
+            }
+            
+            // If not dragging and a point is selected, place the point
+            if (state.currentPointIndex !== null) {
+                const wasEmpty = !state.points[state.currentPointIndex];
+                state.points[state.currentPointIndex] = {x, y, label: state.pointLabels[state.currentPointIndex]};
+                // Any point edit invalidates prior analysis; user must re-run Analyze Dental Image
+                invalidateAnalysisState();
+                if (wasEmpty) {
+                    state.placementHistory.push(state.currentPointIndex);
+                    updateUndoButton();
+                }
+                
+                // Draw the point
+                drawAllPoints();
+                
+                // Update UI
+                updatePointStatus(state.currentPointIndex, true);
+                
+                // Move to next point automatically if not all placed
+                const placedCount = state.points.filter(p => p).length;
+                if (placedCount < state.pointLabels.length) {
+                    let nextIndex = (state.currentPointIndex + 1) % state.pointLabels.length;
+                    while (state.points[nextIndex] && nextIndex !== state.currentPointIndex) {
+                        nextIndex = (nextIndex + 1) % state.pointLabels.length;
+                    }
+                    selectPoint(nextIndex);
+                } else {
+                    state.currentPointIndex = null;
+                    state.canvas.style.cursor = 'default';
+                }
+                
+                // Update status (analysis runs only after all mandatory points are placed and user presses Analyze Dental Image)
+                updateStatus();
+            }
+        }
+
+        // Handle canvas mouse move
+        function handleCanvasMouseMove(event) {
+            if (!state.imageLoaded || !state.isDragging || state.dragPointIndex === null) return;
+            
+            const { x, y } = getCanvasPointerPos(event);
+            
+            // Update point position
+            state.points[state.dragPointIndex] = {
+                ...state.points[state.dragPointIndex],
+                x, y
+            };
+            
+            // Redraw everything
+            drawAllPoints();
+            
+            // Analysis is run only when the user presses Analyze Dental Image (after mandatory points are placed)
+            
+        }
+
+        // Handle canvas mouse up
+        function handleCanvasMouseUp() {
+            if (state.isDragging) {
+                state.isDragging = false;
+                state.dragPointIndex = null;
+                state.canvas.style.cursor = state.currentPointIndex !== null ? 'crosshair' : 'default';
+            }
+        }
+
+        // Draw all points and measurement lines
+        function drawAllPoints() {
+            // Clear canvas
+            state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+            
+            // Redraw image
+            if (state.image) {
+                state.ctx.drawImage(state.image, 0, 0, state.canvas.width, state.canvas.height);
+            }
+            
+            // Clear existing measurement labels
+            measurementLabels.forEach(label => {
+                if (label.element && label.element.parentNode) {
+                    label.element.parentNode.removeChild(label.element);
+                }
+            });
+            measurementLabels = [];
+            
+            // Draw all points
+            state.points.forEach((point, index) => {
+                if (point) {
+                    drawPoint(point.x, point.y, index);
+                }
+            });
+            
+            // Draw measurement lines only after analysis is started
+            if (state.analysisActive) {
+                drawDentalMeasurementLines();
+            }
+}
+
+        // Draw a single point (UPDATED: removed text labels)
+        function drawPoint(x, y, index) {
+            // Draw point circle
+            state.ctx.beginPath();
+            state.ctx.arc(x, y, 4, 0, Math.PI * 2);
+            state.ctx.fillStyle = index < 7 ? '#e74c3c' : '#f39c12'; // Mandatory red, optional orange
+            state.ctx.fill();
+            state.ctx.strokeStyle = 'white';
+            state.ctx.lineWidth = 1.5;
+            state.ctx.stroke();
+            
+            // Draw number inside
+            state.ctx.font = 'bold 10px Arial';
+            state.ctx.fillStyle = 'white';
+            state.ctx.textAlign = 'center';
+            state.ctx.textBaseline = 'middle';
+            state.ctx.fillText(index + 1, x, y);
+            
+            // Draw drag handle indicator
+            state.ctx.beginPath();
+            state.ctx.arc(x, y, 8, 0, Math.PI * 2);
+            state.ctx.strokeStyle = index < 7 ? 'rgba(231, 76, 60, 0.3)' : 'rgba(243, 156, 18, 0.3)';
+            state.ctx.lineWidth = 1;
+            state.ctx.stroke();
+            
+            // REMOVED: Text label drawing next to the point
+        }
+
+        // Draw dental measurement lines (UPDATED: Extended reference plane and vertical lines)
+        function drawDentalMeasurementLines() {
+            const points = state.points;
+            
+            // 1. Draw Extended Reference Plane (Upper incisor line) if points 0 and 1 exist
+            if (points[0] && points[1]) {
+                // Calculate line equation through points 0 and 1
+                const x1 = points[0].x;
+                const y1 = points[0].y;
+                const x2 = points[1].x;
+                const y2 = points[1].y;
+                
+                // Calculate slope and intercept
+                const slope = (y2 - y1) / (x2 - x1);
+                const intercept = y1 - slope * x1;
+                
+                // Draw extended line across the entire canvas width
+                const canvasWidth = state.canvas.width;
+                const extendedY1 = slope * 0 + intercept; // x = 0
+                const extendedY2 = slope * canvasWidth + intercept; // x = canvasWidth
+                
+                // Draw the extended reference plane line
+                state.ctx.beginPath();
+                state.ctx.moveTo(0, extendedY1);
+                state.ctx.lineTo(canvasWidth, extendedY2);
+                state.ctx.strokeStyle = '#3498db';
+                state.ctx.lineWidth = 2;
+                state.ctx.setLineDash([5, 3]);
+                state.ctx.stroke();
+                state.ctx.setLineDash([]);
+                
+                // Add measurement label
+                const midX = canvasWidth / 2;
+                const midY = (extendedY1 + extendedY2) / 2;
+                
+                const labelElement = document.createElement('div');
+                labelElement.className = 'measurement-label';
+                labelElement.style.left = (midX - 60) + 'px';
+                labelElement.style.top = (midY - 25) + 'px';
+                labelElement.innerHTML = `Reference Plane: <span class="value">Extended</span>`;
+                
+                document.getElementById('canvas-container').appendChild(labelElement);
+                measurementLabels.push({element: labelElement, x: midX, y: midY});
+            }
+            
+            // 2. Draw lines for canting analysis if premolar points exist
+            if (points[0] && points[1] && points[2] && points[3]) {
+                // Calculate line equation through points 0 and 1
+                const x1 = points[0].x;
+                const y1 = points[0].y;
+                const x2 = points[1].x;
+                const y2 = points[1].y;
+                const slope = (y2 - y1) / (x2 - x1);
+                const intercept = y1 - slope * x1;
+                
+                // Draw vertical lines from premolars to reference plane
+                if (points[2]) {
+                    const projX2 = points[2].x;
+                    const projY2 = slope * projX2 + intercept;
+                    
+                    // Draw dashed perpendicular line
+                    state.ctx.beginPath();
+                    state.ctx.setLineDash([3, 3]);
+                    state.ctx.moveTo(points[2].x, points[2].y);
+                    state.ctx.lineTo(projX2, projY2);
+                    state.ctx.strokeStyle = '#e74c3c';
+                    state.ctx.lineWidth = 1.5;
+                    state.ctx.stroke();
+                    state.ctx.setLineDash([]);
+                    
+                    // Add measurement label
+                    const midX2 = (points[2].x + projX2) / 2;
+                    const midY2 = (points[2].y + projY2) / 2;
+                    const distance2 = Math.abs(points[2].y - projY2);
+                    const displayDistance2 = formatDistance(distance2);
+                    
+                    const labelElement2 = document.createElement('div');
+                    labelElement2.className = 'measurement-label';
+                    labelElement2.style.left = (midX2 + 15) + 'px';
+                    labelElement2.style.top = (midY2 - 10) + 'px';
+                    labelElement2.innerHTML = `Right: <span class="value">${displayDistance2}</span>`;
+                    
+                    document.getElementById('canvas-container').appendChild(labelElement2);
+                    measurementLabels.push({element: labelElement2, x: midX2, y: midY2});
+                }
+                
+                if (points[3]) {
+                    const projX3 = points[3].x;
+                    const projY3 = slope * projX3 + intercept;
+                    
+                    // Draw dashed perpendicular line
+                    state.ctx.beginPath();
+                    state.ctx.setLineDash([3, 3]);
+                    state.ctx.moveTo(points[3].x, points[3].y);
+                    state.ctx.lineTo(projX3, projY3);
+                    state.ctx.strokeStyle = '#e74c3c';
+                    state.ctx.lineWidth = 1.5;
+                    state.ctx.stroke();
+                    state.ctx.setLineDash([]);
+                    
+                    // Add measurement label
+                    const midX3 = (points[3].x + projX3) / 2;
+                    const midY3 = (points[3].y + projY3) / 2;
+                    const distance3 = Math.abs(points[3].y - projY3);
+                    const displayDistance3 = formatDistance(distance3);
+                    
+                    const labelElement3 = document.createElement('div');
+                    labelElement3.className = 'measurement-label';
+                    labelElement3.style.left = (midX3 + 15) + 'px';
+                    labelElement3.style.top = (midY3 - 10) + 'px';
+                    labelElement3.innerHTML = `Left: <span class="value">${displayDistance3}</span>`;
+                    
+                    document.getElementById('canvas-container').appendChild(labelElement3);
+                    measurementLabels.push({element: labelElement3, x: midX3, y: midY3});
+                }
+            }
+            
+            // 3. Draw midline deviation lines if midline points exist
+            if (points[4] && points[5]) {
+                // Draw line between upper and lower midlines
+                state.ctx.beginPath();
+                state.ctx.setLineDash([2, 2]);
+                state.ctx.moveTo(points[4].x, points[4].y);
+                state.ctx.lineTo(points[5].x, points[5].y);
+                state.ctx.strokeStyle = '#2ecc71';
+                state.ctx.lineWidth = 1.5;
+                state.ctx.stroke();
+                state.ctx.setLineDash([]);
+                
+                // Draw vertical reference line through upper midline
+                const canvasHeight = state.canvas.height;
+                const verticalLine = {
+                    x: points[4].x,
+                    y1: Math.min(points[4].y, points[5].y) - 30,
+                    y2: Math.max(points[4].y, points[5].y) + 30
+                };
+                
+                state.ctx.beginPath();
+                state.ctx.setLineDash([2, 2]);
+                state.ctx.moveTo(verticalLine.x, verticalLine.y1);
+                state.ctx.lineTo(verticalLine.x, verticalLine.y2);
+                state.ctx.strokeStyle = '#2ecc71';
+                state.ctx.lineWidth = 1;
+                state.ctx.stroke();
+                state.ctx.setLineDash([]);
+                
+                // Add measurement label for midline shift
+                const shiftDistance = Math.abs(points[5].x - points[4].x);
+                const displayShift = formatDistance(shiftDistance);
+                const midX = (points[4].x + points[5].x) / 2;
+                const midY = (points[4].y + points[5].y) / 2;
+                
+                const shiftLabel = document.createElement('div');
+                shiftLabel.className = 'measurement-label';
+                shiftLabel.style.left = (midX - 50) + 'px';
+                shiftLabel.style.top = (midY - 20) + 'px';
+                shiftLabel.innerHTML = `Midline Shift: <span class="value">${displayShift}</span>`;
+                
+                document.getElementById('canvas-container').appendChild(shiftLabel);
+                measurementLabels.push({element: shiftLabel, x: midX, y: midY});
+            }
+            
+            // 4. Draw anterior vertical relationship if incisor points exist
+            if (points[6] && points[7]) {
+                // Draw line between upper and lower incisor points
+                state.ctx.beginPath();
+                state.ctx.moveTo(points[6].x, points[6].y);
+                state.ctx.lineTo(points[7].x, points[7].y);
+                state.ctx.strokeStyle = '#9b59b6';
+                state.ctx.lineWidth = 1.5;
+                state.ctx.stroke();
+                
+                const verticalDistance = Math.abs(points[7].y - points[6].y);
+                const displayDistance = formatDistance(verticalDistance);
+                const midX = (points[6].x + points[7].x) / 2;
+                const midY = (points[6].y + points[7].y) / 2;
+                
+                const labelElement = document.createElement('div');
+                labelElement.className = 'measurement-label';
+                labelElement.style.left = (midX + 10) + 'px';
+                labelElement.style.top = (midY - 20) + 'px';
+                labelElement.innerHTML = `Anterior: <span class="value">${displayDistance}</span>`;
+                
+                document.getElementById('canvas-container').appendChild(labelElement);
+                measurementLabels.push({element: labelElement, x: midX, y: midY});
+            }
+            
+            // 5. Draw posterior vertical relationship if molar points exist
+            // Right
+            if (points[8] && points[9]) {
+                // Draw line between upper and lower molar points
+                state.ctx.beginPath();
+                state.ctx.moveTo(points[8].x, points[8].y);
+                state.ctx.lineTo(points[9].x, points[9].y);
+                state.ctx.strokeStyle = '#f39c12';
+                state.ctx.lineWidth = 1.5;
+                state.ctx.stroke();
+
+                const verticalDistance = Math.abs(points[9].y - points[8].y);
+                const displayDistance = formatDistance(verticalDistance);
+                const midX = (points[8].x + points[9].x) / 2;
+                const midY = (points[8].y + points[9].y) / 2;
+
+                const labelElement = document.createElement('div');
+                labelElement.className = 'measurement-label';
+                labelElement.style.left = (midX + 10) + 'px';
+                labelElement.style.top = (midY - 20) + 'px';
+                labelElement.innerHTML = `Posterior (R): <span class="value">${displayDistance}</span>`;
+
+                document.getElementById('canvas-container').appendChild(labelElement);
+                measurementLabels.push({element: labelElement, x: midX, y: midY});
+            }
+
+            // Left
+            if (points[10] && points[11]) {
+                // Draw line between upper and lower molar points
+                state.ctx.beginPath();
+                state.ctx.moveTo(points[10].x, points[10].y);
+                state.ctx.lineTo(points[11].x, points[11].y);
+                state.ctx.strokeStyle = '#f39c12';
+                state.ctx.lineWidth = 1.5;
+                state.ctx.stroke();
+
+                const verticalDistanceL = Math.abs(points[11].y - points[10].y);
+                const displayDistanceL = formatDistance(verticalDistanceL);
+                const midXL = (points[10].x + points[11].x) / 2;
+                const midYL = (points[10].y + points[11].y) / 2;
+
+                const labelElementL = document.createElement('div');
+                labelElementL.className = 'measurement-label';
+                labelElementL.style.left = (midXL + 10) + 'px';
+                labelElementL.style.top = (midYL - 20) + 'px';
+                labelElementL.innerHTML = `Posterior (L): <span class="value">${displayDistanceL}</span>`;
+
+                document.getElementById('canvas-container').appendChild(labelElementL);
+                measurementLabels.push({element: labelElementL, x: midXL, y: midYL});
+            }
+        }
+
+        // Project point to line (for perpendicular distance calculation)
+        function projectPointToLine(point, line) {
+            const x1 = line.p1.x;
+            const y1 = line.p1.y;
+            const x2 = line.p2.x;
+            const y2 = line.p2.y;
+            
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const t = ((point.x - x1) * dx + (point.y - y1) * dy) / (dx * dx + dy * dy);
+            
+            return {
+                x: x1 + t * dx,
+                y: y1 + t * dy
+            };
+        }
+
+        // Calculate perpendicular distance from point to line
+        function perpendicularDistance(point, line) {
+            const proj = projectPointToLine(point, line);
+            return Math.sqrt(Math.pow(point.x - proj.x, 2) + Math.pow(point.y - proj.y, 2));
+        }
+
+        // Update point status in sidebar
+        function updatePointStatus(index, placed) {
+            const opt = document.getElementById(`point-option-${index}`);
+            if (!opt) return;
+
+            const base = opt.dataset.baseText || opt.textContent.replace(/^✓\s*/, '');
+            opt.dataset.baseText = base;
+
+            opt.textContent = placed ? `✓ ${base}` : base;
+        }
+
+        // Update status bar
+        function updateStatus() {
+            const placedCount = state.points.filter(p => p).length;
+            const mandatoryPoints = state.points.slice(0, 7);
+            const mandatoryPlaced = mandatoryPoints.filter(p => p).length;
+            
+            document.getElementById('points-count').textContent = `${placedCount}/${state.pointLabels.length}`;
+            document.getElementById('points-status').textContent = `${mandatoryPlaced} mandatory, ${placedCount - mandatoryPlaced} optional points placed`;
+            
+            const progressPercent = (mandatoryPlaced / 7) * 100;
+            document.getElementById('points-progress-fill').style.width = `${progressPercent}%`;
+            
+            const imageStatusDot = document.getElementById('image-status-dot');
+            const pointsStatusDot = document.getElementById('points-status-dot');
+            
+            if (state.imageLoaded) {
+                document.getElementById('image-status').textContent = 'Image loaded';
+                imageStatusDot.classList.add('active');
+            } else {
+                document.getElementById('image-status').textContent = 'No image loaded';
+                imageStatusDot.classList.remove('active');
+            }
+            
+            if (mandatoryPlaced >= 7) {
+                pointsStatusDot.classList.add('active');
+            } else {
+                pointsStatusDot.classList.remove('active');
+            }
+        }
+
+        // Switch between tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        }
+
+
+        // Enable/disable Undo button
+        function updateUndoButton() {
+            const btn = document.getElementById('undo-point-btn');
+            if (!btn) return;
+            const canUndo = Array.isArray(state.placementHistory) && state.placementHistory.length > 0;
+            btn.disabled = !canUndo;
+        }
+
+        // Undo last point placement (removes last placed point and returns selection to it)
+        function undoPointPlacement() {
+            if (!state.imageLoaded) return;
+            if (!Array.isArray(state.placementHistory) || state.placementHistory.length === 0) {
+                updateUndoButton();
+                return;
+            }
+
+            const lastIdx = state.placementHistory.pop();
+            if (lastIdx === null || lastIdx === undefined) {
+                updateUndoButton();
+                return;
+            }
+
+            // Remove the point
+            state.points[lastIdx] = null;
+
+            // Update UI + redraw
+            updatePointStatus(lastIdx, false);
+            resetAnalysis(); // keep analysis consistent when points drop below threshold
+            drawAllPoints();
+            updateStatus();
+
+            // Return to the undone point for immediate re-placement
+            try { selectPoint(lastIdx); } catch(e) {}
+
+            updateUndoButton();
+        }
+
+
+        // Reset everything
+        function resetAll() {
+            if (!state.imageLoaded) return;
+            
+            // Clear canvas
+            state.ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+            state.ctx.drawImage(state.image, 0, 0, state.canvas.width, state.canvas.height);
+            
+            // Clear measurement labels
+            measurementLabels.forEach(label => {
+                if (label.element && label.element.parentNode) {
+                    label.element.parentNode.removeChild(label.element);
+                }
+            });
+            measurementLabels = [];
+            
+            // Reset points
+            state.points = [];
+            state.currentPointIndex = null;
+            state.isDragging = false;
+            state.dragPointIndex = null;
+            state.canvas.style.cursor = 'default';
+            
+            // Reset measurements
+            state.measurements = {};
+            state.angles = {};
+            
+            // Reset UI
+            resetPointListUI();
+            resetAnalysis();
+            updateStatus();
+            
+            // Auto-select first point
+            selectPoint(0);
+        }
+
+        // Reset points UI
+        function resetPointListUI() {
+            for (let i = 0; i < state.pointLabels.length; i++) {
+                updatePointStatus(i, false);
+            }
+        }
+
+        // Reset analysis displays
+        function resetAnalysis() {
+            state.analysisActive = false;
+            document.getElementById('cant-table').innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Measurement</th>
+                        <th>Value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            `;
+            
+            document.getElementById('midline-table').innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Measurement</th>
+                        <th>Value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            `;
+            
+            document.getElementById('bite-table').innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Measurement</th>
+                        <th>Value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            `;
+            
+            // Reset all metric displays
+            const metricIds = [
+                'reference-plane-status', 'plane-status', 'cant-status', 'canting-value',
+                'midline-shift-status', 'shift-value', 'shift-direction',
+                'anterior-bite-status', 'posterior-bite-status',
+                'overall-assessment', 'summary-cant', 'summary-midline', 'summary-anterior'
+            ];
+            
+            metricIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = '--';
+            });
+            
+            // Reset progress bars
+            document.getElementById('plane-progress').style.width = '0%';
+            document.getElementById('canting-progress').style.width = '0%';
+            document.getElementById('shift-progress').style.width = '0%';
+            
+            // Reset descriptions
+            document.getElementById('overall-description').textContent = 'Complete all measurements for assessment';
+            document.getElementById('cant-clinical').textContent = 'Measure to view clinical significance';
+            document.getElementById('shift-direction-info').textContent = 'Direction of lower midline relative to upper midline';
+            document.getElementById('anterior-bite-description').textContent = 'Vertical relationship between upper and lower central incisors';
+            document.getElementById('posterior-bite-description').textContent = 'Vertical relationship between upper and lower molars';
+            
+            if (state.imageLoaded) { try { drawAllPoints(); } catch(e) {} }
+
+        }
+
+        // Calculate distance between two points
+        function calculateDistance(p1, p2) {
+            return Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        }
+
+        // Calculate angle between two lines
+        function calculateAngle(p1, p2, p3, p4) {
+            const dx1 = p2.x - p1.x;
+            const dy1 = p2.y - p1.y;
+            const dx2 = p4.x - p3.x;
+            const dy2 = p4.y - p3.y;
+            
+            const angle1 = Math.atan2(dy1, dx1);
+            const angle2 = Math.atan2(dy2, dx2);
+            
+            let angle = Math.abs(angle1 - angle2) * (180 / Math.PI);
+            
+            // Ensure angle is between 0 and 90 degrees
+            if (angle > 90) {
+                angle = 180 - angle;
+            }
+            
+            return angle;
+        }
+
+        // Format distance based on calibration
+        function formatDistance(distanceInPixels) {
+            if (state.calibration.method === 'mm' && state.calibration.pixelsPerMM && state.calibration.pixelsPerMM > 0) {
+                const distanceInMM = distanceInPixels / state.calibration.pixelsPerMM;
+                return distanceInMM.toFixed(1) + ' mm';
+            } else {
+                return Math.round(distanceInPixels) + ' px';
+            }
+        }
+
+        // Perform complete dental analysis
+        function performAnalysis() {
+            // Check if mandatory points are placed
+            const mandatoryPoints = state.points.slice(0, 7);
+            const allMandatoryPlaced = mandatoryPoints.every(p => p !== null && p !== undefined);
+            
+            if (!allMandatoryPlaced) return;
+            
+            state.analysisActive = true;
+
+            state.measurements = {};
+            state.angles = {};
+            
+            // 1. Calculate all measurements based on System Prompt logic
+            calculateDentalMeasurements();
+            
+            // 2. Update UI with results
+            updateAnalysisUI();
+            
+            // 3. Redraw canvas with measurement lines
+            drawAllPoints();
+        }
+
+        // Calculate all dental measurements based on System Prompt
+        function calculateDentalMeasurements() {
+            const points = state.points;
+            
+            // A. Reference Plane Construction
+            if (points[0] && points[1]) {
+                state.measurements.referencePlane = calculateDistance(points[0], points[1]);
+            }
+            
+            // B. Dental Canting Analysis
+            if (points[0] && points[1] && points[2] && points[3]) {
+                const refLine = {p1: points[0], p2: points[1]};
+                const distanceR = perpendicularDistance(points[2], refLine);
+                const distanceL = perpendicularDistance(points[3], refLine);
+                
+                state.measurements.cantingDistanceR = distanceR;
+                state.measurements.cantingDistanceL = distanceL;
+                state.measurements.cantingDifference = Math.abs(distanceR - distanceL);
+                
+                // Convert to mm if calibrated
+                if (state.calibration.method === 'mm') {
+                    const differenceMM = state.measurements.cantingDifference / state.calibration.pixelsPerMM;
+                    state.measurements.cantingDetected = differenceMM > state.toleranceMM;
+                    state.measurements.cantingSide = distanceR < distanceL ? 'Right side higher' : 'Left side higher';
+                } else {
+                    state.measurements.cantingDetected = state.measurements.cantingDifference > (state.toleranceMM * state.calibration.pixelsPerMM);
+                    state.measurements.cantingSide = distanceR < distanceL ? 'Right side higher' : 'Left side higher';
+                }
+            }
+            
+            // C. Midline Deviation
+            if (points[4] && points[5]) {
+                state.measurements.midlineShift = points[5].x - points[4].x; // Positive = Mandibular shift to Right
+                
+                if (state.measurements.midlineShift > 0) {
+                    state.measurements.midlineDirection = 'Mandibular shift to Right';
+                } else if (state.measurements.midlineShift < 0) {
+                    state.measurements.midlineDirection = 'Mandibular shift to Left';
+                } else {
+                    state.measurements.midlineDirection = 'No shift';
+                }
+                
+                state.measurements.midlineShiftAbs = Math.abs(state.measurements.midlineShift);
+            }
+            
+            // D. Bite relation & Anterior Vertical Relationship (Normal / Edge-to-Edge / Open Bite / Deep Bite)
+            // Uses: Upper Mid-Incisal Point (index 6) & Lower Mid-Incisal Point (index 7)
+            // delta = (Lower - Upper): + = lower is inferior (overbite), - = lower is above (open bite)
+            if (points[6]) {
+                if (points[7]) {
+                    const deltaPx = (points[7].y - points[6].y);
+                    const ppm = (state.calibration && state.calibration.pixelsPerMM && state.calibration.pixelsPerMM > 0)
+                        ? state.calibration.pixelsPerMM
+                        : 1;
+                    const deltaMM = deltaPx / ppm; // if not calibrated (px mode), treated as px-scale
+
+                    state.measurements.anteriorVertical = deltaPx;
+                    state.measurements.anteriorVerticalMM = deltaMM;
+
+                    // Classification rules (per reference image)
+                    // - Normal: lower ~1.5mm inferior (we treat 0.5–2.0mm inferior as normal)
+                    // - Edge to edge: touch (|delta| <= 0.5mm)
+                    // - Deep bite: lower > 1.5mm above (delta < -1.5mm)
+                    // - Open bite: lower > 2.0mm inferior (delta > 2.0mm)
+                    const EDGE_TOL = 0.5;
+                    const OPEN_THR = 1.5;
+                    const DEEP_THR = 2.0;
+
+                    let type = 'Normal';
+
+                    if (Math.abs(deltaMM) <= EDGE_TOL) {
+                        type = 'Edge to Edge';
+                    } else if (deltaMM < -EDGE_TOL) {
+                        type = (Math.abs(deltaMM) > OPEN_THR) ? 'Deep Bite' : 'Edge to Edge';
+                    } else if (deltaMM > DEEP_THR) {
+                        type = 'Open Bite';
+                    } else {
+                        type = 'Normal';
+                    }
+
+                    state.measurements.anteriorBiteType = type;
+                } else {
+                    state.measurements.anteriorVertical = null;
+                    state.measurements.anteriorVerticalMM = null;
+                    state.measurements.anteriorBiteType = 'Lower Incisors Not Visible (Likely Deep Bite / Covered)';
+                }
+            }
+
+            // E. Posterior Vertical Relationship (Right / Left)
+            // Right (points 8-9): Right Upper/Lower molar mesial cusps
+            if (points[8] && points[9]) {
+                state.measurements.posteriorVertical = points[9].y - points[8].y; // Positive = Lower below Upper
+
+                // Convert to mm if calibrated for threshold check
+                if (state.calibration.method === 'mm') {
+                    const verticalMM = Math.abs(state.measurements.posteriorVertical) / state.calibration.pixelsPerMM;
+                    state.measurements.posteriorBiteType = (verticalMM > state.toleranceMM)
+                        ? 'Posterior Open Bite'
+                        : 'Posterior contact present';
+                } else {
+                    state.measurements.posteriorBiteType = (Math.abs(state.measurements.posteriorVertical) > (state.toleranceMM * state.calibration.pixelsPerMM))
+                        ? 'Posterior Open Bite'
+                        : 'Posterior contact present';
+                }
+            } else {
+                state.measurements.posteriorVertical = null;
+                state.measurements.posteriorBiteType = 'Posterior occlusion not assessable';
+            }
+
+            // Left (points 10-11): Left Upper/Lower molar mesial cusps
+            if (points[10] && points[11]) {
+                state.measurements.posteriorVerticalL = points[11].y - points[10].y; // Positive = Lower below Upper
+
+                // Convert to mm if calibrated for threshold check
+                if (state.calibration.method === 'mm') {
+                    const verticalMML = Math.abs(state.measurements.posteriorVerticalL) / state.calibration.pixelsPerMM;
+                    state.measurements.posteriorBiteTypeL = (verticalMML > state.toleranceMM)
+                        ? 'Posterior Open Bite'
+                        : 'Posterior contact present';
+                } else {
+                    state.measurements.posteriorBiteTypeL = (Math.abs(state.measurements.posteriorVerticalL) > (state.toleranceMM * state.calibration.pixelsPerMM))
+                        ? 'Posterior Open Bite'
+                        : 'Posterior contact present';
+                }
+            } else {
+                state.measurements.posteriorVerticalL = null;
+                state.measurements.posteriorBiteTypeL = 'Posterior occlusion not assessable';
+            }
+        }
+
+        // -----------------------------
+        // Analysis gating helpers
+        // -----------------------------
+        function clearAnalysisUI() {
+            // Clear tables
+            const tableIds = ['cant-table', 'midline-table', 'bite-table'];
+            tableIds.forEach(id => {
+                const t = document.getElementById(id);
+                if (!t) return;
+                const tb = t.querySelector('tbody');
+                if (tb) tb.innerHTML = '';
+            });
+
+            // Reset key metrics / statuses
+            const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            const setWidth = (id, val) => { const el = document.getElementById(id); if (el) el.style.width = val; };
+
+            setText('cant-status', '—');
+            setText('canting-value', '—');
+            setWidth('canting-progress', '0%');
+
+            setText('midline-shift-status', '—');
+            setText('shift-value', '—');
+            setWidth('shift-progress', '0%');
+
+            setText('shift-direction', '—');
+
+            setText('anterior-bite-status', '—');
+            setText('posterior-bite-status', '—');
+
+            setText('summary-cant', '—');
+            setText('summary-midline', '—');
+            setText('summary-anterior', '—');
+
+            setText('cant-clinical', '—');
+            setText('overall-assessment', 'Not analyzed');
+            setText('overall-description', 'Place all mandatory points, then press Analyze Dental Image.');
+        }
+
+        function invalidateAnalysisState() {
+            state.analysisActive = false;
+            state.measurements = {};
+            state.angles = {};
+            clearAnalysisUI();
+        }
+
+        function updateAnalysisUI() {
+            // Update Cant tab
+            updateCantTab();
+            
+            // Update Midline tab
+            updateMidlineTab();
+            
+            // Update Bite tab
+            updateBiteTab();
+            
+            // Update Summary tab
+            updateSummaryTab();
+        }
+
+        // Update Cant tab
+        function updateCantTab() {
+            const cantTable = document.getElementById('cant-table').querySelector('tbody');
+            cantTable.innerHTML = '';
+            
+            // Reference Plane
+            if (state.measurements.referencePlane !== undefined) {
+                const row = document.createElement('tr');
+                const distance = formatDistance(state.measurements.referencePlane);
+                row.innerHTML = `
+                    <td>Reference Plane (Upper Incisors)</td>
+                    <td>${distance}</td>
+                    <td><span class="good">Established</span></td>
+                `;
+                cantTable.appendChild(row);
+                
+                document.getElementById('reference-plane-status').textContent = 'Established';
+                document.getElementById('plane-status').textContent = 'Complete';
+                document.getElementById('plane-progress').style.width = '100%';
+            }
+            
+            // Dental Canting
+            if (state.measurements.cantingDifference !== undefined) {
+                const row = document.createElement('tr');
+                const difference = formatDistance(state.measurements.cantingDifference);
+                
+                let status = 'No Cant';
+                let statusClass = 'good';
+                
+                if (state.measurements.cantingDetected) {
+                    status = 'Canting Detected';
+                    statusClass = 'alert';
+                }
+                
+                row.innerHTML = `
+                    <td>Premolar Height Difference</td>
+                    <td>${difference}</td>
+                    <td><span class="${statusClass}">${status}</span></td>
+                `;
+                cantTable.appendChild(row);
+                
+                // Side information
+                if (state.measurements.cantingSide) {
+                    const sideRow = document.createElement('tr');
+                    sideRow.innerHTML = `
+                        <td>Higher Side</td>
+                        <td>${state.measurements.cantingSide}</td>
+                        <td><span class="warning">Observed</span></td>
+                    `;
+                    cantTable.appendChild(sideRow);
+                }
+                
+                // Update display
+                document.getElementById('cant-status').textContent = status;
+                document.getElementById('canting-value').textContent = difference;
+                
+                const cantPercent = Math.min(100, (state.measurements.cantingDifference / (state.toleranceMM * state.calibration.pixelsPerMM * 2)) * 100);
+                document.getElementById('canting-progress').style.width = cantPercent + '%';
+            }
+        }
+
+        // Update Midline tab
+        function updateMidlineTab() {
+            const midlineTable = document.getElementById('midline-table').querySelector('tbody');
+            midlineTable.innerHTML = '';
+            
+            // Midline Shift
+            if (state.measurements.midlineShiftAbs !== undefined) {
+                const row = document.createElement('tr');
+                const shift = formatDistance(state.measurements.midlineShiftAbs);
+                
+                let status = 'Normal';
+                let statusClass = 'good';
+                
+                if (state.calibration.method === 'mm') {
+                    const shiftMM = state.measurements.midlineShiftAbs / state.calibration.pixelsPerMM;
+                    if (shiftMM > 2) {
+                        status = 'Clinically Significant';
+                        statusClass = 'alert';
+                    } else if (shiftMM > 1) {
+                        status = 'Moderate';
+                        statusClass = 'warning';
+                    }
+                }
+                
+                row.innerHTML = `
+                    <td>Midline Shift Magnitude</td>
+                    <td>${shift}</td>
+                    <td><span class="${statusClass}">${status}</span></td>
+                `;
+                midlineTable.appendChild(row);
+                
+                // Direction
+                if (state.measurements.midlineDirection) {
+                    const dirRow = document.createElement('tr');
+                    dirRow.innerHTML = `
+                        <td>Shift Direction</td>
+                        <td>${state.measurements.midlineDirection}</td>
+                        <td><span class="warning">Observed</span></td>
+                    `;
+                    midlineTable.appendChild(dirRow);
+                    
+                    document.getElementById('shift-direction').textContent = state.measurements.midlineDirection;
+                    document.getElementById('shift-direction-info').textContent = state.measurements.midlineDirection;
+                }
+                
+                // Update display
+                document.getElementById('midline-shift-status').textContent = status;
+                document.getElementById('shift-value').textContent = shift;
+                
+                const shiftPercent = Math.min(100, (state.measurements.midlineShiftAbs / (2 * state.calibration.pixelsPerMM)) * 100);
+                document.getElementById('shift-progress').style.width = shiftPercent + '%';
+            }
+        }
+
+        // Update Bite tab
+        function updateBiteTab() {
+            const biteTable = document.getElementById('bite-table').querySelector('tbody');
+            biteTable.innerHTML = '';
+            
+            // Anterior Vertical Relationship
+            if (state.measurements.anteriorBiteType !== undefined) {
+                const row = document.createElement('tr');
+
+                const type = state.measurements.anteriorBiteType;
+                let status = type;
+                let statusClass = 'good';
+
+                if (type === 'Normal') {
+                    statusClass = 'good';
+                } else if (type === 'Edge to Edge') {
+                    statusClass = 'warning';
+                } else if (type === 'Open Bite') {
+                    statusClass = 'alert';
+                } else if (type === 'Deep Bite') {
+                    statusClass = 'alert';
+                } else if (type && type.includes('Not Visible')) {
+                    status = 'Deep Bite Likely';
+                    statusClass = 'warning';
+                }
+
+                row.innerHTML = `
+                    <td>Anterior Vertical Relationship</td>
+                    <td>${type}</td>
+                    <td><span class="${statusClass}">${status}</span></td>
+                `;
+                biteTable.appendChild(row);
+
+                document.getElementById('anterior-bite-status').textContent = status;
+                document.getElementById('anterior-bite-description').textContent = type;
+            }
+
+            // Posterior Vertical Relationship (Right / Left)
+            const posteriorItems = [
+                { side: 'Right', biteType: state.measurements.posteriorBiteType, vertical: state.measurements.posteriorVertical },
+                { side: 'Left',  biteType: state.measurements.posteriorBiteTypeL, vertical: state.measurements.posteriorVerticalL }
+            ];
+
+            const hasAnyPosterior = posteriorItems.some(it => it.biteType !== undefined);
+            if (hasAnyPosterior) {
+                const rank = (biteType) => {
+                    if (!biteType) return 1;
+                    if (biteType.includes('Open Bite')) return 3;
+                    if (biteType.includes('not assessable')) return 2;
+                    return 1;
+                };
+
+                let worst = 0;
+                const summaryParts = [];
+
+                posteriorItems.forEach((it) => {
+                    if (it.biteType === undefined) return;
+
+                    let status = 'Normal';
+                    let statusClass = 'good';
+                    if (it.biteType.includes('Open Bite')) {
+                        status = 'Open Bite';
+                        statusClass = 'alert';
+                    } else if (it.biteType.includes('not assessable')) {
+                        status = 'Not Assessable';
+                        statusClass = 'warning';
+                    }
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>Posterior Vertical Relationship (${it.side})</td>
+                        <td>${it.biteType}</td>
+                        <td><span class="${statusClass}">${status}</span></td>
+                    `;
+                    biteTable.appendChild(row);
+
+                    // Add distance if measured
+                    if (it.vertical !== null && it.vertical !== undefined) {
+                        const distanceRow = document.createElement('tr');
+                        const distance = formatDistance(Math.abs(it.vertical));
+                        distanceRow.innerHTML = `
+                            <td>Posterior Vertical Distance (${it.side})</td>
+                            <td>${distance}</td>
+                            <td><span class="good">Measured</span></td>
+                        `;
+                        biteTable.appendChild(distanceRow);
+                    }
+
+                    summaryParts.push(`${it.side}: ${it.biteType}`);
+                    worst = Math.max(worst, rank(it.biteType));
+                });
+
+                let overallPosteriorStatus = 'Normal';
+                if (worst === 3) overallPosteriorStatus = 'Open Bite';
+                else if (worst === 2) overallPosteriorStatus = 'Not Assessable';
+
+                document.getElementById('posterior-bite-status').textContent = overallPosteriorStatus;
+                document.getElementById('posterior-bite-description').textContent = summaryParts.join(' | ');
+            }
+        }
+
+        // Update Summary tab
+        function updateSummaryTab() {
+            let overallStatus = 'Normal';
+            let overallClass = 'good';
+            let issues = [];
+            
+            // Check cant
+            if (state.measurements.cantingDetected) {
+                document.getElementById('summary-cant').textContent = 'Detected';
+                issues.push('Dental canting present');
+                overallStatus = 'Needs Attention';
+                overallClass = 'alert';
+                document.getElementById('cant-clinical').textContent = state.measurements.cantingSide;
+            } else if (state.measurements.cantingDifference !== undefined) {
+                document.getElementById('summary-cant').textContent = 'Normal';
+                document.getElementById('cant-clinical').textContent = 'Within normal limits';
+            }
+            
+            // Check midline
+            if (state.measurements.midlineShiftAbs !== undefined) {
+                const shift = formatDistance(state.measurements.midlineShiftAbs);
+                document.getElementById('summary-midline').textContent = shift;
+                
+                if (state.calibration.method === 'mm') {
+                    const shiftMM = state.measurements.midlineShiftAbs / state.calibration.pixelsPerMM;
+                    if (shiftMM > 2) {
+                        issues.push('Significant midline deviation');
+                        overallStatus = 'Needs Attention';
+                        overallClass = 'alert';
+                    } else if (shiftMM > 1 && overallStatus === 'Normal') {
+                        issues.push('Moderate midline deviation');
+                        overallStatus = 'Borderline';
+                        overallClass = 'warning';
+                    }
+                }
+            }
+            
+            // Check anterior bite
+            if (state.measurements.anteriorBiteType !== undefined) {
+                const type = state.measurements.anteriorBiteType;
+
+                if (type === 'Open Bite') {
+                    document.getElementById('summary-anterior').textContent = 'Open Bite';
+                    issues.push('Anterior open bite');
+                    overallStatus = 'Needs Attention';
+                    overallClass = 'alert';
+                } else if (type === 'Deep Bite') {
+                    document.getElementById('summary-anterior').textContent = 'Deep Bite';
+                    issues.push('Deep bite');
+                    overallStatus = 'Needs Attention';
+                    overallClass = 'alert';
+                } else if (type === 'Edge to Edge') {
+                    document.getElementById('summary-anterior').textContent = 'Edge to Edge';
+                    if (overallStatus === 'Normal') {
+                        overallStatus = 'Borderline';
+                        overallClass = 'warning';
+                    }
+                    issues.push('Edge-to-edge incisal relationship');
+                } else if (type && type.includes('Not Visible')) {
+                    document.getElementById('summary-anterior').textContent = 'Deep Bite Likely';
+                    if (overallStatus === 'Normal') {
+                        overallStatus = 'Borderline';
+                        overallClass = 'warning';
+                    }
+                    issues.push('Deep bite likely (lower incisors not visible)');
+                } else {
+                    document.getElementById('summary-anterior').textContent = 'Normal';
+                }
+            }
+
+            // Update overall assessment
+            document.getElementById('overall-assessment').textContent = overallStatus;
+            document.getElementById('overall-assessment').className = 'metric-value ' + overallClass;
+            
+            if (issues.length > 0) {
+                document.getElementById('overall-description').textContent = 'Findings: ' + issues.join(', ');
+            } else if (state.measurements.cantingDifference !== undefined || state.measurements.midlineShiftAbs !== undefined) {
+                document.getElementById('overall-description').textContent = 'All measurements within normal limits';
+            }
+        }
+
+        // Export analysis results
+        function exportAnalysis() {
+            if (!state.imageLoaded || !state.analysisActive) {
+                alert("Please place all mandatory points and press Analyze Dental Image before exporting.");
+                return;
+            }
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Dental Analysis Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .header { text-align: center;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.65); margin-bottom: 30px; }
+                        .header h1 { color: #2c3e50; }
+                        .image-container { text-align: center;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.65); margin: 20px 0; }
+                        .image-container img { max-width: 100%; border: 1px solid #ddd; }
+                        .results { margin-top: 30px; }
+                        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                        th { background: #2c3e50; color: white; padding: 10px; text-align: left; }
+                        td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
+                        .section { margin: 30px 0; }
+                        .section h3 { color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+                        .timestamp { color: #7f8c8d; font-size: 14px; }
+                        .good { color: #2ecc71; }
+                        .warning { color: #f39c12; }
+                        .alert { color: #e74c3c; }
+                        @media print {
+                            .no-print { display: none; }
+                            body { padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Dental Analysis Report</h1>
+                        <div class="timestamp">Generated: ${new Date().toLocaleString()}</div>
+                    </div>
+                    
+                    <div class="image-container">
+                        <h3>Analyzed Dental Image with Measurements</h3>
+                        <img src="${state.canvas.toDataURL('image/png')}" alt="Dental Analysis">
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Dental Canting Analysis</h3>
+                        <table>
+                            <tr>
+                                <th>Measurement</th>
+                                <th>Value</th>
+                                <th>Status</th>
+                            </tr>
+            `);
+            
+            // Add canting measurements
+            if (state.measurements.referencePlane !== undefined) {
+                const distance = formatDistance(state.measurements.referencePlane);
+                printWindow.document.write(`
+                    <tr>
+                        <td>Reference Plane (Upper Incisors)</td>
+                        <td>${distance}</td>
+                        <td>Established</td>
+                    </tr>
+                `);
+            }
+            
+            if (state.measurements.cantingDifference !== undefined) {
+                const difference = formatDistance(state.measurements.cantingDifference);
+                let status = 'No Cant';
+                let statusClass = 'good';
+                
+                if (state.measurements.cantingDetected) {
+                    status = 'Canting Detected';
+                    statusClass = 'alert';
+                }
+                
+                printWindow.document.write(`
+                    <tr>
+                        <td>Premolar Height Difference</td>
+                        <td>${difference}</td>
+                        <td class="${statusClass}">${status}</td>
+                    </tr>
+                `);
+                
+                if (state.measurements.cantingSide) {
+                    printWindow.document.write(`
+                        <tr>
+                            <td>Higher Side</td>
+                            <td>${state.measurements.cantingSide}</td>
+                            <td>Observed</td>
+                        </tr>
+                    `);
+                }
+            }
+            
+            printWindow.document.write(`
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Midline Deviation Analysis</h3>
+                        <table>
+                            <tr>
+                                <th>Measurement</th>
+                                <th>Value</th>
+                                <th>Status</th>
+                            </tr>
+            `);
+            
+            // Add midline measurements
+            if (state.measurements.midlineShiftAbs !== undefined) {
+                const shift = formatDistance(state.measurements.midlineShiftAbs);
+                let status = 'Normal';
+                let statusClass = 'good';
+                
+                if (state.calibration.method === 'mm') {
+                    const shiftMM = state.measurements.midlineShiftAbs / state.calibration.pixelsPerMM;
+                    if (shiftMM > 2) {
+                        status = 'Clinically Significant';
+                        statusClass = 'alert';
+                    } else if (shiftMM > 1) {
+                        status = 'Moderate';
+                        statusClass = 'warning';
+                    }
+                }
+                
+                printWindow.document.write(`
+                    <tr>
+                        <td>Midline Shift Magnitude</td>
+                        <td>${shift}</td>
+                        <td class="${statusClass}">${status}</td>
+                    </tr>
+                `);
+                
+                if (state.measurements.midlineDirection) {
+                    printWindow.document.write(`
+                        <tr>
+                            <td>Shift Direction</td>
+                            <td>${state.measurements.midlineDirection}</td>
+                            <td>Observed</td>
+                        </tr>
+                    `);
+                }
+            }
+            
+            printWindow.document.write(`
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Bite Relationship Analysis</h3>
+                        <table>
+                            <tr>
+                                <th>Measurement</th>
+                                <th>Value</th>
+                                <th>Status</th>
+                            </tr>
+            `);
+            
+            // Add bite measurements
+            if (state.measurements.anteriorBiteType !== undefined) {
+                let status = 'Measured';
+                let statusClass = 'good';
+                
+                if (state.measurements.anteriorBiteType.includes('Open Bite')) {
+                    status = 'Open Bite';
+                    statusClass = 'alert';
+                } else if (state.measurements.anteriorBiteType.includes('Not Visible')) {
+                    status = 'Deep Bite Likely';
+                    statusClass = 'warning';
+                }
+                
+                printWindow.document.write(`
+                    <tr>
+                        <td>Anterior Vertical Relationship</td>
+                        <td>${state.measurements.anteriorBiteType}</td>
+                        <td class="${statusClass}">${status}</td>
+                    </tr>
+                `);
+            }
+            
+            if (state.measurements.posteriorBiteType !== undefined) {
+                let status = 'Normal';
+                let statusClass = 'good';
+                
+                if (state.measurements.posteriorBiteType.includes('Open Bite')) {
+                    status = 'Open Bite';
+                    statusClass = 'alert';
+                } else if (state.measurements.posteriorBiteType.includes('not assessable')) {
+                    status = 'Not Assessable';
+                    statusClass = 'warning';
+                }
+                
+                printWindow.document.write(`
+                    <tr>
+                        <td>Posterior Vertical Relationship</td>
+                        <td>${state.measurements.posteriorBiteType}</td>
+                        <td class="${statusClass}">${status}</td>
+                    </tr>
+                `);
+            }
+            
+            printWindow.document.write(`
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Calibration Information</h3>
+                        <p>Measurement unit: ${state.calibration.method === 'mm' ? 'Millimeters' : 'Pixels'}</p>
+                        ${state.calibration.method === 'mm' ? 
+                          `<p>Conversion factor: ${state.calibration.pixelsPerMM.toFixed(2)} pixels per mm</p>` : 
+                          ''}
+                        <p>Tolerance for canting detection: ${state.toleranceMM} mm</p>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Clinical Recommendations</h3>
+                        <p><strong>Dental Canting:</strong> ${state.measurements.cantingDetected ? 
+                          'Consider orthodontic evaluation for cant correction. ' + state.measurements.cantingSide + '.' : 
+                          'Within normal limits, no intervention needed.'}</p>
+                        <p><strong>Midline Deviation:</strong> ${state.measurements.midlineShiftAbs && state.calibration.method === 'mm' && 
+                          state.measurements.midlineShiftAbs / state.calibration.pixelsPerMM > 2 ? 
+                          'Significant deviation; orthodontic evaluation recommended.' : 
+                          'Within acceptable limits for most patients.'}</p>
+                        <p><strong>Anterior Bite:</strong> ${state.measurements.anteriorBiteType === 'Open Bite' ? 
+                          'Anterior open bite detected. Consider functional assessment.' :
+                          state.measurements.anteriorBiteType === 'Deep Bite' ?
+                          'Deep bite detected. Consider overbite management and functional assessment.' :
+                          state.measurements.anteriorBiteType === 'Edge to Edge' ?
+                          'Edge-to-edge incisal relationship. Monitor incisal wear and guidance.' :
+                          state.measurements.anteriorBiteType && state.measurements.anteriorBiteType.includes('Not Visible') ?
+                          'Deep bite likely. Lower incisors not visible in frontal view.' :
+                          'Normal anterior relationship.'}</p>
+                    </div>
+                    
+                    ${rrzNotesToPrintHtml()}
+
+                    <div class="no-print" style="margin-top: 30px; text-align: center;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.65);">
+                        <button onclick="window.print()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Print Report
+                        </button>
+                    </div>
+                    
+                    <script>
+                        window.onload = function() {
+                            // Auto-print option
+                            // window.print();
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+        }
+    </script>
+
+<script>
+(function(){
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    });
+  }
+})();
+
+
+// === RRZ NOTES HELPERS (added) ===
+(function(){
+  function rrzNotesSlotKey(){
+    try{
+      const qs = new URLSearchParams(location.search);
+      const slot = qs.get('slot') || '';
+      const from = qs.get('from') || '';
+      return (slot ? ('slot:'+slot) : '') + (from ? ('|from:'+from) : '');
+    }catch(e){
+      return '';
+    }
+  }
+
+  function rrzNotesStorageKey(){
+    return 'rrz_photo_notes::' + location.pathname + '::' + rrzNotesSlotKey();
+  }
+
+  function rrzReadNotes(){
+    const empty = { crowding:'', gingivalMargin:'', gingivalColor:'', otherFindings:'' };
+    try{
+      const raw = localStorage.getItem(rrzNotesStorageKey());
+      if(!raw) return empty;
+      const obj = JSON.parse(raw);
+      return {
+        crowding: (obj.crowding||''),
+        gingivalMargin: (obj.gingivalMargin||''),
+        gingivalColor: (obj.gingivalColor||''),
+        otherFindings: (obj.otherFindings||'')
+      };
+    }catch(e){
+      return empty;
+    }
+  }
+
+  function rrzWriteNotes(n){
+    try{ localStorage.setItem(rrzNotesStorageKey(), JSON.stringify(n||{})); }catch(e){}
+  }
+
+  function rrzEscapeHtml(str){
+    return String(str||'')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+  }
+
+  window.rrzGetNotes = function(){
+    const n = rrzReadNotes();
+    const c = document.getElementById('note-crowding');
+    const gm = document.getElementById('note-gingival-margin');
+    const gc = document.getElementById('note-gingival-color');
+    const of = document.getElementById('note-other-findings');
+    if(c) n.crowding = (c.value||'').trim();
+    if(gm) n.gingivalMargin = (gm.value||'').trim();
+    if(gc) n.gingivalColor = (gc.value||'').trim();
+    if(of) n.otherFindings = (of.value||'').trim();
+    rrzWriteNotes(n);
+    return n;
+  };
+
+  window.rrzNotesToPrintHtml = function(){
+    const n = window.rrzGetNotes ? window.rrzGetNotes() : rrzReadNotes();
+    const rows = [];
+    if(n.crowding) rows.push(['Crowding', n.crowding]);
+    if(n.gingivalMargin) rows.push(['Gingival Margin', n.gingivalMargin]);
+    if(n.gingivalColor) rows.push(['Gingival color', n.gingivalColor]);
+    if(n.otherFindings) rows.push(['Other Findings', n.otherFindings]);
+    if(!rows.length) return '';
+    return `
+      <div class="section" style="margin-top:18px;">
+        <hr style="border:0; border-top:1px solid #cbd5e1; margin: 14px 0;"/>
+        <h3>Notes</h3>
+        <table>
+          <tr><th>Item</th><th>Value</th></tr>
+          ${rows.map(([k,v]) => `<tr><td>${rrzEscapeHtml(k)}</td><td>${rrzEscapeHtml(v)}</td></tr>`).join('')}
+        </table>
+      </div>
+    `;
+  };
+
+  window.rrzNotesToReportHtml = function(){
+    const n = window.rrzGetNotes ? window.rrzGetNotes() : rrzReadNotes();
+    const rows = [];
+    if(n.crowding) rows.push(`<div class="p-item"><div class="p-title">Crowding</div><div class="p-value">${rrzEscapeHtml(n.crowding)}</div></div>`);
+    if(n.gingivalMargin) rows.push(`<div class="p-item"><div class="p-title">Gingival Margin</div><div class="p-value">${rrzEscapeHtml(n.gingivalMargin)}</div></div>`);
+    if(n.gingivalColor) rows.push(`<div class="p-item"><div class="p-title">Gingival color</div><div class="p-value">${rrzEscapeHtml(n.gingivalColor)}</div></div>`);
+    if(n.otherFindings) rows.push(`<div class="p-item"><div class="p-title">Other Findings</div><div class="p-value">${rrzEscapeHtml(n.otherFindings)}</div></div>`);
+    if(!rows.length) return '';
+    return `
+      <div style="margin-top:14px;">
+        <hr style="border:0; border-top:1px solid #cbd5e1; margin: 14px 0;"/>
+        <div style="font-weight:800; margin: 0 0 10px;">Notes</div>
+        ${rows.join('')}
+      </div>
+    `;
+  };
+
+  window.rrzInitNotes = function(){
+    const panel = document.getElementById('user-notes-panel');
+    if(!panel) return;
+    const n = rrzReadNotes();
+    const c = document.getElementById('note-crowding');
+    const gm = document.getElementById('note-gingival-margin');
+    const gc = document.getElementById('note-gingival-color');
+    const of = document.getElementById('note-other-findings');
+    if(c) c.value = n.crowding || '';
+    if(gm) gm.value = n.gingivalMargin || '';
+    if(gc) gc.value = n.gingivalColor || '';
+    if(of) of.value = n.otherFindings || '';
+
+    const saveNow = () => { try{ window.rrzGetNotes && window.rrzGetNotes(); }catch(e){} };
+    [c,gm,gc,of].forEach(el => { if(el){ el.addEventListener('input', saveNow); el.addEventListener('change', saveNow); } });
+
+    const toggle = (on) => { panel.style.display = on ? 'block' : 'none'; };
+
+    // Toggle based on common global state flags if present
+    try{
+      if(typeof state === 'object' && state && ('imageLoaded' in state)) toggle(!!state.imageLoaded);
+      else toggle(false);
+    }catch(e){ toggle(false); }
+
+
+    // RRZ_NOTES_VISIBILITY_WATCH: ensure panel appears after auto-load from dashboard/PWA caches.
+    (function(){
+      let tries = 0;
+      const qs = (function(){ try{ return new URLSearchParams(location.search); }catch(e){ return null; } })();
+      const openedFromDashboard = !!(qs && ((qs.get('from') === 'photo') || qs.get('slot')));
+      const t = setInterval(() => {
+        tries++;
+        let loaded = false;
+        try{ loaded = !!(typeof state === 'object' && state && state.imageLoaded); }catch(e){}
+        if (loaded){
+          try{ toggle(true); }catch(e){}
+          clearInterval(t);
+          return;
+        }
+        // After ~3 seconds: if opened from dashboard, show notes anyway (even if image load failed),
+        // so user can still type notes and the page won't look "missing".
+        if (tries >= 30){
+          if (openedFromDashboard){
+            try{ toggle(true); }catch(e){}
+          }
+          clearInterval(t);
+        }
+      }, 100);
+    })();
+    // Hook image upload/reset buttons if present (supports different ids)
+    const up = document.getElementById('image-upload') || document.getElementById('file-input');
+    if(up){ up.addEventListener('change', () => setTimeout(() => toggle(true), 80)); }
+
+    const ch = document.getElementById('change-img-btn');
+    if(ch){ ch.addEventListener('click', () => setTimeout(() => toggle(true), 80)); }
+
+    const rs = document.getElementById('reset-btn');
+    if(rs){ rs.addEventListener('click', () => setTimeout(() => {
+      try{ if(typeof state === 'object' && state && ('imageLoaded' in state)) toggle(!!state.imageLoaded); }
+      catch(e){}
+    }, 80)); }
+
+    // If resetAll() exists (some workflows use inline onclick), wrap it once.
+    try{
+      if(typeof window.resetAll === 'function' && !window.resetAll.__rrz_wrapped){
+        const _orig = window.resetAll;
+        const _wrap = function(){
+          const ret = _orig.apply(this, arguments);
+          setTimeout(() => {
+            try{ if(typeof state === 'object' && state && ('imageLoaded' in state)) toggle(!!state.imageLoaded); else toggle(false); }
+            catch(e){ toggle(false); }
+          }, 80);
+          return ret;
+        };
+        _wrap.__rrz_wrapped = true;
+        window.resetAll = _wrap;
+      }
+    }catch(e){}
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    try{ window.rrzInitNotes && window.rrzInitNotes(); }catch(e){}
+  });
+})();
+
+</script>
+</body>
+</html>

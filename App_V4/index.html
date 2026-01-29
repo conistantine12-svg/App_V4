@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royal Ray Zone</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#c5a059">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0f172a;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* حاوية المحتوى الرئيسي */
+        .content-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        
+        /* حاوية اللوجو */
+        .logo-container {
+            position: relative;
+            margin-bottom: 40px;
+            perspective: 1000px;
+        }
+        
+        /* اللوجو المتحرك */
+        .dynamic-logo {
+            width: 200px;
+            height: 200px;
+            border-radius: 30px;
+            object-fit: cover;
+            animation: zoomInOut 3s ease-in-out infinite;
+            box-shadow: 0 15px 40px rgba(197, 160, 89, 0.5);
+            border: 4px solid #c5a059;
+        }
+        
+        /* حركة التقريب والتبعيد */
+        @keyframes zoomInOut {
+            0%, 100% {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+            50% {
+                transform: scale(1.15);
+                filter: brightness(1.2);
+                box-shadow: 0 20px 50px rgba(197, 160, 89, 0.7);
+            }
+        }
+        
+        /* العنوان الرئيسي */
+        .main-title {
+            color: #c5a059;
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        /* الجملة الترحيبية */
+        .welcome-text {
+            color: #e2e8f0;
+            font-size: 2em;
+            font-weight: 300;
+            margin-top: 30px;
+            padding: 20px 40px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 15px;
+            border: 1px solid rgba(197, 160, 89, 0.3);
+            animation: fadeInUp 1.5s ease-out 0.5s both;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* مؤشر التحميل */
+        .loader {
+            width: 300px;
+            height: 4px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 2px;
+            margin-top: 40px;
+            overflow: hidden;
+            animation: fadeInUp 2s ease-out 1s both;
+        }
+        
+        .loader-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #c5a059, #f0d699);
+            border-radius: 2px;
+            animation: loadingBar 4s linear forwards;
+        }
+        
+        @keyframes loadingBar {
+            0% {
+                width: 0%;
+            }
+            100% {
+                width: 100%;
+            }
+        }
+        
+        /* الرسالة المؤقتة */
+        .countdown {
+            position: absolute;
+            bottom: 40px;
+            color: #94a3b8;
+            font-size: 0.9em;
+            animation: fadeInUp 2s ease-out 2s both;
+        }
+        
+        /* الرسوم المتحركة للظهور */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* الرسوم المتحركة للاختفاء */
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+        }
+        
+        /* تأثير الاختفاء */
+        .fade-out {
+            animation: fadeOut 1s ease-out forwards !important;
+        }
+        
+        /* صفحة التسجيل (مخفية في البداية) */
+        .registration-page {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            padding: 80px 20px 40px;
+            background: #0f172a;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1s ease;
+            overflow-y: auto;
+        }
+        
+        .registration-page.active {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* تصميم صفحة التسجيل */
+        .registration-form {
+            background: rgba(30, 41, 59, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 420px;
+            border: 2px solid rgba(197, 160, 89, 0.4);
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+        
+        .form-title {
+            color: #c5a059;
+            font-size: 2em;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #e2e8f0;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            color: white;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #c5a059;
+            box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.1);
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #c5a059, #b89040);
+            color: #0f172a;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #f0d699, #c5a059);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(197, 160, 89, 0.3);
+        }
+        
+        .login-link {
+            text-align: center;
+            margin-top: 15px;
+            color: #94a3b8;
+        }
+        
+        .login-link a {
+            color: #c5a059;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .login-link a:hover {
+            background: rgba(197, 160, 89, 0.1);
+            text-decoration: none;
+        }
+        
+        /* النص التحتي */
+        .sub-text {
+            color: #64748b;
+            font-size: 0.8em;
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            max-width: 400px;
+        }
+        
+        /* للأجهزة الصغيرة */
+        @media (max-height: 700px) {
+            .registration-page {
+                padding-top: 50px;
+                padding-bottom: 30px;
+            }
+            
+            .registration-form {
+                padding: 30px 25px;
+                margin-top: 10px;
+            }
+            
+            .form-title {
+                font-size: 1.8em;
+                margin-bottom: 25px;
+            }
+            
+            .form-group {
+                margin-bottom: 15px;
+            }
+            
+            .form-group input {
+                padding: 12px;
+            }
+            
+            .submit-btn {
+                padding: 14px;
+                margin-top: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .registration-form {
+                padding: 30px 20px;
+                margin: 15px;
+            }
+            
+            .main-title {
+                font-size: 2.5em;
+            }
+            
+            .welcome-text {
+                font-size: 1.7em;
+                padding: 15px 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- الصفحة الأولى (صفحة الترحيب) -->
+    <div class="content-container" id="welcomePage">
+        <div class="logo-container">
+  <img 
+    src="./incon/logo.png" 
+    alt="Royal Ray Zone Logo" 
+    class="dynamic-logo"
+    onerror="this.onerror=null; this.src='./icon/logo.png';"
+  >
+</div>
+
+        
+        <h1 class="main-title">Royal Ray Zone</h1>
+        
+        <div class="welcome-text">
+            Welcome to Dental AI Era
+        </div>
+        
+        <div class="loader">
+            <div class="loader-bar"></div>
+        </div>
+        
+        <div class="countdown" id="countdown">
+            الانتقال إلى التسجيل خلال: <span id="timer">4</span> ثانية
+        </div>
+    </div>
+    
+    <!-- صفحة التسجيل (مخفية في البداية) -->
+    <div class="registration-page" id="registrationPage">
+        <div class="registration-form">
+            <h2 class="form-title">تسجيل حساب جديد</h2>
+            
+            <div class="form-group">
+                <label for="fullName">الاسم الكامل</label>
+                <input type="text" id="fullName" placeholder="أدخل اسمك الكامل" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">البريد الإلكتروني</label>
+                <input type="email" id="email" placeholder="example@domain.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">كلمة المرور</label>
+                <input type="password" id="password" placeholder="********" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">تأكيد كلمة المرور</label>
+                <input type="password" id="confirmPassword" placeholder="********" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="specialty">التخصص الطبي</label>
+                <input type="text" id="specialty" placeholder="طبيب أسنان، أخصائي أشعة، إلخ">
+            </div>
+            
+            <button type="submit" class="submit-btn" onclick="register()">
+                إنشاء حساب
+            </button>
+            
+            <div class="login-link">
+                لديك حساب بالفعل؟ 
+                <a href="subscription.html" onclick="skipToSubscription()">تسجيل الدخول</a>
+            </div>
+        </div>
+        
+        <div class="sub-text">
+            جميع الحقوق محفوظة © 2024 Royal Ray Zone
+        </div>
+    </div>
+    
+    <script>
+        // عناصر DOM
+        const welcomePage = document.getElementById('welcomePage');
+        const registrationPage = document.getElementById('registrationPage');
+        const timerElement = document.getElementById('timer');
+        const countdownElement = document.getElementById('countdown');
+        
+        let countdown = 4;
+        let timerInterval;
+        
+        // بدء العد التنازلي
+        function startCountdown() {
+            timerInterval = setInterval(() => {
+                countdown--;
+                timerElement.textContent = countdown;
+                
+                if (countdown === 0) {
+                    clearInterval(timerInterval);
+                    switchToRegistration();
+                }
+                
+                // تغيير لون العد التنازلي عندما يقترب من الصفر
+                if (countdown <= 2) {
+                    countdownElement.style.color = '#f87171';
+                }
+            }, 1000);
+        }
+        
+        // الانتقال إلى صفحة التسجيل
+        function switchToRegistration() {
+            // إضافة تأثير الاختفاء للعناصر الفردية
+            const elements = welcomePage.querySelectorAll('*');
+            elements.forEach((element, index) => {
+                setTimeout(() => {
+                    element.classList.add('fade-out');
+                }, index * 100);
+            });
+            
+            // بعد الانتهاء من الاختفاء، إظهار صفحة التسجيل
+            setTimeout(() => {
+                welcomePage.style.display = 'none';
+                registrationPage.classList.add('active');
+                
+                // رفع الصفحة للأعلى
+                window.scrollTo(0, 0);
+                
+                // إضافة تأثير ظهور لصفحة التسجيل
+                setTimeout(() => {
+                    registrationPage.style.opacity = '1';
+                    registrationPage.style.transform = 'translateY(0)';
+                }, 100);
+            }, 1000);
+        }
+        
+        // دالة التسجيل
+        function register() {
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const specialty = document.getElementById('specialty').value;
+            
+            // تحقق بسيط
+            if (!fullName || !email || !password || !confirmPassword) {
+                alert('يرجى ملء جميع الحقول المطلوبة');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert('كلمة المرور وتأكيدها غير متطابقتين');
+                return;
+            }
+            
+            // هنا يمكنك إضافة كود إرسال البيانات للخادم
+            alert(`تم إنشاء حساب بنجاح!\n\nسيتم توجيهك لصفحة خطط الاشتراك...`);
+            
+            // الانتقال لصفحة الاشتراك بعد 1.5 ثانية
+            setTimeout(() => {
+                window.location.href = "subscription.html";
+            }, 1500);
+            
+            // في الواقع، هنا نرسل البيانات للخادم
+            console.log('بيانات التسجيل:', {
+                fullName,
+                email,
+                password,
+                specialty
+            });
+        }
+        
+        // الانتقال المباشر لصفحة الاشتراك (لتسجيل الدخول)
+        function skipToSubscription() {
+            event.preventDefault(); // منع السلوك الافتراضي للرابط
+            alert('تم توجيهك لصفحة خطط الاشتراك...');
+            window.location.href = "subscription.html";
+            return false;
+        }
+        
+        // بدء التطبيق
+        window.onload = function() {
+            startCountdown();
+            
+            // يمكن للمستخدم النقر للتخطي
+            welcomePage.addEventListener('click', function() {
+                clearInterval(timerInterval);
+                switchToRegistration();
+            });
+            
+            // رفع الصفحة للأعلى عند التحميل
+            window.scrollTo(0, 0);
+        };
+        
+        // منع التمرير التلقائي
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                window.scrollTo(0, 0);
+            }, 100);
+        });
+    </script>
+</body>
+</html>

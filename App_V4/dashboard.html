@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - Royal Ray Zone</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#c5a059">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        /* شريط التنقل */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(197, 160, 89, 0.2);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+        
+        .logo-text {
+            font-size: 1.5em;
+            color: #c5a059;
+            font-weight: bold;
+        }
+        
+        /* محتوى Dashboard */
+        .dashboard-container {
+            max-width: 950px;
+            margin: 0 auto;
+            background: rgba(30, 41, 59, 0.9);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(197, 160, 89, 0.3);
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .dashboard-title {
+            color: #c5a059;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .dashboard-subtitle {
+            color: #94a3b8;
+            font-size: 1.2em;
+        }
+        
+        /* أزرار الخدمات */
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .upload-card {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            border: 2px solid rgba(197, 160, 89, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 280px; /* ضمان ارتفاع موحد */
+        }
+        
+        .upload-card:hover {
+            transform: translateY(-8px);
+            border-color: #c5a059;
+            box-shadow: 0 20px 40px rgba(197, 160, 89, 0.15);
+            background: rgba(20, 30, 50, 0.95);
+        }
+        
+        /* تنسيق الصور PNG */
+        .card-image-container {
+            height: 120px; /* مساحة مخصصة للصورة */
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .upload-icon-img {
+            max-width: 110px;
+            max-height: 110px;
+            object-fit: contain;
+            transition: all 0.4s ease;
+            /* إضافة ظل خفيف للصورة لتندمج مع الخلفية */
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
+        }
+
+        .upload-card:hover .upload-icon-img {
+            transform: scale(1.15);
+            filter: drop-shadow(0 10px 15px rgba(197, 160, 89, 0.3));
+        }
+        
+        .upload-title {
+            color: white;
+            font-size: 1.3em;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        
+        .upload-desc {
+            color: #94a3b8;
+            font-size: 0.95em;
+            line-height: 1.5;
+            max-width: 90%;
+        }
+        
+        /* زر العودة */
+        .back-container {
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        .back-btn {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .back-btn:hover {
+            background: #475569;
+        }
+        
+        /* ===== Patient Data Styles (نفس التنسيق السابق) ===== */
+        .patient-summary {
+            margin-top: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(197, 160, 89, 0.25);
+        }
+
+        .patient-summary-text {
+            color: #e2e8f0;
+            font-size: 0.98em;
+            line-height: 1.6;
+        }
+
+        .patient-edit-btn {
+            background: transparent;
+            color: #c5a059;
+            border: 1px solid rgba(197, 160, 89, 0.55);
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+        }
+
+        .patient-edit-btn:hover {
+            background: rgba(197, 160, 89, 0.12);
+        }
+
+        .patient-step {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(197, 160, 89, 0.25);
+            border-radius: 16px;
+            padding: 26px;
+            margin-bottom: 26px;
+        }
+
+        .patient-title {
+            color: #c5a059;
+            font-size: 1.6em;
+            margin-bottom: 8px;
+        }
+
+        .patient-hint {
+            color: #94a3b8;
+            margin-bottom: 20px;
+            line-height: 1.7;
+        }
+
+        .patient-form .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .form-field label {
+            display: block;
+            margin-bottom: 8px;
+            color: #e2e8f0;
+            font-weight: 600;
+            font-size: 0.98em;
+        }
+
+        .form-field input,
+        .form-field select {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid rgba(197, 160, 89, 0.25);
+            color: white;
+            padding: 14px 14px;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.25s ease;
+            font-size: 1.02em;
+        }
+
+        .form-field input::placeholder {
+            color: rgba(148, 163, 184, 0.85);
+        }
+
+        .form-field input:focus,
+        .form-field select:focus {
+            border-color: #c5a059;
+            box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.14);
+        }
+
+        .form-error {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fecaca;
+            line-height: 1.6;
+        }
+
+        .form-actions {
+            margin-top: 18px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #c5a059 0%, #b8924f 100%);
+            color: #0f172a;
+            border: none;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 1.05em;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(197, 160, 89, 0.18);
+        }
+
+        .secondary-btn {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 1.05em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .secondary-btn:hover {
+            background: rgba(148, 163, 184, 0.08);
+            border-color: rgba(148, 163, 184, 0.6);
+        }
+
+        /* تحسينات للجوال */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 25px;
+            }
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+            .patient-form .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .patient-step {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- شريط التنقل -->
+    <nav class="navbar">
+        <div class="logo">
+            <img src="logo.png" alt="Logo" class="logo-img" 
+                 onerror="this.onerror=null; this.src='https://via.placeholder.com/50x50/c5a059/0f172a?text=RRZ'">
+            <div class="logo-text">Royal Ray Zone</div>
+        </div>
+    </nav>
+    
+    <!-- محتوى Dashboard -->
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1 class="dashboard-title">لوحة التحكم</h1>
+            <p class="dashboard-subtitle">اختر الخدمة أو نوع الصورة لبدء التحليل</p>
+        
+            <!-- بيانات المريض الحالية -->
+            <div id="patientSummary" class="patient-summary" style="display:none;">
+                <div class="patient-summary-text" id="patientSummaryText"></div>
+                <button class="patient-edit-btn" type="button" onclick="editPatient()">تعديل بيانات المريض</button>
+            </div>
+        </header>
+        
+        <!-- بيانات المريض -->
+        <div id="patientStep" class="patient-step">
+            <h2 class="patient-title">بيانات المريض</h2>
+            <p class="patient-hint">يرجى إدخال بيانات المريض قبل البدء.</p>
+
+            <form id="patientForm" class="patient-form" onsubmit="event.preventDefault(); savePatientAndContinue();">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="patientName">اسم المريض</label>
+                        <input id="patientName" name="patientName" type="text" placeholder="مثال: Ahmed Ali" autocomplete="off" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="patientAge">العمر</label>
+                        <input id="patientAge" name="patientAge" type="number" min="0" max="120" placeholder="مثال: 24" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="patientId">Patient ID</label>
+                        <input id="patientId" name="patientId" type="text" placeholder="مثال: RRZ-00123" autocomplete="off" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="patientGender">النوع</label>
+                        <select id="patientGender" name="patientGender" required>
+                            <option value="" selected disabled>اختر</option>
+                            <option value="male">ذكر</option>
+                            <option value="female">أنثى</option>
+                            <option value="other">آخر</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="patientError" class="form-error" style="display:none;"></div>
+                <div class="form-actions">
+                    <button class="primary-btn" type="submit">تأكيد والمتابعة</button>
+                    <button class="secondary-btn" type="button" onclick="clearPatientForm()">مسح</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- شبكة الخدمات (تظهر بعد تأكيد بيانات المريض) -->
+        <div id="uploadStep" style="display:none;">
+            <div class="upload-grid">
+                
+                <!-- 1. صورة الرأس الشعاعية -->
+                <div class="upload-card" onclick="goToCeph()">
+                    <div class="card-image-container">
+                        <img src="ceph.png" alt="Cephalometric" class="upload-icon-img" onerror="this.style.display='none'; this.parentElement.innerHTML='🦷'">
+                    </div>
+                    <h3 class="upload-title">صورة الرأس الشعاعية<br>(Cephalometric)</h3>
+                    <p class="upload-desc">تحليل القياسات الرأسية والتخطيط التقويمي</p>
+                </div>
+                
+                <!-- 2. صورة البانوراما -->
+                <div class="upload-card" onclick="goToPano()">
+                    <div class="card-image-container">
+                        <img src="panorama.png" alt="Panoramic" class="upload-icon-img" onerror="this.style.display='none'; this.parentElement.innerHTML='📷'">
+                    </div>
+                    <h3 class="upload-title">صورة البانوراما<br>(Panoramic)</h3>
+                    <p class="upload-desc">تحليل شامل للفكين والأسنان والنسج الداعمة</p>
+                </div>
+                
+                <!-- 3. الصور السريرية -->
+                <div class="upload-card" onclick="goToPhoto()">
+                    <div class="card-image-container">
+                        <img src="clinic photo.png" alt="Clinic Photo" class="upload-icon-img" onerror="this.style.display='none'; this.parentElement.innerHTML='📸'">
+                    </div>
+                    <h3 class="upload-title">الصور السريرية<br>(Clinic Photos)</h3>
+                    <p class="upload-desc">رفع صور الوجه والابتسامة للتوثيق والتحليل الجمالي</p>
+                </div>
+                
+                <!-- 4. CBCT MPR Module -->
+                <div class="upload-card" onclick="goToCBCT()">
+                    <div class="card-image-container">
+                        <img src="cbct.png" alt="CBCT" class="upload-icon-img" onerror="this.style.display='none'; this.parentElement.innerHTML='🧊'">
+                    </div>
+                    <h3 class="upload-title">CBCT MPR Module<br>(3D Imaging)</h3>
+                    <p class="upload-desc">عرض وتحليل الأشعة المقطعية ثلاثية الأبعاد</p>
+                </div>
+
+                <!-- 5. التقرير الصوتي -->
+                <div class="upload-card" onclick="goToVoiceReport()">
+                    <div class="card-image-container">
+                        <img src="voice to report.png" alt="Voice Report" class="upload-icon-img" onerror="this.style.display='none'; this.parentElement.innerHTML='🎤'">
+                    </div>
+                    <h3 class="upload-title">التقرير الصوتي<br>(Voice to Report)</h3>
+                    <p class="upload-desc">إنشاء التقارير الطبية باستخدام الإملاء الصوتي</p>
+                </div>
+
+                <!-- 6. Ask AI Assistant -->
+                <div class="upload-card" onclick="goToAIAssistant()">
+                    <div class="card-image-container">
+                        <img src="Ask ai.png" alt="Ask AI" class="upload-icon-img" onerror="this.style.display='none'; this.parentElement.innerHTML='🤖'">
+                    </div>
+                    <h3 class="upload-title">مساعد الأشعة الذكي<br>(Ask AI Assistant)</h3>
+                    <p class="upload-desc">استشر الذكاء الاصطناعي في تشخيص وتحليل الصور</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- زر العودة -->
+        <div class="back-container">
+            <button class="back-btn" onclick="goBack()">
+                العودة لصفحة الشروط
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // وظائف الانتقال للصفحات
+        function goToCeph() { window.location.href = "ceph.html"; }
+        function goToPano() { window.location.href = "pano.html"; }
+        function goToPhoto() { window.location.href = "photo.html"; }
+        function goToVoiceReport() {
+            try { localStorage.setItem("rrz_voice_start", "template"); } catch(e) {}
+            window.location.href = "voice-report.html#template";
+        }
+        function goToCBCT() { window.location.href = "cbct.html"; }
+        function goToAIAssistant() { window.location.href = "ai-assistant.html"; }
+        function goBack() { window.location.href = "agreement.html"; }
+
+        // ===== Patient Data Logic =====
+        const PATIENT_KEY = 'currentPatient';
+        const PATIENT_CONFIRMED_KEY = 'patientConfirmed';
+
+        function getCurrentPatient() {
+            try { return JSON.parse(localStorage.getItem(PATIENT_KEY)); } catch (e) { return null; }
+        }
+
+        function setPatientError(msg) {
+            const el = document.getElementById('patientError');
+            if (!el) return;
+            if (!msg) { el.style.display = 'none'; el.textContent = ''; return; }
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function showPatientStep() {
+            document.getElementById('patientStep').style.display = 'block';
+            document.getElementById('uploadStep').style.display = 'none';
+            document.getElementById('patientSummary').style.display = 'none';
+
+            const p = getCurrentPatient();
+            if (p) {
+                document.getElementById('patientName').value = p.name || '';
+                document.getElementById('patientAge').value = (p.age ?? '');
+                document.getElementById('patientId').value = p.id || '';
+                document.getElementById('patientGender').value = p.gender || '';
+            }
+            setPatientError('');
+        }
+
+        function showUploadStep() {
+            document.getElementById('patientStep').style.display = 'none';
+            document.getElementById('uploadStep').style.display = 'block';
+            document.getElementById('patientSummary').style.display = 'flex';
+            renderPatientSummary();
+        }
+
+        function renderPatientSummary() {
+            const p = getCurrentPatient();
+            const el = document.getElementById('patientSummaryText');
+            if (!el || !p) return;
+            const gMap = { male: 'ذكر', female: 'أنثى', other: 'آخر' };
+            el.innerHTML = `<strong>المريض:</strong> ${escapeHtml(p.name)} | <strong>العمر:</strong> ${p.age} | <strong>ID:</strong> ${escapeHtml(p.id)} | <strong>النوع:</strong> ${gMap[p.gender] || p.gender}`;
+        }
+
+        function escapeHtml(str) {
+            return String(str).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+        }
+
+        function clearPatientForm() { document.getElementById('patientForm').reset(); setPatientError(''); }
+
+        function editPatient() {
+            localStorage.setItem(PATIENT_CONFIRMED_KEY, 'false');
+            showPatientStep();
+        }
+
+        function savePatientAndContinue() {
+            const name = document.getElementById('patientName').value.trim();
+            const age = Number(document.getElementById('patientAge').value.trim());
+            const id = document.getElementById('patientId').value.trim();
+            const gender = document.getElementById('patientGender').value;
+
+            if (!name || !age || !id || !gender) { setPatientError('يرجى ملء جميع الحقول.'); return; }
+            if (age < 0 || age > 120) { setPatientError('العمر غير صحيح.'); return; }
+
+            const patient = { name, age, id, gender, createdAt: new Date().toISOString() };
+            localStorage.setItem(PATIENT_KEY, JSON.stringify(patient));
+            localStorage.setItem(PATIENT_CONFIRMED_KEY, 'true');
+            
+            // Compatibility
+            localStorage.setItem('rrz_patient_name', name);
+            localStorage.setItem('patientName', name);
+
+            setPatientError('');
+            showUploadStep();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('termsAccepted') !== 'true') {
+                window.location.href = "agreement.html";
+                return;
+            }
+            if (localStorage.getItem(PATIENT_CONFIRMED_KEY) === 'true' && getCurrentPatient()) {
+                showUploadStep();
+            } else {
+                showPatientStep();
+            }
+        });
+        
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+        }
+    </script>
+</body>
+</html>

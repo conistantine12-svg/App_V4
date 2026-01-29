@@ -1,0 +1,2994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#c5a059" />
+    <link rel="manifest" href="manifest.json" />
+    <title>Facial Analysis Pro</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: 320px;
+            background: linear-gradient(180deg, #2c3e50 0%, #1a2530 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 5px 0 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .sidebar-header {
+            padding: 25px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .sidebar-header h2 i {
+            color: #3498db;
+        }
+        
+        .sidebar-subtitle {
+            color: #bdc3c7;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .points-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ecf0f1;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .points-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        
+        
+/* Points list as a scroll wheel */
+.points-wheel{
+    width: 100%;
+    min-height: 320px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: #ecf0f1;
+    border-radius: 14px;
+    padding: 10px;
+    outline: none;
+}
+.points-wheel:focus{
+    box-shadow: 0 0 0 3px rgba(52,152,219,0.35);
+}
+.points-wheel option{
+    padding: 10px 8px;
+    background: rgba(26,37,48,0.98);
+    color: #ecf0f1;
+}
+.point-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .point-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateX(5px);
+        }
+        
+        .point-card.active {
+            background: rgba(52, 152, 219, 0.2);
+            border-color: #3498db;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
+        }
+        
+        .point-card.placed {
+            background: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid #2ecc71;
+        }
+        
+        .point-number {
+            width: 32px;
+            height: 32px;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .point-card.active .point-number {
+            background: #fff;
+            color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+        }
+        
+        .point-card.placed .point-number {
+            background: #2ecc71;
+        }
+        
+        .point-info {
+            flex: 1;
+        }
+        
+        .point-name {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+        
+        .point-desc {
+            font-size: 12px;
+            color: #bdc3c7;
+            line-height: 1.4;
+        }
+        
+        .point-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e74c3c;
+            flex-shrink: 0;
+        }
+        
+        .point-card.placed .point-status {
+            background: #2ecc71;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+        
+        .sidebar-controls {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Undo (Points) */
+        .points-undo{
+            margin-top: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+        .btn-undo{
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+        .btn-undo:hover{
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+
+        .btn {
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-reference {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            margin-top: 10px;
+        }
+        
+        .btn-reference:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(155, 89, 182, 0.3);
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .main-header {
+            padding: 25px 30px;
+            background: white;
+            border-bottom: 1px solid #eaeaea;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .main-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .main-header-subtitle {
+            color: #7f8c8d;
+            margin-top: 8px;
+            font-size: 16px;
+        }
+        
+        .analysis-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .image-section {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            position: relative;
+        }
+        
+        /* Enhanced Upload Area */
+        .upload-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            z-index: 10;
+            display: none;
+        }
+        
+        .upload-area.active {
+            display: block;
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+        
+        .upload-card {
+            background: white;
+            border-radius: 20px;
+            padding: 50px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            border: 2px dashed #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-card:hover {
+            border-color: #3498db;
+            box-shadow: 0 25px 70px rgba(52, 152, 219, 0.2);
+        }
+        
+        .upload-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            color: white;
+            font-size: 40px;
+            box-shadow: 0 10px 30px rgba(52, 152, 219, 0.3);
+        }
+        
+        .upload-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .upload-subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(46, 204, 113, 0.3);
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(46, 204, 113, 0.4);
+        }
+        
+        .upload-note {
+            margin-top: 25px;
+            color: #95a5a6;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+                .canvas-container {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+
+            /* Size tuning: keep the image area compact (better on desktop & mobile/PWA) */
+            flex: 0 0 auto;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            min-height: 260px;
+            max-height: 520px;
+            padding: 12px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .canvas-container.active {
+            opacity: 1;
+        }
+
+        #face-canvas {
+            max-width: 100%;
+            max-height: 496px;
+            width: auto;
+            height: auto;
+            display: block;
+        }
+
+.image-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .image-controls.active {
+            opacity: 1;
+        }
+        
+        .btn-upload {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+        }
+        
+        .btn-reset {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+        
+        .btn-upload:hover, .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .analysis-section {
+            width: 500px;
+            padding: 30px;
+            overflow-y: auto;
+            background: white;
+            border-left: 1px solid #eaeaea;
+        }
+        
+        .analysis-tabs {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 25px;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #7f8c8d;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateX(5px);
+        }
+        
+        .metric-card.good {
+            border-left-color: #2ecc71;
+        }
+        
+        .metric-card.warning {
+            border-left-color: #f39c12;
+        }
+        
+        .metric-card.alert {
+            border-left-color: #e74c3c;
+        }
+        
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .metric-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        
+        .metric-value {
+            font-weight: 700;
+            font-size: 18px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .metric-value.good {
+            color: #2ecc71;
+        }
+        
+        .metric-value.warning {
+            color: #f39c12;
+        }
+        
+        .metric-value.alert {
+            color: #e74c3c;
+        }
+        
+        .metric-description {
+            color: #7f8c8d;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .progress-container {
+            margin-top: 10px;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #3498db);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            position: relative;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            animation: modalSlideIn 0.4s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from { transform: translateY(-100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        
+        .close-modal {
+            font-size: 28px;
+            font-weight: bold;
+            color: #95a5a6;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .close-modal:hover {
+            color: #e74c3c;
+        }
+        
+        .reference-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .reference-image-container {
+            text-align: center;
+        }
+        
+        .reference-image {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .reference-list {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .reference-list ol {
+            padding-left: 20px;
+        }
+        
+        .reference-list li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: white;
+            border-top: 1px solid #eaeaea;
+            font-size: 14px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e74c3c;
+        }
+        
+        .status-dot.active {
+            background: #2ecc71;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+        
+        .points-progress {
+            width: 200px;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .points-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        /* Results Table */
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .results-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .results-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .results-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .results-table .ideal {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        
+        .results-table .actual {
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        .results-table .deviation {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        /* Calibration Modal */
+        .calibration-options {
+            display: flex;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .calibration-option {
+            flex: 1;
+            text-align: center;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .calibration-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .calibration-option.selected {
+            border-color: #3498db;
+            background: #e8f4fc;
+        }
+        
+        .calibration-icon {
+            font-size: 40px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        
+        .calibration-input {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .calibration-input.active {
+            display: block;
+        }
+        
+        .calibration-input label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .calibration-input input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        /* Export Button */
+        .btn-export {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            margin-top: 15px;
+        }
+        
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(243, 156, 18, 0.3);
+        }
+        
+        /* Measurement Lines on Canvas */
+        .measurement-line {
+            pointer-events: none;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .analysis-container {
+                flex-direction: column;
+            }
+            
+            .analysis-section {
+                width: 100%;
+                height: 400px;
+            }
+            
+            .sidebar {
+                width: 280px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .points-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .upload-area {
+                width: 95%;
+            }
+            
+            .upload-card {
+                padding: 30px 20px;
+            }
+            
+            .calibration-options {
+                flex-direction: column;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .points-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .reference-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .upload-title {
+                font-size: 24px;
+            }
+            
+            .upload-btn {
+                padding: 15px 30px;
+                font-size: 16px;
+            }
+        }
+    
+
+/* === Modern Sidebar Skin (RRZ) - START === */
+:root{
+  --rrz-sb-bg1:#0b1220;
+  --rrz-sb-bg2:#0f1a2a;
+  --rrz-sb-card:rgba(255,255,255,0.06);
+  --rrz-sb-card2:rgba(255,255,255,0.08);
+  --rrz-sb-border:rgba(255,255,255,0.10);
+  --rrz-sb-border2:rgba(255,255,255,0.14);
+  --rrz-sb-text:rgba(255,255,255,0.92);
+  --rrz-sb-muted:rgba(255,255,255,0.62);
+  --rrz-sb-accent:#6ea8ff;
+  --rrz-sb-accent2:#2ecc71;
+}
+
+.sidebar{
+  width: 292px;
+  background: radial-gradient(1200px 500px at 20% 0%, rgba(110,168,255,0.18), transparent 55%),
+              linear-gradient(180deg, var(--rrz-sb-bg1) 0%, var(--rrz-sb-bg2) 100%);
+  color: var(--rrz-sb-text);
+  box-shadow: 8px 0 24px rgba(0,0,0,0.18);
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+.sidebar-header{
+  padding: 18px 18px 14px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.sidebar-header h2{
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  margin: 0;
+  color: var(--rrz-sb-text);
+}
+
+.sidebar-header h2 i{
+  color: var(--rrz-sb-accent);
+  filter: drop-shadow(0 6px 10px rgba(110,168,255,0.22));
+}
+
+.sidebar-subtitle{
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--rrz-sb-muted);
+  line-height: 1.35;
+}
+
+.points-section{
+  padding: 14px 14px 10px;
+}
+
+.section-title{
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.86);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+#points-count{
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+.points-wheel{
+  background: linear-gradient(180deg, var(--rrz-sb-card2), var(--rrz-sb-card));
+  border: 1px solid var(--rrz-sb-border);
+  border-radius: 16px;
+  padding: 10px 10px;
+  min-height: 340px;
+  color: rgba(255,255,255,0.92);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+.points-wheel:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(110,168,255,0.28), inset 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+.points-wheel option{
+  padding: 10px 10px;
+  margin: 2px 0;
+  border-radius: 10px;
+  background: rgba(8, 13, 23, 0.98);
+  color: rgba(255,255,255,0.92);
+}
+
+.points-wheel option:checked{
+  background: rgba(110,168,255,0.22);
+}
+
+.points-wheel::-webkit-scrollbar{
+  width: 10px;
+}
+.points-wheel::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,0.14);
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,0.35);
+}
+.points-wheel::-webkit-scrollbar-track{
+  background: rgba(0,0,0,0.12);
+  border-radius: 999px;
+}
+
+.sidebar-controls{
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.10);
+  gap: 10px;
+}
+
+.btn{
+  border-radius: 14px;
+  padding: 12px 12px;
+  font-size: 14px;
+  letter-spacing: 0.1px;
+}
+
+.btn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(110,168,255,0.26);
+}
+
+.btn-secondary{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+}
+
+.btn-secondary:hover{
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.18);
+}
+
+.btn-primary{
+  background: linear-gradient(135deg, rgba(110,168,255,1) 0%, rgba(52,152,219,1) 55%, rgba(41,128,185,1) 100%);
+  box-shadow: 0 14px 26px rgba(52,152,219,0.22);
+}
+
+.btn-primary:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(52,152,219,0.28);
+}
+
+.btn-reference{
+  background: linear-gradient(135deg, rgba(170,120,255,1) 0%, rgba(142,68,173,1) 100%);
+  box-shadow: 0 14px 26px rgba(142,68,173,0.20);
+  margin-top: 2px;
+}
+
+.btn-reference:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(142,68,173,0.26);
+}
+
+.btn-export{
+  background: linear-gradient(135deg, rgba(255,187,92,1) 0%, rgba(230,126,34,1) 100%);
+  box-shadow: 0 14px 26px rgba(230,126,34,0.20);
+  margin-top: 4px;
+}
+
+.btn-export:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(230,126,34,0.26);
+}
+
+@media (max-width: 1200px){
+  .sidebar{ width: 270px; }
+}
+@media (max-width: 900px){
+  .sidebar{
+    width: 100%;
+    box-shadow: none;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+  }
+  .points-wheel{ min-height: 240px; }
+}
+/* === Modern Sidebar Skin (RRZ) - END === */
+
+
+
+/* Unified Calibration Modal Theme */
+#calibration-modal.modal, #calib-settings-modal.modal{
+  display:none;
+  position:fixed;
+  z-index:1000;
+  left:0; top:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.80);
+  backdrop-filter: blur(5px);
+  overflow:auto;
+}
+#calibration-modal .calib-unified, #calib-settings-modal .calib-unified{
+  background:#ffffff !important;
+  margin:50px auto !important;
+  padding:0 !important;
+  border-radius:20px !important;
+  width:90% !important;
+  max-width:600px !important;
+  box-shadow:0 20px 40px rgba(0,0,0,0.20) !important;
+  overflow:hidden !important;
+  position:relative !important;
+}
+.calib-unified .modal-header{
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d) !important;
+  color:#ffffff !important;
+  padding:20px 30px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:16px !important;
+}
+.calib-unified .modal-header h2,
+.calib-unified .modal-header h3{
+  margin:0 !important;
+  font-size:20px !important;
+  font-weight:700 !important;
+  color:#ffffff !important;
+}
+.calib-unified .close-modal,
+.calib-unified .close-calib{
+  color:#ffffff !important;
+  font-size:28px !important;
+  font-weight:700 !important;
+  cursor:pointer !important;
+  background:transparent !important;
+  border:0 !important;
+  line-height:1 !important;
+}
+.calib-unified .modal-body{
+  padding:25px 30px !important;
+}
+.calib-unified .modal-subtitle{
+  margin:0 0 10px 0 !important;
+  color:#475569 !important;
+  font-size:13px !important;
+}
+.calib-unified .calibration-options,
+.calib-unified .calib-grid{
+  display:flex !important;
+  gap:20px !important;
+  margin:18px 0 0 0 !important;
+  flex-wrap:wrap !important;
+}
+.calib-unified .calibration-option,
+.calib-unified .calib-card{
+  flex:1 1 240px !important;
+  background:#f8f9fa !important;
+  border-radius:15px !important;
+  padding:20px !important;
+  cursor:pointer !important;
+  border:2px solid transparent !important;
+  transition: all 0.25s ease !important;
+  box-shadow:0 10px 20px rgba(0,0,0,0.06) !important;
+}
+.calib-unified .calibration-option:hover,
+.calib-unified .calib-card:hover{
+  transform: translateY(-3px) !important;
+  box-shadow:0 15px 30px rgba(0,0,0,0.10) !important;
+}
+.calib-unified .calibration-option.selected,
+.calib-unified .calib-card.selected{
+  border-color:#b21f1f !important;
+  background:#fff4f4 !important;
+}
+.calib-unified .calibration-icon,
+.calib-unified .calib-icon{
+  width:60px !important;
+  height:60px !important;
+  border-radius:50% !important;
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f) !important;
+  color:#ffffff !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin:0 auto 15px auto !important;
+  font-size:24px !important;
+}
+.calib-unified h3, .calib-unified .calib-card-title{
+  margin:0 0 8px 0 !important;
+  text-align:center !important;
+  font-size:16px !important;
+  color:#0f172a !important;
+}
+.calib-unified p, .calib-unified .calib-card-desc{
+  margin:0 !important;
+  text-align:center !important;
+  color:#475569 !important;
+  font-size:13px !important;
+}
+.calib-unified .calibration-input,
+.calib-unified .calib-manual-input,
+.calib-unified .calib-fields{
+  margin-top:14px !important;
+  background:#ffffff !important;
+  border-radius:12px !important;
+  padding:14px !important;
+  border:1px solid #e2e8f0 !important;
+}
+.calib-unified label{
+  display:block !important;
+  font-size:13px !important;
+  color:#334155 !important;
+  margin-bottom:6px !important;
+}
+.calib-unified input[type="number"],
+.calib-unified input[type="text"]{
+  width:100% !important;
+  padding:12px !important;
+  border:2px solid #e2e8f0 !important;
+  border-radius:10px !important;
+  font-size:14px !important;
+}
+.calib-unified .calib-inline{
+  display:flex !important;
+  gap:10px !important;
+  align-items:center !important;
+}
+.calib-unified .calib-help{
+  margin-top:8px !important;
+  font-size:12px !important;
+  color:#64748b !important;
+}
+.calib-unified .modal-footer,
+.calib-unified .modal-actions,
+.calib-unified .calib-actions{
+  display:flex !important;
+  justify-content:flex-end !important;
+  gap:12px !important;
+  padding:0 30px 25px 30px !important;
+}
+.calib-unified .btn{
+  border-radius:12px !important;
+}
+.calib-unified .calib-radio-row{
+  display:flex !important;
+  gap:8px !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin-top:12px !important;
+  font-size:13px !important;
+  color:#334155 !important;
+}
+
+</style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-landmark"></i> Facial Landmarks</h2>
+                <div class="sidebar-subtitle">Select and place key points for analysis</div>
+            </div>
+            
+            <div class="points-section">
+                <div class="section-title">
+                    <span>Anatomical Points</span>
+                    <span id="points-count">0/19</span>
+                </div>
+                <select class="points-wheel" id="points-list" size="12" aria-label="Points List"></select>
+            </div>
+
+
+            <div class="points-undo">
+                <button class="btn btn-undo" id="undo-point-btn" type="button">
+                    <i class="fas fa-undo"></i> Undo Point Placement
+                </button>
+            </div>
+
+            <div class="sidebar-controls">
+                <button class="btn btn-primary" id="start-analysis-btn">
+                    <i class="fas fa-play-circle"></i> Analyze Face
+                </button>
+                <button class="btn btn-secondary" id="calibration-btn">
+                    <i class="fas fa-ruler"></i> Calibration
+                </button>
+                <button class="btn btn-reference" id="reference-btn">
+                    <i class="fas fa-question-circle"></i> Reference Guide
+                </button>
+                <button class="btn btn-export" id="export-btn">
+                    <i class="fas fa-download"></i> Export Analysis
+                </button>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <h1><i class="fas fa-user-md"></i> Facial Analysis Pro</h1>
+                <div class="main-header-subtitle">Comprehensive facial symmetry and proportions analysis using geometric algorithms</div>
+            </div>
+            
+            <div class="analysis-container">
+                <div class="image-section">
+                    <!-- Upload Area (Centered when no image loaded) -->
+                    <div class="upload-area active" id="upload-area">
+                        <div class="upload-card">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h2 class="upload-title">Upload Facial Image</h2>
+                            <p class="upload-subtitle">Upload a clear, frontal face photo to begin facial analysis. For best results, use a well-lit image with face facing directly forward.</p>
+                            
+                            <button class="upload-btn" id="main-upload-btn">
+                                <i class="fas fa-camera"></i> Select Image
+                            </button>
+                            
+                            <div class="upload-note">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Supported formats: JPG, PNG, WebP. Max file size: 5MB</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Canvas Area (Hidden until image is uploaded) -->
+                    <div class="canvas-container" id="canvas-container">
+                        <canvas id="face-canvas" width="800" height="600"></canvas>
+                    </div>
+                    
+                    <!-- Image Controls (Hidden until image is uploaded) -->
+                    <div class="image-controls" id="image-controls">
+                        <button class="btn btn-upload" onclick="document.getElementById('image-upload').click()">
+                            <i class="fas fa-sync-alt"></i> Change Image
+                        </button>
+                        <button class="btn btn-reset" onclick="resetAll()">
+                            <i class="fas fa-redo"></i> Reset All Points
+                        </button>
+                        <div style="margin-left: auto; color: #7f8c8d; font-size: 14px;">
+                            <i class="fas fa-mouse-pointer"></i> Click to place, drag to move points
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analysis-section">
+                    <div class="analysis-tabs">
+                        <div class="tab active" data-tab="measurements">Measurements</div>
+                        <div class="tab" data-tab="fifths">Horizontal Fifths</div>
+                        <div class="tab" data-tab="thirds">Vertical Thirds</div>
+                        <div class="tab" data-tab="symmetry">Symmetry</div>
+                    </div>
+                    
+                    <div id="measurements-tab" class="tab-content active">
+                        <h3 style="margin-top: 0; color: #2c3e50;">Facial Measurements</h3>
+                        <table class="results-table" id="measurements-table">
+                            <thead>
+                                <tr>
+                                    <th>Measurement</th>
+                                    <th>Distance</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Measurements will be populated here -->
+                            </tbody>
+                        </table>
+                        
+                        <div class="metric-card" style="margin-top: 20px;">
+                            <div class="metric-header">
+                                <div class="metric-title">Calibration Status</div>
+                                <div class="metric-value" id="calibration-status">Pixels</div>
+                            </div>
+                            <div class="metric-description" id="calibration-info">
+                                Currently using pixel measurements. Click "Calibration" to set millimeter conversion.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="fifths-tab" class="tab-content">
+                        <h3 style="margin-top: 0; color: #2c3e50;">Horizontal Fifth Analysis</h3>
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Total Face Width</div>
+                                <div class="metric-value" id="total-face-width">0 px</div>
+                            </div>
+                            <div class="metric-description">
+                                Distance between Left Zygon and Right Zygon
+                            </div>
+                        </div>
+                        
+                        <table class="results-table" id="fifths-table">
+                            <thead>
+                                <tr>
+                                    <th>Segment</th>
+                                    <th>Distance</th>
+                                    <th>Ideal (1/5)</th>
+                                    <th>Deviation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Fifths analysis will be populated here -->
+                            </tbody>
+                        </table>
+                        
+                        <div class="metric-card" id="fifths-assessment-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Fifth Proportion Assessment</div>
+                                <div class="metric-value" id="fifths-assessment">--</div>
+                            </div>
+                            <div class="metric-description" id="fifths-description">
+                                Each segment should be approximately 1/5 of total face width.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="thirds-tab" class="tab-content">
+                        <h3 style="margin-top: 0; color: #2c3e50;">Vertical Thirds Analysis</h3>
+                        <div class="metric-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Subnasale to Menton</div>
+                                <div class="metric-value" id="subnasale-menton">0 px</div>
+                            </div>
+                        </div>
+                        
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Segment</th>
+                                    <th>Distance</th>
+                                    <th>Ideal Ratio</th>
+                                    <th>Actual Ratio</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Subnasale to Stomion</td>
+                                    <td id="subnasale-stomion">--</td>
+                                    <td class="ideal">1/3 (33.3%)</td>
+                                    <td id="ratio-stomion-subnasale">--</td>
+                                </tr>
+                                <tr>
+                                    <td>Stomion to Menton</td>
+                                    <td id="stomion-menton">--</td>
+                                    <td class="ideal">2/3 (66.7%)</td>
+                                    <td id="ratio-stomion-menton">--</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div class="metric-card" id="thirds-assessment-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Vertical Thirds Assessment</div>
+                                <div class="metric-value" id="thirds-assessment">--</div>
+                            </div>
+                            <div class="metric-description">
+                                Ideal ratio: Stomion divides Subnasale-Menton distance into 1:2 ratio.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="symmetry-tab" class="tab-content">
+                        <div class="metric-card" id="symmetry-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Bilateral Symmetry</div>
+                                <div class="metric-value" id="symmetry-score">0%</div>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-label">
+                                    <span>Asymmetry</span>
+                                    <span>Perfect Symmetry</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="symmetry-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="metric-description">
+                                Measures how closely the left and right halves of the face mirror each other. Scores above 95% are excellent.
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card" id="jaw-angle-card">
+                            <div class="metric-header">
+                                <div class="metric-title">Jaw Angle Symmetry</div>
+                                <div class="metric-value" id="jaw-angle-diff">0°</div>
+                            </div>
+                            <div class="metric-description">
+                                Difference between left and right gonial angles. Less than 5° difference is considered normal.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-dot" id="image-status-dot"></div>
+                    <span id="image-status">No image loaded</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="points-status-dot"></div>
+                    <span id="points-status">0 points placed</span>
+                </div>
+                <div class="status-item">
+                    <div class="points-progress">
+                        <div class="points-progress-fill" id="points-progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Calibration Modal -->
+    <div id="calibration-modal" class="modal">
+        <div class="modal-content calib-unified">
+            <div class="modal-header">
+                <h2><i class="fas fa-ruler"></i> Calibration Settings</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <p>Choose calibration method to convert pixels to real-world measurements.</p>
+            
+            <div class="calibration-options">
+                <div class="calibration-option" id="manual-calibration">
+                    <div class="calibration-icon">
+                        <i class="fas fa-ruler-combined"></i>
+                    </div>
+                    <h3>Manual (mm)</h3>
+                    <p>Enter a known measurement in millimeters for accurate conversion</p>
+                </div>
+                
+                <div class="calibration-option" id="pixel-calibration">
+                    <div class="calibration-icon">
+                        <i class="fas fa-pencil-ruler"></i>
+                    </div>
+                    <h3>Continue with Pixels</h3>
+                    <p>Use pixel measurements without conversion to real units</p>
+                </div>
+            </div>
+            
+            <div class="calibration-input" id="manual-input">
+                <label for="known-distance">Enter known distance in mm (e.g., distance between pupils):</label>
+                <input type="number" id="known-distance" step="0.1" min="1" placeholder="e.g., 65.0">
+                <p style="margin-top: 10px; font-size: 13px; color: #7f8c8d;">
+                    <i class="fas fa-info-circle"></i> Measure a known distance on the face in mm and enter it above
+                </p>
+            </div>
+            
+            <div style="text-align: right; margin-top: 25px;">
+                <button class="btn btn-secondary" id="cancel-calibration">Cancel</button>
+                <button class="btn btn-primary" id="apply-calibration">Apply Calibration</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reference Modal -->
+    <div id="reference-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-map-marker-alt"></i> Facial Landmarks Reference Guide</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            
+            <p>Place these 19 landmarks accurately for precise facial analysis. Click and drag to adjust point positions.</p>
+            
+            <div class="reference-grid">
+                <div class="reference-image-container">
+                    <img src="referance image.png" alt="Facial landmarks reference" class="reference-image" 
+                         onerror="this.onerror=null; this.src='data:image/svg+xml;charset=UTF-8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"600\" viewBox=\"0 0 800 600\"><rect width=\"800\" height=\"600\" fill=\"%23f0f0f0\"/><text x=\"400\" y=\"300\" font-family=\"Arial\" font-size=\"24\" text-anchor=\"middle\" fill=\"%23333\">Facial Landmarks Reference</text></svg>';">
+                </div>
+                
+                <div class="reference-list">
+                    <ol>
+                        <li><strong>Trichion:</strong> Midpoint of forehead hairline</li>
+                        <li><strong>Glabella:</strong> Smooth area between eyebrows</li>
+                        <li><strong>Nasion:</strong> Deepest point of nasal root</li>
+                        <li><strong>Subnasale:</strong> Base of nasal columella</li>
+                        <li><strong>Menton:</strong> Lowest point of chin</li>
+                        <li><strong>Left Zygon:</strong> Most lateral point of left cheekbone</li>
+                        <li><strong>Right Zygon:</strong> Most lateral point of right cheekbone</li>
+                        <li><strong>Left Gonion:</strong> Most lateral point of left jaw angle</li>
+                        <li><strong>Right Gonion:</strong> Most lateral point of right jaw angle</li>
+                        <li><strong>Left pupil center:</strong> Center of left pupil</li>
+                        <li><strong>Right pupil center:</strong> Center of right pupil</li>
+                        <li><strong>Left outer canthus:</strong> Outer corner of left eye</li>
+                        <li><strong>Right outer canthus:</strong> Outer corner of right eye</li>
+                        <li><strong>Left inner canthus:</strong> Inner corner of left eye</li>
+                        <li><strong>Right inner canthus:</strong> Inner corner of right eye</li>
+                        <li><strong>Left Ala:</strong> Most lateral point of left nasal wing</li>
+                        <li><strong>Right Ala:</strong> Most lateral point of right nasal wing</li>
+                        <li><strong>Left commissure:</strong> Left corner of the mouth</li>
+                        <li><strong>Right commissure:</strong> Right corner of the mouth</li>
+                        <li><strong>Stomion:</strong> Center of mouth closure (added for vertical thirds)</li>
+                    </ol>
+                </div>
+            </div>
+</div>
+    </div>
+    
+    <input type="file" id="image-upload" accept="image/*" style="display: none;">
+
+    <script>
+        /* ---------- PWA Service Worker ---------- */
+        if ("serviceWorker" in navigator){
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("sw.js").catch(()=>{});
+            });
+        }
+
+        /* ---------- Bridge: Auto-load image coming from photo.html ---------- */
+        const RRZ_PHOTO_DB_NAME = "rrz_clinical_photos_db";
+        const RRZ_PHOTO_DB_STORE = "images";
+        const RRZ_PHOTO_DB_VER = 1;
+
+        function rrzOpenPhotoDB(){
+            return new Promise((resolve, reject)=>{
+                const req = indexedDB.open(RRZ_PHOTO_DB_NAME, RRZ_PHOTO_DB_VER);
+                req.onupgradeneeded = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains(RRZ_PHOTO_DB_STORE)){
+                        db.createObjectStore(RRZ_PHOTO_DB_STORE, { keyPath:"id" });
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error || new Error("IDB open failed"));
+            });
+        }
+
+        async function rrzGetPhotoImage(slotId){
+            const db = await rrzOpenPhotoDB();
+            return new Promise((resolve, reject)=>{
+                const tx = db.transaction(RRZ_PHOTO_DB_STORE, "readonly");
+                const req = tx.objectStore(RRZ_PHOTO_DB_STORE).get(String(slotId));
+                req.onsuccess = () => { const r = req.result || null; db.close(); resolve(r); };
+                req.onerror = () => { db.close(); reject(req.error); };
+            });
+        }
+
+        function rrzBlobToDataURL(blob){
+            return new Promise((resolve, reject)=>{
+                try{
+                    const r = new FileReader();
+                    r.onload = () => resolve(String(r.result || ""));
+                    r.onerror = () => reject(r.error || new Error("read failed"));
+                    r.readAsDataURL(blob);
+                }catch(e){ reject(e); }
+            });
+        }
+
+        async function rrzLoadImageFromDataURL(dataUrl){
+            return new Promise((resolve, reject)=>{
+                const img = new Image();
+                img.onload = function(){
+                    try{
+                        // Calculate dimensions to fit canvas while maintaining aspect ratio
+                        const maxWidth = 800;
+                        const maxHeight = 600;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > maxWidth) {
+                            height = (maxWidth / width) * height;
+                            width = maxWidth;
+                        }
+
+                        if (height > maxHeight) {
+                            width = (maxHeight / height) * width;
+                            height = maxHeight;
+                        }
+
+                        state.canvas.width = width;
+                        state.canvas.height = height;
+
+                        // Draw image
+                        state.ctx.drawImage(img, 0, 0, width, height);
+                        state.image = img;
+                        state.imageLoaded = true;
+
+                        // Hide upload area and show canvas
+                        document.getElementById('upload-area').classList.remove('active');
+                        document.getElementById('canvas-container').classList.add('active');
+                        document.getElementById('image-controls').classList.add('active');
+
+                        // Reset points
+                        state.points = [];
+                        state.currentPointIndex = null;
+                        state.undoStack = [];
+                        state.measurements = {};
+                        state.analysisDone = false;
+
+                        // Reset UI
+                        resetPointListUI();
+                        resetAnalysis();
+
+                        // Update status
+                        updateStatus();
+
+                        // Auto-select first point
+                        setTimeout(() => selectPoint(0), 500);
+
+                        // Show calibration modal
+                        setTimeout(() => {
+                            document.getElementById('calibration-modal').style.display = 'block';
+                        }, 800);
+
+                        resolve(true);
+                    }catch(e){
+                        reject(e);
+                    }
+                };
+                img.onerror = () => reject(new Error("Image decode failed"));
+                img.src = dataUrl;
+            });
+        }
+
+        async function rrzTryBootstrapFromPhoto(){
+            try{
+                const params = new URLSearchParams(window.location.search);
+                const from = params.get("from");
+                if (from !== "photo") return false;
+
+                const slot = params.get("slot") || (sessionStorage.getItem("rrz_workflow_slot") || "extra_close");
+                let rec = await rrzGetPhotoImage(slot);
+                let dataUrl = null;
+
+                // 1) Prefer IndexedDB blob (normal path)
+                if (rec && rec.blob){
+                    dataUrl = await rrzBlobToDataURL(rec.blob);
+                }
+
+                // 2) Fallback: sessionStorage dataURL that photo.html already sets
+                if (!dataUrl){
+                    try{
+                        const keys = [
+                            `rrz_${slot}_image_dataurl`,
+                            `rrz_${slot}_image`,
+                            'rrz_uploaded_image',
+                            'uploadedImageDataUrl',
+                            'selectedImageDataUrl'
+                        ];
+                        for(const k of keys){
+                            const v = (sessionStorage.getItem(k) || '').trim();
+                            if (v && v.startsWith('data:image')) { dataUrl = v; break; }
+                        }
+                    }catch(e){}
+                }
+
+                if (!dataUrl) return false;
+
+                await rrzLoadImageFromDataURL(dataUrl);
+                return true;
+            }catch(e){
+                // Silent fail – user can still upload manually
+                return false;
+            }
+        }
+
+        // Application state
+
+        let state = {
+            imageLoaded: false,
+            points: [],
+            undoStack: [],
+            currentPointIndex: null,
+            image: null,
+            ctx: null,
+            canvas: null,
+            isDragging: false,
+            dragPointIndex: null,
+            calibration: {
+                method: 'pixels', // 'pixels' or 'mm'
+                pixelsPerMM: 1,
+                knownDistanceMM: null
+            },
+            measurements: {},
+            analysisDone: false,
+                        pointLabels: [
+                "Trichion (Hairline midpoint)",
+                "Glabella (Between eyebrows)",
+                "Nasion (Nasal root)",
+                "Subnasale (Nasal base)",
+                "Menton (Chin lowest point)",
+                "Left Zygon (Cheekbone)",
+                "Right Zygon (Cheekbone)",
+                "Left Gonion (Jaw angle)",
+                "Right Gonion (Jaw angle)",
+                "Left pupil center",
+                "Right pupil center",
+                "Left outer canthus (Eye corner)",
+                "Right outer canthus (Eye corner)",
+                "Left inner canthus (Inner eye corner)",
+                "Right inner canthus (Inner eye corner)",
+                "Left Ala (Nasal wing)",
+                "Right Ala (Nasal wing)",
+                "Left commissure (Mouth corner)",
+                "Right commissure (Mouth corner)",
+                "Stomion (Center of mouth closure)"
+            ]
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('face-canvas');
+            state.canvas = canvas;
+            state.ctx = canvas.getContext('2d');
+            
+            // Set up event listeners
+            document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+            
+            // Canvas mouse events for dragging
+            canvas.addEventListener('mousedown', handleCanvasMouseDown);
+            canvas.addEventListener('mousemove', handleCanvasMouseMove);
+            canvas.addEventListener('mouseup', handleCanvasMouseUp);
+            canvas.addEventListener('mouseleave', handleCanvasMouseUp);
+            
+            // Set up main upload button
+            document.getElementById('main-upload-btn').addEventListener('click', function() {
+                document.getElementById('image-upload').click();
+            });
+            
+            // Set up calibration modal
+            const calibrationBtn = document.getElementById('calibration-btn');
+            const calibrationModal = document.getElementById('calibration-modal');
+            const closeCalibration = document.querySelector('#calibration-modal .close-modal');
+            const cancelCalibration = document.getElementById('cancel-calibration');
+            const applyCalibration = document.getElementById('apply-calibration');
+            const manualCalibration = document.getElementById('manual-calibration');
+            const pixelCalibration = document.getElementById('pixel-calibration');
+            
+            calibrationBtn.addEventListener('click', function() {
+                if (!state.imageLoaded) {
+                    alert("Please upload an image first");
+                    return;
+                }
+                calibrationModal.style.display = 'block';
+            });
+            
+            closeCalibration.addEventListener('click', function() {
+                calibrationModal.style.display = 'none';
+            });
+            
+            cancelCalibration.addEventListener('click', function() {
+                calibrationModal.style.display = 'none';
+            });
+            
+            manualCalibration.addEventListener('click', function() {
+                manualCalibration.classList.add('selected');
+                pixelCalibration.classList.remove('selected');
+                document.getElementById('manual-input').classList.add('active');
+            });
+            
+            pixelCalibration.addEventListener('click', function() {
+                pixelCalibration.classList.add('selected');
+                manualCalibration.classList.remove('selected');
+                document.getElementById('manual-input').classList.remove('active');
+            });
+            
+            applyCalibration.addEventListener('click', function() {
+                if (manualCalibration.classList.contains('selected')) {
+                    const knownDistance = parseFloat(document.getElementById('known-distance').value);
+                    if (!knownDistance || knownDistance <= 0) {
+                        alert("Please enter a valid distance in mm");
+                        return;
+                    }
+                    
+                    // For demo purposes, we'll use a fixed pixel distance
+                    // In real implementation, user would measure on canvas
+                    state.calibration.method = 'mm';
+                    state.calibration.knownDistanceMM = knownDistance;
+                    state.calibration.pixelsPerMM = 5; // Example conversion
+                    
+                    document.getElementById('calibration-status').textContent = 'Millimeters';
+                    document.getElementById('calibration-info').textContent = 
+                        `Calibrated: ${state.calibration.pixelsPerMM.toFixed(2)} pixels/mm (based on ${knownDistance}mm reference)`;
+                } else {
+                    state.calibration.method = 'pixels';
+                    state.calibration.pixelsPerMM = 1;
+                    document.getElementById('calibration-status').textContent = 'Pixels';
+                    document.getElementById('calibration-info').textContent = 
+                        'Using pixel measurements without conversion';
+                }
+                
+                calibrationModal.style.display = 'none';
+                
+                // Recalculate measurements if points are placed
+                if (state.points.filter(p => p).length >= 19) {
+                    performAnalysis();
+                }
+            });
+            
+            // Set up reference modal
+            const referenceBtn = document.getElementById('reference-btn');
+            const closeModal = document.querySelector('#reference-modal .close-modal');
+            const modal = document.getElementById('reference-modal');
+            
+            referenceBtn.addEventListener('click', function() {
+                modal.style.display = 'block';
+            });
+            
+            closeModal.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+                if (event.target === calibrationModal) {
+                    calibrationModal.style.display = 'none';
+                }
+            });
+            
+            // Set up tab switching
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            // Set up analysis button
+            document.getElementById('start-analysis-btn').addEventListener('click', function() {
+                if (!state.imageLoaded) {
+                    alert("Please upload an image first");
+                    return;
+                }
+                
+                if (state.points.filter(p => p).length < state.pointLabels.length) {
+                    alert(`Please place all ${state.pointLabels.length} points before analysis`);
+                    return;
+                }
+                
+                performAnalysis();
+            });
+            
+            // Set up export button
+            document.getElementById('export-btn').addEventListener('click', function() {
+                exportAnalysis();
+            });
+
+
+            // Set up undo button (remove last placed point)
+            const undoBtn = document.getElementById('undo-point-btn');
+            if (undoBtn) {
+                undoBtn.addEventListener('click', function() {
+                    undoLastPoint();
+                });
+            }
+            
+            // Initialize points list
+            initializePointsList();
+            
+            // Update status
+            updateStatus();
+
+            // If coming from photo.html, auto-load the uploaded image
+            rrzTryBootstrapFromPhoto();
+        });
+
+        // Initialize points list in sidebar
+        function initializePointsList() {
+            const pointsList = document.getElementById('points-list');
+            if (!pointsList) return;
+
+            pointsList.innerHTML = '';
+
+            // Scroll wheel selection (native <select>)
+            pointsList.onchange = function() {
+                const idx = parseInt(this.value, 10);
+                if (!Number.isNaN(idx)) selectPoint(idx);
+            };
+
+            state.pointLabels.forEach((label, index) => {
+                const [name, description] = label.split(' (');
+                const desc = description ? description.replace(')', '') : '';
+
+                const baseText = `${index + 1}. ${name}${desc ? ' ' + desc : ''}`;
+
+                const opt = document.createElement('option');
+                opt.value = String(index);
+                opt.id = `point-option-${index}`;
+                opt.dataset.baseText = baseText;
+                opt.textContent = baseText;
+
+                pointsList.appendChild(opt);
+            });
+        }
+
+        // Select a point from the sidebar
+        function selectPoint(index) {
+            if (!state.imageLoaded) {
+                alert("Please upload an image first");
+                return;
+            }
+
+            // Update UI (scroll wheel)
+            const pointsList = document.getElementById('points-list');
+            if (pointsList) {
+                pointsList.value = String(index);
+            }
+
+            // Update state
+            state.currentPointIndex = index;
+
+            // Change cursor
+            state.canvas.style.cursor = 'crosshair';
+        }
+
+        // Handle image upload
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Check file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                alert("File size exceeds 5MB limit. Please choose a smaller image.");
+                return;
+            }
+            
+            // Check file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert("Please upload a valid image file (JPG, PNG, or WebP).");
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Calculate dimensions to fit canvas while maintaining aspect ratio
+                    const maxWidth = 800;
+                    const maxHeight = 600;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                        height = (maxWidth / width) * height;
+                        width = maxWidth;
+                    }
+                    
+                    if (height > maxHeight) {
+                        width = (maxHeight / height) * width;
+                        height = maxHeight;
+                    }
+                    
+                    state.canvas.width = width;
+                    state.canvas.height = height;
+                    
+                    // Draw image
+                    state.ctx.drawImage(img, 0, 0, width, height);
+                    state.image = img;
+                    state.imageLoaded = true;
+                    
+                    // Hide upload area and show canvas
+                    document.getElementById('upload-area').classList.remove('active');
+                    document.getElementById('canvas-container').classList.add('active');
+                    document.getElementById('image-controls').classList.add('active');
+                    
+                    // Reset points
+                    state.points = [];
+                    state.currentPointIndex = null;
+                    state.undoStack = [];
+                    state.measurements = {};
+                    state.analysisDone = false;
+                    
+                    // Reset UI
+                    resetPointListUI();
+                    resetAnalysis();
+                    
+                    // Update status
+                    updateStatus();
+                    
+                    // Auto-select first point
+                    setTimeout(() => selectPoint(0), 500);
+                    
+                    // Show calibration modal
+                    setTimeout(() => {
+                        document.getElementById('calibration-modal').style.display = 'block';
+                    }, 1000);
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                alert("Error reading file. Please try again.");
+            };
+            reader.readAsDataURL(file);
+        }
+
+
+// Convert pointer coordinates from CSS pixels to canvas pixels (handles CSS scaling).
+function getCanvasPointerPos(evt) {
+    const rect = state.canvas.getBoundingClientRect();
+    const e = (evt && evt.touches && evt.touches[0]) ? evt.touches[0] : evt;
+    const scaleX = state.canvas.width / rect.width;
+    const scaleY = state.canvas.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+    };
+}
+
+// Handle canvas mouse down (for placing and dragging points)
+        function handleCanvasMouseDown(event) {
+            if (!state.imageLoaded) return;
+            
+            const { x, y } = getCanvasPointerPos(event);
+            
+            // Check if clicking on an existing point to drag
+            for (let i = 0; i < state.points.length; i++) {
+                if (state.points[i]) {
+                    const point = state.points[i];
+                    const distance = Math.sqrt(Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2));
+                    
+                    if (distance < 10) { // Within point radius
+                        state.isDragging = true;
+                        state.dragPointIndex = i;
+                        state.canvas.style.cursor = 'grabbing';
+                        
+                        // Select this point in sidebar
+                        selectPoint(i);
+                        return;
+                    }
+                }
+            }
+            
+            // If not dragging and a point is selected, place the point
+            if (state.currentPointIndex !== null) {
+                const idx = state.currentPointIndex;
+                const prev = state.points[idx] ? { ...state.points[idx] } : null;
+                state.undoStack = state.undoStack || [];
+                state.undoStack.push({ index: idx, prev });
+                state.points[idx] = {x, y, label: state.pointLabels[idx]};
+                
+                // Draw the point
+                drawAllPoints();
+                
+                // Update UI
+                updatePointStatus(state.currentPointIndex, true);
+                
+                // Move to next point automatically if not all placed
+                const placedCount = state.points.filter(p => p).length;
+                if (placedCount < state.pointLabels.length) {
+                    // Find next unplaced point
+                    let nextIndex = (state.currentPointIndex + 1) % state.pointLabels.length;
+                    while (state.points[nextIndex] && nextIndex !== state.currentPointIndex) {
+                        nextIndex = (nextIndex + 1) % state.pointLabels.length;
+                    }
+                    selectPoint(nextIndex);
+                } else {
+                    state.currentPointIndex = null;
+                    state.canvas.style.cursor = 'default';
+                }
+                
+                // Update status (analysis runs only when user clicks "Analyze Face")
+                updateStatus();
+            }
+        }
+
+        // Handle canvas mouse move (for dragging points)
+        function handleCanvasMouseMove(event) {
+            if (!state.imageLoaded || !state.isDragging || state.dragPointIndex === null) return;
+            
+            const { x, y } = getCanvasPointerPos(event);
+            
+            // Update point position
+            state.points[state.dragPointIndex] = {
+                ...state.points[state.dragPointIndex],
+                x, y
+            };
+            
+            // Redraw everything
+            drawAllPoints();
+            
+            // Re-run analysis in real-time while dragging ONLY if analysis was already performed
+            if (state.analysisDone && state.points.filter(p => p).length === state.pointLabels.length) {
+                performAnalysis();
+            }
+        }
+
+        // Handle canvas mouse up (stop dragging)
+        function handleCanvasMouseUp() {
+            if (state.isDragging) {
+                state.isDragging = false;
+                state.dragPointIndex = null;
+                state.canvas.style.cursor = state.currentPointIndex !== null ? 'crosshair' : 'default';
+            }
+        }
+
+        // Draw all points and measurement lines on canvas
+        function drawAllPoints() {
+            // Redraw image
+            state.ctx.drawImage(state.image, 0, 0, state.canvas.width, state.canvas.height);
+            
+            // Draw all points
+            state.points.forEach((point, index) => {
+                if (point) {
+                    drawPoint(point.x, point.y, index);
+                }
+            });
+            
+            // Draw measurement lines if analysis has been performed
+            if (state.measurements && Object.keys(state.measurements).length > 0) {
+                drawMeasurementLines();
+            }
+        }
+
+                // Draw a single point
+        function drawPoint(x, y, index) {
+            // Tunables (smaller points as requested)
+            const r = 4;                 // point radius
+            const ringR = 8;             // drag ring radius
+            const strokeW = 1.5;
+
+            // Draw point circle
+            state.ctx.beginPath();
+            state.ctx.arc(x, y, r, 0, Math.PI * 2);
+            state.ctx.fillStyle = '#e74c3c';
+            state.ctx.fill();
+            state.ctx.strokeStyle = 'white';
+            state.ctx.lineWidth = strokeW;
+            state.ctx.stroke();
+
+            // Draw number inside
+            state.ctx.font = 'bold 10px Arial';
+            state.ctx.fillStyle = 'white';
+            state.ctx.textAlign = 'center';
+            state.ctx.textBaseline = 'middle';
+            state.ctx.fillText(index + 1, x, y);
+
+            // Draw drag handle indicator (subtle ring)
+            state.ctx.beginPath();
+            state.ctx.arc(x, y, ringR, 0, Math.PI * 2);
+            state.ctx.strokeStyle = 'rgba(52, 152, 219, 0.28)';
+            state.ctx.lineWidth = 1;
+            state.ctx.stroke();
+
+            // Draw full point name next to the point
+            const raw = state.pointLabels[index] || `Point ${index + 1}`;
+            const name = String(raw).split(' (')[0].trim();
+
+            state.ctx.save();
+            state.ctx.font = '600 12px Arial';
+
+            let tx = x + 12;
+            let ty = y - 12;
+            let align = 'left';
+
+            const w = state.ctx.measureText(name).width;
+            if (tx + w > state.canvas.width - 6) {
+                align = 'right';
+                tx = x - 12;
+            }
+            if (ty < 14) ty = y + 14;
+
+            state.ctx.textAlign = align;
+            state.ctx.textBaseline = 'middle';
+
+            // Outline for readability on any background
+            state.ctx.lineWidth = 3;
+            state.ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
+            state.ctx.strokeText(name, tx, ty);
+
+            state.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            state.ctx.fillText(name, tx, ty);
+            state.ctx.restore();
+        }
+
+
+        // Draw measurement lines between points
+        function drawMeasurementLines() {
+            if (!state.points || state.points.filter(p => p).length < state.pointLabels.length) return;
+            
+            const points = state.points;
+            
+            // Define measurement pairs to draw
+            const measurements = [
+                { from: 5, to: 6, color: '#3498db', label: 'Face Width' }, // Left Zygon to Right Zygon
+                { from: 7, to: 8, color: '#2ecc71', label: 'Jaw Width' }, // Left Gonion to Right Gonion
+                { from: 0, to: 4, color: '#9b59b6', label: 'Face Height' }, // Trichion to Menton
+                { from: 4, to: 7, color: '#f39c12', label: 'Menton-Left Gonion' }, // Menton to Left Gonion
+                { from: 4, to: 8, color: '#f39c12', label: 'Menton-Right Gonion' }, // Menton to Right Gonion
+                { from: 7, to: 5, color: '#1abc9c', label: 'Left Jaw-Cheek' }, // Left Gonion to Left Zygon
+                { from: 8, to: 6, color: '#1abc9c', label: 'Right Jaw-Cheek' }, // Right Gonion to Right Zygon
+                { from: 17, to: 9, color: '#e74c3c', label: 'Left Commissure-Pupil' }, // Left commissure to Left pupil
+                { from: 18, to: 10, color: '#e74c3c', label: 'Right Commissure-Pupil' }, // Right commissure to Right pupil
+                { from: 4, to: 3, color: '#34495e', label: 'Chin-Nose' }, // Menton to Subnasale
+                { from: 3, to: 0, color: '#34495e', label: 'Nose-Hairline' }, // Subnasale to Trichion
+                { from: 5, to: 11, color: '#8e44ad', label: 'Left Zygon-Canthis' }, // Left Zygon to left external canthus
+                { from: 11, to: 13, color: '#8e44ad', label: 'Left Eye Width' }, // Left external canthus to Left inner canthus
+                { from: 13, to: 14, color: '#8e44ad', label: 'Between Eyes' }, // Left inner canthus to Right inner canthus
+                { from: 14, to: 12, color: '#8e44ad', label: 'Right Eye Width' }, // Right inner canthus to Right external canthus
+                { from: 12, to: 6, color: '#8e44ad', label: 'Right Canthis-Zygon' }, // Right external canthus to Right Zygon
+                { from: 3, to: 19, color: '#d35400', label: 'Nose-Stomion' }, // Subnasale to Stomion
+                { from: 19, to: 4, color: '#d35400', label: 'Stomion-Chin' } // Stomion to Menton
+            ];
+            
+            // Draw each measurement line
+            measurements.forEach(measurement => {
+                const fromPoint = points[measurement.from];
+                const toPoint = points[measurement.to];
+                
+                if (fromPoint && toPoint) {
+                    drawLine(fromPoint, toPoint, measurement.color, measurement.label);
+                }
+            });
+        }
+
+        // Draw a single measurement line
+        function drawLine(from, to, color, label) {
+            // Draw line
+            state.ctx.beginPath();
+            state.ctx.moveTo(from.x, from.y);
+            state.ctx.lineTo(to.x, to.y);
+            state.ctx.strokeStyle = color;
+            state.ctx.lineWidth = 1.2;
+            state.ctx.setLineDash([5, 3]);
+            state.ctx.stroke();
+            state.ctx.setLineDash([]);
+            
+            // Calculate midpoint for label
+            const midX = (from.x + to.x) / 2;
+            const midY = (from.y + to.y) / 2;
+            
+            // Prepare label text (transparent background)
+            const distance = calculateDistance(from, to);
+            const displayDistance = formatDistance(distance);
+
+            // Draw label text with outline for readability (no background rectangle)
+            state.ctx.save();
+            state.ctx.font = 'bold 11px Arial';
+            state.ctx.textAlign = 'center';
+            state.ctx.textBaseline = 'middle';
+            state.ctx.lineWidth = 4;
+            state.ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
+            state.ctx.strokeText(displayDistance, midX, midY);
+            state.ctx.fillStyle = color;
+            state.ctx.fillText(displayDistance, midX, midY);
+            state.ctx.restore();
+}
+
+        // Update point status in sidebar
+        function updatePointStatus(index, placed) {
+            const opt = document.getElementById(`point-option-${index}`);
+            if (!opt) return;
+
+            const base = opt.dataset.baseText || opt.textContent.replace(/^✓\s*/, '');
+            opt.dataset.baseText = base;
+
+            opt.textContent = placed ? `✓ ${base}` : base;
+        }
+
+        // Update status bar and counters
+        function updateStatus() {
+            const placedCount = state.points.filter(p => p).length;
+            const totalPoints = state.pointLabels.length;
+            
+            // Update counters
+            document.getElementById('points-count').textContent = `${placedCount}/${totalPoints}`;
+            document.getElementById('points-status').textContent = `${placedCount} of ${totalPoints} points placed`;
+            
+            // Update progress bar
+            const progressPercent = (placedCount / totalPoints) * 100;
+            document.getElementById('points-progress-fill').style.width = `${progressPercent}%`;
+            
+            // Update status dots
+            const imageStatusDot = document.getElementById('image-status-dot');
+            const pointsStatusDot = document.getElementById('points-status-dot');
+            
+            if (state.imageLoaded) {
+                document.getElementById('image-status').textContent = 'Image loaded';
+                imageStatusDot.classList.add('active');
+            } else {
+                document.getElementById('image-status').textContent = 'No image loaded';
+                imageStatusDot.classList.remove('active');
+            }
+            
+            if (placedCount === totalPoints) {
+                pointsStatusDot.classList.add('active');
+            } else {
+                pointsStatusDot.classList.remove('active');
+            }
+        }
+
+        // Switch between analysis tabs
+        function switchTab(tabId) {
+            // Update tab UI
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            
+            // Show corresponding content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        }
+
+        // Reset everything
+        function resetAll() {
+            if (!state.imageLoaded) return;
+            
+            // Clear canvas and redraw image
+            state.ctx.drawImage(state.image, 0, 0, state.canvas.width, state.canvas.height);
+            
+            // Reset points
+            state.points = [];
+            state.currentPointIndex = null;
+            state.undoStack = [];
+            state.isDragging = false;
+            state.dragPointIndex = null;
+            state.canvas.style.cursor = 'default';
+            
+            // Reset measurements
+            state.measurements = {};
+            state.analysisDone = false;
+            
+            // Reset UI
+            resetPointListUI();
+            resetAnalysis();
+            updateStatus();
+            
+            // Auto-select first point
+            selectPoint(0);
+        }
+
+
+        // Undo last placed point (removes the last placement and returns to that point)
+        function undoLastPoint() {
+            if (!state.imageLoaded) {
+                alert("Please upload an image first");
+                return;
+            }
+
+            state.undoStack = state.undoStack || [];
+            if (state.undoStack.length === 0) {
+                alert("Nothing to undo");
+                return;
+            }
+
+            const last = state.undoStack.pop();
+            const idx = last.index;
+            state.points[idx] = null;
+            updatePointStatus(idx, false);
+
+            // Invalidate analysis if it was already performed
+            state.measurements = {};
+            state.analysisDone = false;
+            resetAnalysis();
+
+            drawAllPoints();
+            updateStatus();
+
+            // Focus back on the undone point so the user can place it again
+            selectPoint(idx);
+        }
+
+        // Reset points UI
+        function resetPointListUI() {
+            for (let i = 0; i < state.pointLabels.length; i++) {
+                updatePointStatus(i, false);
+            }
+        }
+
+        // Reset analysis displays
+        function resetAnalysis() {
+            // Reset all metrics
+            document.getElementById('symmetry-score').textContent = '0%';
+            document.getElementById('symmetry-progress').style.width = '0%';
+            document.getElementById('jaw-angle-diff').textContent = '0°';
+            
+            // Reset tables
+            document.getElementById('measurements-table').innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Measurement</th>
+                        <th>Distance</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            `;
+            
+            document.getElementById('fifths-table').innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Segment</th>
+                        <th>Distance</th>
+                        <th>Ideal (1/5)</th>
+                        <th>Deviation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            `;
+            
+            // Reset card styles
+            document.querySelectorAll('.metric-card').forEach(card => {
+                card.className = 'metric-card';
+            });
+        }
+
+        // Calculate distance between two points
+        function calculateDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+
+        // Format distance based on calibration
+        function formatDistance(distanceInPixels) {
+            if (state.calibration.method === 'mm' && state.calibration.pixelsPerMM) {
+                const distanceInMM = distanceInPixels / state.calibration.pixelsPerMM;
+                return distanceInMM.toFixed(1) + ' mm';
+            } else {
+                return Math.round(distanceInPixels) + ' px';
+            }
+        }
+
+        // Get distance in display units
+        function getDisplayDistance(distanceInPixels) {
+            if (state.calibration.method === 'mm' && state.calibration.pixelsPerMM) {
+                return distanceInPixels / state.calibration.pixelsPerMM;
+            } else {
+                return distanceInPixels;
+            }
+        }
+
+        // Get display unit
+        function getDisplayUnit() {
+            return state.calibration.method === 'mm' ? 'mm' : 'px';
+        }
+
+        // Perform complete analysis
+        function performAnalysis() {
+            if (state.points.filter(p => p).length < state.pointLabels.length) return;
+            
+            // Mark analysis as performed
+            state.analysisDone = true;
+            
+            // Store measurements
+            state.measurements = {};
+            
+            // 1. Calculate all required measurements
+            calculateAllMeasurements();
+            
+            // 2. Analyze horizontal fifths
+            analyzeHorizontalFifths();
+            
+            // 3. Analyze vertical thirds with Stomion
+            analyzeVerticalThirds();
+            
+            // 4. Analyze symmetry
+            const symmetryResults = analyzeSymmetry();
+            
+            // 5. Update UI with results
+            updateAnalysisUI(symmetryResults);
+            
+            // 6. Redraw canvas with measurement lines
+            drawAllPoints();
+        }
+
+        // Calculate all required measurements
+        function calculateAllMeasurements() {
+            const points = state.points;
+            
+            // Main measurements
+            state.measurements.leftZygonRightZygon = calculateDistance(points[5], points[6]);
+            state.measurements.leftGonionRightGonion = calculateDistance(points[7], points[8]);
+            state.measurements.trichionMenton = calculateDistance(points[0], points[4]);
+            state.measurements.mentonLeftGonion = calculateDistance(points[4], points[7]);
+            state.measurements.mentonRightGonion = calculateDistance(points[4], points[8]);
+            state.measurements.leftGonionLeftZygon = calculateDistance(points[7], points[5]);
+            state.measurements.rightGonionRightZygon = calculateDistance(points[8], points[6]);
+            
+            // Calculate point 1.5mm mesial to pupil centers
+            // For simplicity, we'll use the pupil center directly
+            state.measurements.leftCommissureLeftPupil = calculateDistance(points[17], points[9]);
+            state.measurements.rightCommissureRightPupil = calculateDistance(points[18], points[10]);
+            
+            state.measurements.mentonSubnasale = calculateDistance(points[4], points[3]);
+            // Alias for clarity (same line, reversed direction)
+            state.measurements.subnasaleMenton = state.measurements.mentonSubnasale;
+            state.measurements.subnasaleTrichion = calculateDistance(points[3], points[0]);
+            
+            // Horizontal fifth measurements
+            state.measurements.leftZygonLeftCanthus = calculateDistance(points[5], points[11]);
+            state.measurements.leftCanthusLeftInnerCanthus = calculateDistance(points[11], points[13]);
+            state.measurements.leftInnerCanthusRightInnerCanthus = calculateDistance(points[13], points[14]);
+            state.measurements.rightInnerCanthusRightCanthus = calculateDistance(points[14], points[12]);
+            state.measurements.rightCanthusRightZygon = calculateDistance(points[12], points[6]);
+            
+            // Stomion measurements
+            state.measurements.subnasaleStomion = calculateDistance(points[3], points[19]);
+            state.measurements.stomionMenton = calculateDistance(points[19], points[4]);
+        }
+
+        // Analyze horizontal fifths
+        function analyzeHorizontalFifths() {
+            const totalWidth = state.measurements.leftZygonRightZygon;
+            const idealFifth = totalWidth / 5;
+            
+            const fifthSegments = [
+                { name: 'Left Zygon to Left Canthus', distance: state.measurements.leftZygonLeftCanthus },
+                { name: 'Left Canthus to Left Inner Canthus', distance: state.measurements.leftCanthusLeftInnerCanthus },
+                { name: 'Left Inner to Right Inner Canthus', distance: state.measurements.leftInnerCanthusRightInnerCanthus },
+                { name: 'Right Inner Canthus to Right Canthus', distance: state.measurements.rightInnerCanthusRightCanthus },
+                { name: 'Right Canthus to Right Zygon', distance: state.measurements.rightCanthusRightZygon }
+            ];
+            
+            // Update UI
+            const fifthsTable = document.getElementById('fifths-table').querySelector('tbody');
+            fifthsTable.innerHTML = '';
+            
+            let totalActual = 0;
+            let withinTolerance = true;
+            
+            fifthSegments.forEach((segment, index) => {
+                const deviation = Math.abs(segment.distance - idealFifth) / idealFifth * 100;
+                totalActual += segment.distance;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${segment.name}</td>
+                    <td class="actual">${formatDistance(segment.distance)}</td>
+                    <td class="ideal">${formatDistance(idealFifth)}</td>
+                    <td class="${deviation > 15 ? 'deviation' : ''}">${deviation.toFixed(1)}%</td>
+                `;
+                fifthsTable.appendChild(row);
+                
+                if (deviation > 15) withinTolerance = false;
+            });
+            
+            // Update assessment
+            const totalDeviation = Math.abs(totalActual - totalWidth) / totalWidth * 100;
+            const assessmentCard = document.getElementById('fifths-assessment-card');
+            const assessmentValue = document.getElementById('fifths-assessment');
+            
+            if (totalDeviation < 5 && withinTolerance) {
+                assessmentCard.className = 'metric-card good';
+                assessmentValue.textContent = 'Ideal Proportion';
+                assessmentValue.className = 'metric-value good';
+                document.getElementById('fifths-description').textContent = 
+                    'All segments are close to 1/5 of total face width. Excellent horizontal proportions.';
+            } else if (totalDeviation < 10) {
+                assessmentCard.className = 'metric-card warning';
+                assessmentValue.textContent = 'Acceptable';
+                assessmentValue.className = 'metric-value warning';
+                document.getElementById('fifths-description').textContent = 
+                    'Most segments are within acceptable range of 1/5 proportion.';
+            } else {
+                assessmentCard.className = 'metric-card alert';
+                assessmentValue.textContent = 'Needs Attention';
+                assessmentValue.className = 'metric-value alert';
+                document.getElementById('fifths-description').textContent = 
+                    'Significant deviation from ideal 1/5 proportions detected.';
+            }
+            
+            // Update total width display
+            document.getElementById('total-face-width').textContent = formatDistance(totalWidth);
+        }
+
+        // Analyze vertical thirds with Stomion
+        function analyzeVerticalThirds() {
+            const subnasaleMenton = state.measurements.mentonSubnasale;
+            const subnasaleStomion = state.measurements.subnasaleStomion;
+            const stomionMenton = state.measurements.stomionMenton;
+            
+            const idealStomionSubnasale = subnasaleMenton / 3;
+            const idealStomionMenton = subnasaleMenton * 2 / 3;
+            
+            const ratioStomionSubnasale = subnasaleStomion / subnasaleMenton;
+            const ratioStomionMenton = stomionMenton / subnasaleMenton;
+            
+            // Update UI
+            document.getElementById('subnasale-menton').textContent = formatDistance(subnasaleMenton);
+            document.getElementById('subnasale-stomion').textContent = formatDistance(subnasaleStomion);
+            document.getElementById('stomion-menton').textContent = formatDistance(stomionMenton);
+            document.getElementById('ratio-stomion-subnasale').textContent = (ratioStomionSubnasale * 100).toFixed(1) + '%';
+            document.getElementById('ratio-stomion-menton').textContent = (ratioStomionMenton * 100).toFixed(1) + '%';
+            
+            // Update assessment
+            const assessmentCard = document.getElementById('thirds-assessment-card');
+            const assessmentValue = document.getElementById('thirds-assessment');
+            
+            const deviationSubnasale = Math.abs(ratioStomionSubnasale - 0.333) / 0.333 * 100;
+            const deviationMenton = Math.abs(ratioStomionMenton - 0.667) / 0.667 * 100;
+            
+            if (deviationSubnasale < 10 && deviationMenton < 10) {
+                assessmentCard.className = 'metric-card good';
+                assessmentValue.textContent = 'Ideal Ratio';
+                assessmentValue.className = 'metric-value good';
+            } else if (deviationSubnasale < 20 && deviationMenton < 20) {
+                assessmentCard.className = 'metric-card warning';
+                assessmentValue.textContent = 'Acceptable';
+                assessmentValue.className = 'metric-value warning';
+            } else {
+                assessmentCard.className = 'metric-card alert';
+                assessmentValue.textContent = 'Significant Deviation';
+                assessmentValue.className = 'metric-value alert';
+            }
+        }
+
+        // Analyze facial symmetry
+        function analyzeSymmetry() {
+            const midX = state.canvas.width / 2;
+            
+            // Face width asymmetry
+            const faceWidthLeft = Math.abs(midX - state.points[5].x);
+            const faceWidthRight = Math.abs(state.points[6].x - midX);
+            const widthDiff = Math.abs(faceWidthRight - faceWidthLeft);
+            const widthDiffPercent = (widthDiff / ((faceWidthLeft + faceWidthRight) / 2)) * 100;
+            
+            // Overall symmetry score
+            const symmetryScore = 100 - Math.min(widthDiffPercent, 100);
+            
+            return { symmetryScore, widthDiffPercent };
+        }
+
+        // Update analysis UI with results
+        function updateAnalysisUI(symmetry) {
+            // Update symmetry tab
+            document.getElementById('symmetry-score').textContent = `${symmetry.symmetryScore.toFixed(1)}%`;
+            document.getElementById('symmetry-progress').style.width = `${symmetry.symmetryScore}%`;
+            
+            // Style symmetry card based on score
+            const symmetryCard = document.getElementById('symmetry-card');
+            const symmetryValue = document.getElementById('symmetry-score');
+            if (symmetry.symmetryScore >= 95) {
+                symmetryCard.className = 'metric-card good';
+                symmetryValue.className = 'metric-value good';
+            } else if (symmetry.symmetryScore >= 90) {
+                symmetryCard.className = 'metric-card warning';
+                symmetryValue.className = 'metric-value warning';
+            } else {
+                symmetryCard.className = 'metric-card alert';
+                symmetryValue.className = 'metric-value alert';
+            }
+            
+            // Update measurements table
+            const measurementsTable = document.getElementById('measurements-table').querySelector('tbody');
+            measurementsTable.innerHTML = '';
+            
+                        const measurementData = [
+                { name: 'Left Zygon to Right Zygon', value: state.measurements.leftZygonRightZygon },
+                { name: 'Left Gonion to Right Gonion', value: state.measurements.leftGonionRightGonion },
+                { name: 'Trichion to Menton', value: state.measurements.trichionMenton },
+                { name: 'Menton to Left Gonion', value: state.measurements.mentonLeftGonion },
+                { name: 'Menton to Right Gonion', value: state.measurements.mentonRightGonion },
+                { name: 'Left Gonion to Left Zygon', value: state.measurements.leftGonionLeftZygon },
+                { name: 'Right Gonion to Right Zygon', value: state.measurements.rightGonionRightZygon },
+                { name: 'Left commissure to Left pupil center', value: state.measurements.leftCommissureLeftPupil },
+                { name: 'Right commissure to Right pupil center', value: state.measurements.rightCommissureRightPupil },
+                { name: 'Menton to Subnasale', value: state.measurements.mentonSubnasale },
+                { name: 'Subnasale to Trichion', value: state.measurements.subnasaleTrichion },
+                { name: 'Left Zygon to Left external canthus', value: state.measurements.leftZygonLeftCanthus },
+                { name: 'Left external canthus to Left inner canthus', value: state.measurements.leftCanthusLeftInnerCanthus },
+                { name: 'Left inner canthus to Right inner canthus', value: state.measurements.leftInnerCanthusRightInnerCanthus },
+                { name: 'Right inner canthus to Right external canthus', value: state.measurements.rightInnerCanthusRightCanthus },
+                { name: 'Right external canthus to Right Zygon', value: state.measurements.rightCanthusRightZygon },
+                { name: 'Stomion to Subnasale', value: state.measurements.subnasaleStomion },
+                { name: 'Stomion to Menton', value: state.measurements.stomionMenton },
+                { name: 'Subnasale to Menton', value: state.measurements.subnasaleMenton }
+            ];
+            
+            measurementData.forEach(measurement => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${measurement.name}</td>
+                    <td>${formatDistance(measurement.value)}</td>
+                    <td><span style="color: #2ecc71;">✓ Measured</span></td>
+                `;
+                measurementsTable.appendChild(row);
+            });
+        }
+
+        // Export analysis results
+        function exportAnalysis() {
+            if (!state.imageLoaded || state.points.filter(p => p).length < state.pointLabels.length) {
+                alert("Please complete the analysis before exporting.");
+                return;
+            }
+            
+            // Create a new window for printing
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Facial Analysis Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .header h1 { color: #2c3e50; }
+                        .image-container { text-align: center; margin: 20px 0; }
+                        .image-container img { max-width: 100%; border: 1px solid #ddd; }
+                        .results { margin-top: 30px; }
+                        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                        th { background: #2c3e50; color: white; padding: 10px; text-align: left; }
+                        td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
+                        .section { margin: 30px 0; }
+                        .section h3 { color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+                        .timestamp { color: #7f8c8d; font-size: 14px; }
+                        @media print {
+                            .no-print { display: none; }
+                            body { padding: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Facial Analysis Report</h1>
+                        <div class="timestamp">Generated: ${new Date().toLocaleString()}</div>
+                    </div>
+                    
+                    <div class="image-container">
+                        <h3>Analyzed Image with Landmarks</h3>
+                        <img src="${state.canvas.toDataURL('image/png')}" alt="Facial Analysis">
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Summary Measurements</h3>
+                        <table>
+                            <tr>
+                                <th>Measurement</th>
+                                <th>Value</th>
+                            </tr>
+                            <tr>
+                                <td>Face Width (Zygon to Zygon)</td>
+                                <td>${formatDistance(state.measurements.leftZygonRightZygon)}</td>
+                            </tr>
+                            <tr>
+                                <td>Face Height (Trichion to Menton)</td>
+                                <td>${formatDistance(state.measurements.trichionMenton)}</td>
+                            </tr>
+                            <tr>
+                                <td>Jaw Width (Gonion to Gonion)</td>
+                                <td>${formatDistance(state.measurements.leftGonionRightGonion)}</td>
+                            </tr>
+                            <tr>
+                                <td>Facial Symmetry Score</td>
+                                <td>${(100 - Math.min((Math.abs(state.canvas.width/2 - state.points[5].x) - Math.abs(state.points[6].x - state.canvas.width/2)) / (state.canvas.width/2) * 100, 100)).toFixed(1)}%</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Horizontal Fifth Analysis</h3>
+                        <table>
+                            <tr>
+                                <th>Segment</th>
+                                <th>Measured</th>
+                                <th>Ideal (1/5)</th>
+                                <th>Deviation</th>
+                            </tr>
+            `);
+            
+            // Add fifth segments
+            const totalWidth = state.measurements.leftZygonRightZygon;
+            const idealFifth = totalWidth / 5;
+            const fifthSegments = [
+                { name: 'Left Zygon to Left Canthus', distance: state.measurements.leftZygonLeftCanthus },
+                { name: 'Left Canthus to Left Inner Canthus', distance: state.measurements.leftCanthusLeftInnerCanthus },
+                { name: 'Left Inner to Right Inner Canthus', distance: state.measurements.leftInnerCanthusRightInnerCanthus },
+                { name: 'Right Inner Canthus to Right Canthus', distance: state.measurements.rightInnerCanthusRightCanthus },
+                { name: 'Right Canthus to Right Zygon', distance: state.measurements.rightCanthusRightZygon }
+            ];
+            
+            fifthSegments.forEach(segment => {
+                const deviation = Math.abs(segment.distance - idealFifth) / idealFifth * 100;
+                printWindow.document.write(`
+                    <tr>
+                        <td>${segment.name}</td>
+                        <td>${formatDistance(segment.distance)}</td>
+                        <td>${formatDistance(idealFifth)}</td>
+                        <td>${deviation.toFixed(1)}%</td>
+                    </tr>
+                `);
+            });
+            
+            printWindow.document.write(`
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Vertical Thirds Analysis</h3>
+                        <table>
+                            <tr>
+                                <th>Segment</th>
+                                <th>Measured</th>
+                                <th>Ideal Ratio</th>
+                                <th>Actual Ratio</th>
+                            </tr>
+                            <tr>
+                                <td>Subnasale to Stomion</td>
+                                <td>${formatDistance(state.measurements.subnasaleStomion)}</td>
+                                <td>1/3 (33.3%)</td>
+                                <td>${(state.measurements.subnasaleStomion / state.measurements.mentonSubnasale * 100).toFixed(1)}%</td>
+                            </tr>
+                            <tr>
+                                <td>Stomion to Menton</td>
+                                <td>${formatDistance(state.measurements.stomionMenton)}</td>
+                                <td>2/3 (66.7%)</td>
+                                <td>${(state.measurements.stomionMenton / state.measurements.mentonSubnasale * 100).toFixed(1)}%</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Detailed Measurements</h3>
+                        <table>
+                            <tr>
+                                <th>Measurement</th>
+                                <th>Value</th>
+                            </tr>
+            `);
+            
+            // Add all measurements
+                        const allMeasurements = [
+                { name: 'Left Zygon to Right Zygon', value: state.measurements.leftZygonRightZygon },
+                { name: 'Left Gonion to Right Gonion', value: state.measurements.leftGonionRightGonion },
+                { name: 'Trichion to Menton', value: state.measurements.trichionMenton },
+                { name: 'Menton to Left Gonion', value: state.measurements.mentonLeftGonion },
+                { name: 'Menton to Right Gonion', value: state.measurements.mentonRightGonion },
+                { name: 'Left Gonion to Left Zygon', value: state.measurements.leftGonionLeftZygon },
+                { name: 'Right Gonion to Right Zygon', value: state.measurements.rightGonionRightZygon },
+                { name: 'Left commissure to Left pupil center', value: state.measurements.leftCommissureLeftPupil },
+                { name: 'Right commissure to Right pupil center', value: state.measurements.rightCommissureRightPupil },
+                { name: 'Menton to Subnasale', value: state.measurements.mentonSubnasale },
+                { name: 'Subnasale to Trichion', value: state.measurements.subnasaleTrichion },
+                { name: 'Left Zygon to Left external canthus', value: state.measurements.leftZygonLeftCanthus },
+                { name: 'Left external canthus to Left inner canthus', value: state.measurements.leftCanthusLeftInnerCanthus },
+                { name: 'Left inner canthus to Right inner canthus', value: state.measurements.leftInnerCanthusRightInnerCanthus },
+                { name: 'Right inner canthus to Right external canthus', value: state.measurements.rightInnerCanthusRightCanthus },
+                { name: 'Right external canthus to Right Zygon', value: state.measurements.rightCanthusRightZygon },
+                { name: 'Stomion to Subnasale', value: state.measurements.subnasaleStomion },
+                { name: 'Stomion to Menton', value: state.measurements.stomionMenton },
+                { name: 'Subnasale to Menton', value: state.measurements.subnasaleMenton }
+            ];
+            
+            allMeasurements.forEach(measurement => {
+                printWindow.document.write(`
+                    <tr>
+                        <td>${measurement.name}</td>
+                        <td>${formatDistance(measurement.value)}</td>
+                    </tr>
+                `);
+            });
+            
+            printWindow.document.write(`
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Calibration Information</h3>
+                        <p>Measurement unit: ${state.calibration.method === 'mm' ? 'Millimeters' : 'Pixels'}</p>
+                        ${state.calibration.method === 'mm' ? 
+                          `<p>Conversion factor: ${state.calibration.pixelsPerMM.toFixed(2)} pixels per mm</p>` : 
+                          ''}
+                    </div>
+                    
+                    <div class="no-print" style="margin-top: 30px; text-align: center;">
+                        <button onclick="window.print()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Print Report
+                        </button>
+                    </div>
+                    
+                    <script>
+                        window.onload = function() {
+                            // Auto-print option (commented out)
+                            // window.print();
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+        }
+    </script>
+</body>
+</html>

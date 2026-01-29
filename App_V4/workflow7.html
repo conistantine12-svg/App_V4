@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+(function(){
+  try{
+    var qs = new URLSearchParams(location.search);
+    var from = qs.get('from') || '';
+    var slot = qs.get('slot') || '';
+    if (from === 'photo' || slot){
+      document.documentElement.classList.add('from-photo');
+      document.addEventListener('DOMContentLoaded', function(){
+        var ov = document.getElementById('auto-load-overlay');
+        if (ov) ov.style.display = 'flex';
+      });
+    }
+  }catch(e){}
+})();
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1220">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/icon-192.png">
+    
+    <title>Orthodontic Relation Analysis (Left Facing)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+            max-width: 1800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* === Modern Sidebar Skin (RRZ) === */
+        :root{
+          --rrz-sb-bg1:#0b1220;
+          --rrz-sb-bg2:#0f1a2a;
+          --rrz-sb-card:rgba(255,255,255,0.06);
+          --rrz-sb-card2:rgba(255,255,255,0.08);
+          --rrz-sb-border:rgba(255,255,255,0.10);
+          --rrz-sb-border2:rgba(255,255,255,0.14);
+          --rrz-sb-text:rgba(255,255,255,0.92);
+          --rrz-sb-muted:rgba(255,255,255,0.62);
+          --rrz-sb-accent:#6ea8ff;
+        }
+
+        .sidebar{
+          width: 292px;
+          background: radial-gradient(1200px 500px at 20% 0%, rgba(110,168,255,0.18), transparent 55%),
+                      linear-gradient(180deg, var(--rrz-sb-bg1) 0%, var(--rrz-sb-bg2) 100%);
+          color: var(--rrz-sb-text);
+          box-shadow: 8px 0 24px rgba(0,0,0,0.18);
+          border-right: 1px solid rgba(255,255,255,0.06);
+          display: flex;
+          flex-direction: column;
+          padding: 0;
+          overflow: hidden;
+        }
+
+        .sidebar-header{
+          padding: 18px 18px 14px;
+          background: rgba(255,255,255,0.03);
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .sidebar-header h2{
+          font-size: 18px;
+          font-weight: 700;
+          letter-spacing: 0.2px;
+          margin: 0;
+          color: var(--rrz-sb-text);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .sidebar-header h2 i{ color: var(--rrz-sb-accent); }
+
+        .sidebar-subtitle{
+          margin-top: 6px;
+          font-size: 12px;
+          color: var(--rrz-sb-muted);
+          line-height: 1.35;
+        }
+
+        .points-section{
+          padding: 14px 14px 10px;
+          flex: 1;
+          overflow-y: auto;
+        }
+
+        .section-title{
+          font-size: 13px;
+          font-weight: 700;
+          color: rgba(255,255,255,0.86);
+          margin-bottom: 10px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .points-wheel{
+          background: linear-gradient(180deg, var(--rrz-sb-card2), var(--rrz-sb-card));
+          border: 1px solid var(--rrz-sb-border);
+          border-radius: 16px;
+          padding: 10px 10px;
+          min-height: 300px;
+          color: rgba(255,255,255,0.92);
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+          width: 100%;
+          font-size: 13px;
+          overflow-y: auto;
+        }
+
+        .points-wheel:focus{ outline: none; box-shadow: 0 0 0 3px rgba(110,168,255,0.28); }
+        .points-wheel option{ padding: 10px; margin: 2px 0; border-radius: 8px; background: rgba(8,13,23,0.98); }
+        .points-wheel option:checked{ background: rgba(110,168,255,0.22); }
+
+        .undo-wrap{ display:flex; justify-content:center; margin-top: 14px; }
+        #undo-point-btn{ width: 100%; max-width: 260px; }
+        #undo-point-btn:disabled{ opacity: 0.55; cursor: not-allowed; }
+
+        .sidebar-controls{
+          padding: 12px 14px 16px;
+          border-top: 1px solid rgba(255,255,255,0.08);
+          background: rgba(0,0,0,0.10);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .btn{
+          border-radius: 14px; padding: 12px; font-size: 14px; border: none; cursor: pointer;
+          font-weight: 600; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        
+        .btn-secondary{ background: rgba(255,255,255,0.06); border: 1px solid var(--rrz-sb-border); color: white; }
+        .btn-secondary:hover{ background: rgba(255,255,255,0.1); }
+        
+        .btn-primary{ background: linear-gradient(135deg, #6ea8ff 0%, #3498db 100%); color: white; }
+        .btn-primary:hover{ transform: translateY(-1px); box-shadow: 0 4px 12px rgba(52,152,219,0.3); }
+
+        .btn-reference{
+          background: linear-gradient(135deg, #aa78ff 0%, #8e44ad 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(142,68,173,0.3);
+        }
+        .btn-reference:hover{ transform: translateY(-1px); box-shadow: 0 6px 16px rgba(142,68,173,0.4); }
+
+        .btn-export{
+          background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(230,126,34,0.3);
+        }
+        .btn-export:hover{ transform: translateY(-1px); box-shadow: 0 6px 16px rgba(230,126,34,0.4); }
+
+
+        /* Main Content */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .main-header { padding: 20px 30px; background: white; border-bottom: 1px solid #eaeaea; }
+        .main-header h1 { margin: 0; font-size: 24px; color: #2c3e50; }
+        
+        .analysis-container { display: flex; flex: 1; overflow: hidden; }
+        .image-section { flex: 1; padding: 20px; display: flex; flex-direction: column; background: #f8f9fa; position: relative; }
+        
+        .upload-area {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 90%; max-width: 500px; text-align: center; z-index: 10;
+        }
+        .upload-area.active { display: block; }
+        .upload-card {
+            background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); border: 2px dashed #e0e0e0;
+        }
+        .upload-btn {
+            background: #2ecc71; color: white; padding: 12px 30px; border-radius: 50px; border: none; font-size: 16px; cursor: pointer;
+        }
+
+        .canvas-container {
+            position: relative; border-radius: 12px; overflow: hidden; background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin: 0 auto; max-width: 900px;
+            opacity: 0; transition: opacity 0.5s ease;
+        }
+        .canvas-container.active { opacity: 1; }
+        #face-canvas { max-width: 100%; max-height: 500px; display: block; cursor: crosshair; }
+
+        .image-controls { display: flex; gap: 12px; margin-top: 20px; opacity: 0; justify-content: space-between; align-items: center; }
+        .image-controls.active { opacity: 1; }
+
+        .analysis-section { width: 500px; padding: 20px; overflow-y: auto; background: white; border-left: 1px solid #eaeaea; }
+        
+        .metric-card {
+            background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px;
+            border-left: 4px solid #3498db; transition: transform 0.2s;
+        }
+        .metric-card:hover { transform: translateX(5px); }
+        .metric-title { font-weight: 600; color: #2c3e50; font-size: 14px; margin-bottom: 5px; }
+        .metric-value { font-weight: 700; font-size: 16px; color: #333; }
+        .metric-desc { font-size: 12px; color: #777; margin-top: 4px; }
+
+        .class-result { font-weight: bold; padding: 4px 8px; border-radius: 4px; color: white; display: inline-block; font-size: 12px; }
+        .class-i { background-color: #2ecc71; }
+        .class-ii { background-color: #e74c3c; }
+        .class-iii { background-color: #f39c12; }
+        .undefined { background-color: #95a5a6; }
+
+        
+        /* Modals */
+        .modal{
+            display:none;
+            position:fixed;
+            inset:0;
+            z-index:1000;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(2px);
+        }
+        .modal-content{
+            background:#fff;
+            margin: 6% auto;
+            padding: 26px 28px 22px;
+            width: min(980px, calc(100% - 32px));
+            border-radius: 18px;
+            position: relative;
+            max-height: 84vh;
+            overflow: auto;
+            box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+        }
+        .close-modal{
+            position:absolute;
+            right: 18px;
+            top: 14px;
+            border: none;
+            background: transparent;
+            font-size: 26px;
+            line-height: 1;
+            cursor:pointer;
+            color:#6b7280;
+        }
+        .close-modal:hover{ color:#111827; }
+
+        .modal-title{ margin:0 0 6px; font-size: 22px; color:#1f2937; }
+        .modal-subtitle{ margin:0 0 18px; color:#6b7280; font-size: 13px; line-height: 1.45; }
+
+        /* Calibration UI */
+        .calib-grid{
+            display:grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-top: 8px;
+        }
+        .calib-card{
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 18px;
+            background:#fafafa;
+            cursor:pointer;
+            transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+            min-height: 170px;
+            position:relative;
+        }
+        .calib-card:hover{ transform: translateY(-1px); box-shadow: 0 10px 26px rgba(0,0,0,0.08); }
+        .calib-card.selected{
+            border-color: rgba(52,152,219,0.55);
+            box-shadow: 0 10px 28px rgba(52,152,219,0.18);
+            background: #ffffff;
+        }
+        .calib-icon{
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background: rgba(52,152,219,0.10);
+            color:#3498db;
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+        .calib-card-title{ font-weight: 800; color:#111827; margin-bottom: 6px; }
+        .calib-card-desc{ color:#6b7280; font-size: 13px; line-height:1.45; }
+
+        .calib-manual-input{
+            margin-top: 12px;
+            display:none;
+        }
+        .calib-manual-input label{
+            display:block;
+            font-size: 12px;
+            color:#374151;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        .calib-manual-input input{
+            width:100%;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+            outline:none;
+        }
+        .calib-manual-input input:focus{
+            border-color: rgba(52,152,219,0.55);
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.18);
+        }
+        .calib-hint{
+            margin-top: 8px;
+            font-size: 12px;
+            color:#6b7280;
+            line-height: 1.4;
+        }
+
+        .modal-actions{
+            margin-top: 18px;
+            display:flex;
+            justify-content:flex-start;
+        }
+        #apply-calib-btn{
+            border-radius: 12px;
+            padding: 12px 18px;
+        }
+
+        /* Reference guide UI */
+        .ref-layout{
+            display:grid;
+            grid-template-columns: 360px 1fr;
+            gap: 18px;
+            align-items:start;
+        }
+        .ref-image-box{
+            border-radius: 14px;
+            border: 1px solid #e5e7eb;
+            background: #e8d6b8;
+            min-height: 240px;
+            overflow:hidden;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            position:relative;
+        }
+        .ref-image-box img{
+            width:100%;
+            height:100%;
+            object-fit: contain;
+            display:block;
+        }
+        .ref-image-box.no-img::after{
+            content: "Reference image not found";
+            color: rgba(17,24,39,0.65);
+            font-weight: 700;
+            font-size: 13px;
+        }
+        .ref-img-fallback{ display:none; }
+        .ref-list{
+            border-radius: 14px;
+            border: 1px solid #e5e7eb;
+            background:#fff;
+            padding: 14px 14px;
+        }
+        .ref-item{
+            padding: 10px 8px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .ref-item:last-child{ border-bottom:none; }
+        .ref-item-title{
+            font-weight: 800;
+            color:#111827;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        .ref-item-desc{
+            color:#6b7280;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        @media (max-width: 820px){
+            .calib-grid{ grid-template-columns: 1fr; }
+            .ref-layout{ grid-template-columns: 1fr; }
+            .ref-image-box{ min-height: 190px; }
+        }
+
+        /* Responsive */
+
+        @media (max-width: 1200px) { .sidebar { width: 260px; } }
+        @media (max-width: 900px) { 
+            .app-container { flex-direction: column; } 
+            .sidebar, .analysis-section { width: 100%; height: auto; }
+            .canvas-container { max-width: 100%; }
+        }
+    
+        /* ----------------------------- */
+        /* Print Report */
+        /* ----------------------------- */
+        #print-report { display:none; }
+
+        @media print {
+            @page { 
+                size: A4; 
+                margin: 8mm; 
+            }
+            body * { visibility: hidden !important; }
+            #print-report, #print-report * { visibility: visible !important; }
+            #print-report { 
+                display:block !important;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                background: #fff;
+                overflow: hidden;
+            }
+            .print-page{
+                width: 100%;
+                height: 100%;
+                box-sizing: border-box;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                color: #0f172a;
+            }
+            .print-header{
+                display:flex;
+                justify-content: space-between;
+                align-items: baseline;
+                border-bottom: 2px solid #d4af37;
+                padding-bottom: 4mm;
+                margin-bottom: 4mm;
+            }
+            .print-title{
+                font-size: 16px;
+                font-weight: 800;
+                letter-spacing: .2px;
+            }
+            .print-meta{
+                font-size: 10px;
+                color: #475569;
+            }
+            .print-image-wrap{
+                width: 100%;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 2mm;
+                box-sizing: border-box;
+                margin-bottom: 4mm;
+                background: #fdfdfd;
+                text-align: center;
+            }
+            .print-image{
+                width: auto;
+                max-width: 100%;
+                max-height: 130mm;
+                object-fit: contain;
+                display:inline-block;
+            }
+            .print-results{
+                font-size: 10px;
+                line-height: 1.25;
+                columns: 2;
+                column-gap: 5mm;
+            }
+            .p-item{
+                break-inside: avoid;
+                page-break-inside: avoid;
+                border-left: 3px solid #d4af37;
+                padding: 2mm 2mm 2mm 3mm;
+                margin-bottom: 3mm;
+                background: #fafafa;
+                border-radius: 4px;
+            }
+            .p-title{ font-weight: 700; font-size: 10px; margin-bottom: 1mm; color: #333; }
+            .p-value{ font-weight: 800; font-size: 11px; margin-bottom: 1mm; color: #000; }
+            .p-desc{ color:#555; font-size: 9px; }
+        }
+
+    
+
+/* Unified Calibration Modal Theme */
+#calibration-modal.modal, #calib-settings-modal.modal{
+  display:none;
+  position:fixed;
+  z-index:1000;
+  left:0; top:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.80);
+  backdrop-filter: blur(5px);
+  overflow:auto;
+}
+#calibration-modal .calib-unified, #calib-settings-modal .calib-unified{
+  background:#ffffff !important;
+  margin:50px auto !important;
+  padding:0 !important;
+  border-radius:20px !important;
+  width:90% !important;
+  max-width:600px !important;
+  box-shadow:0 20px 40px rgba(0,0,0,0.20) !important;
+  overflow:hidden !important;
+  position:relative !important;
+}
+.calib-unified .modal-header{
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d) !important;
+  color:#ffffff !important;
+  padding:20px 30px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:16px !important;
+}
+.calib-unified .modal-header h2,
+.calib-unified .modal-header h3{
+  margin:0 !important;
+  font-size:20px !important;
+  font-weight:700 !important;
+  color:#ffffff !important;
+}
+.calib-unified .close-modal,
+.calib-unified .close-calib{
+  color:#ffffff !important;
+  font-size:28px !important;
+  font-weight:700 !important;
+  cursor:pointer !important;
+  background:transparent !important;
+  border:0 !important;
+  line-height:1 !important;
+}
+.calib-unified .modal-body{
+  padding:25px 30px !important;
+}
+.calib-unified .modal-subtitle{
+  margin:0 0 10px 0 !important;
+  color:#475569 !important;
+  font-size:13px !important;
+}
+.calib-unified .calibration-options,
+.calib-unified .calib-grid{
+  display:flex !important;
+  gap:20px !important;
+  margin:18px 0 0 0 !important;
+  flex-wrap:wrap !important;
+}
+.calib-unified .calibration-option,
+.calib-unified .calib-card{
+  flex:1 1 240px !important;
+  background:#f8f9fa !important;
+  border-radius:15px !important;
+  padding:20px !important;
+  cursor:pointer !important;
+  border:2px solid transparent !important;
+  transition: all 0.25s ease !important;
+  box-shadow:0 10px 20px rgba(0,0,0,0.06) !important;
+}
+.calib-unified .calibration-option:hover,
+.calib-unified .calib-card:hover{
+  transform: translateY(-3px) !important;
+  box-shadow:0 15px 30px rgba(0,0,0,0.10) !important;
+}
+.calib-unified .calibration-option.selected,
+.calib-unified .calib-card.selected{
+  border-color:#b21f1f !important;
+  background:#fff4f4 !important;
+}
+.calib-unified .calibration-icon,
+.calib-unified .calib-icon{
+  width:60px !important;
+  height:60px !important;
+  border-radius:50% !important;
+  background: linear-gradient(135deg, #1a2a6c, #b21f1f) !important;
+  color:#ffffff !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin:0 auto 15px auto !important;
+  font-size:24px !important;
+}
+.calib-unified h3, .calib-unified .calib-card-title{
+  margin:0 0 8px 0 !important;
+  text-align:center !important;
+  font-size:16px !important;
+  color:#0f172a !important;
+}
+.calib-unified p, .calib-unified .calib-card-desc{
+  margin:0 !important;
+  text-align:center !important;
+  color:#475569 !important;
+  font-size:13px !important;
+}
+.calib-unified .calibration-input,
+.calib-unified .calib-manual-input,
+.calib-unified .calib-fields{
+  margin-top:14px !important;
+  background:#ffffff !important;
+  border-radius:12px !important;
+  padding:14px !important;
+  border:1px solid #e2e8f0 !important;
+}
+.calib-unified label{
+  display:block !important;
+  font-size:13px !important;
+  color:#334155 !important;
+  margin-bottom:6px !important;
+}
+.calib-unified input[type="number"],
+.calib-unified input[type="text"]{
+  width:100% !important;
+  padding:12px !important;
+  border:2px solid #e2e8f0 !important;
+  border-radius:10px !important;
+  font-size:14px !important;
+}
+.calib-unified .calib-inline{
+  display:flex !important;
+  gap:10px !important;
+  align-items:center !important;
+}
+.calib-unified .calib-help{
+  margin-top:8px !important;
+  font-size:12px !important;
+  color:#64748b !important;
+}
+.calib-unified .modal-footer,
+.calib-unified .modal-actions,
+.calib-unified .calib-actions{
+  display:flex !important;
+  justify-content:flex-end !important;
+  gap:12px !important;
+  padding:0 30px 25px 30px !important;
+}
+.calib-unified .btn{
+  border-radius:12px !important;
+}
+.calib-unified .calib-radio-row{
+  display:flex !important;
+  gap:8px !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin-top:12px !important;
+  font-size:13px !important;
+  color:#334155 !important;
+}
+
+
+/* === RRZ User Notes Panel (added) === */
+.user-notes-panel{
+  max-width: 900px;
+  margin: 12px auto 0;
+  background: #fff;
+  border: 3px solid #111;
+  border-radius: 18px;
+  padding: 18px 18px 12px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+}
+.user-notes-panel .notes-title{
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0 0 12px;
+  color:#111;
+}
+.user-notes-panel .note-row{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  margin: 14px 0;
+}
+.user-notes-panel .note-label{
+  min-width: 170px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #7b7b7b;
+}
+.user-notes-panel input,
+.user-notes-panel textarea{
+  flex:1;
+  font-size: 16px;
+  border: none;
+  border-bottom: 2px dashed #777;
+  padding: 6px 6px;
+  outline: none;
+  background: transparent;
+}
+.user-notes-panel textarea{
+  border: 2px dashed #777;
+  border-radius: 10px;
+  min-height: 70px;
+  resize: vertical;
+}
+.user-notes-panel .notes-hint{
+  margin-top: 10px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+</style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i>🦷</i> Ortho Relations</h2>
+                <div class="sidebar-subtitle">Class I, II, III Calculator</div>
+            </div>
+            
+            <div class="points-section">
+                <div class="section-title">
+                    <span>Landmarks (Left)</span>
+                    <span id="points-count">0/6</span>
+                </div>
+                <select class="points-wheel" id="points-list" size="6"></select>
+                <div class="undo-wrap">
+                    <button class="btn btn-secondary" id="undo-point-btn">Undo Point Placement</button>
+                </div>
+            </div>
+
+            <!-- UPDATED SIDEBAR CONTROLS -->
+            <div class="sidebar-controls">
+                <button class="btn btn-primary" id="start-analysis-btn">Complete Analysis</button>
+                <button class="btn btn-secondary" id="calibration-btn">Calibration</button>
+                <button class="btn btn-reference" id="reference-btn">Reference Guide</button>
+                <button class="btn btn-export" id="export-btn">Export Analysis</button>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <h1>Molar, Canine & Incisor Analysis</h1>
+                <!-- CHANGED: View direction update -->
+                <div style="font-size:13px; color:#666;">Lateral Ceph / Sagittal View (Face Facing <b>LEFT</b>)</div>
+            </div>
+            
+            <div class="analysis-container">
+                <div class="image-section">
+                    <div id="auto-load-overlay" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.5); z-index:50; justify-content:center; align-items:center; color:white;">
+                        Loading...
+                    </div>
+
+                    <div class="upload-area active" id="upload-area">
+                        <div class="upload-card">
+                            <h2>Upload Lateral Photo/X-Ray</h2>
+                            <!-- CHANGED: Instruction update -->
+                            <p style="color:#777; margin-bottom:20px;">Ensure the patient is facing to the <b>LEFT</b> for correct calculations.</p>
+                            <button class="upload-btn" onclick="document.getElementById('image-upload').click()">Select Image</button>
+                        </div>
+                    </div>
+                    
+                    <div class="canvas-container" id="canvas-container">
+                        <canvas id="face-canvas"></canvas>
+                    </div>
+
+                    <!-- RRZ_USER_NOTES_PANEL_START -->
+                    <div class="user-notes-panel" id="user-notes-panel" style="display:none;">
+                        <div class="notes-title">Notes:</div>
+                        <div class="note-row">
+                            <div class="note-label">Crowding</div>
+                            <input id="note-crowding" type="text" placeholder="">
+                        </div>
+                        <div class="note-row">
+                            <div class="note-label">Gingival Margin</div>
+                            <input id="note-gingival-margin" type="text" placeholder="">
+                        </div>
+                        <div class="note-row">
+                            <div class="note-label">Gingival color</div>
+                            <input id="note-gingival-color" type="text" placeholder="">
+                        </div>
+                        <div class="note-row" style="align-items:flex-start;">
+                            <div class="note-label" style="padding-top:6px;">Other Findings</div>
+                            <textarea id="note-other-findings" placeholder=""></textarea>
+                        </div>
+                        <div class="notes-hint">These notes will be appended automatically at the end of the final report.</div>
+                    </div>
+                    <!-- RRZ_USER_NOTES_PANEL_END -->
+
+                    
+                    <div class="image-controls" id="image-controls">
+                         <div style="color: #555; font-size: 13px;">
+                            <i>👆</i> Click to place points. Drag to adjust.
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button id="change-img-btn" style="background: #34495e; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Change Image</button>
+                            <button id="reset-btn" style="background: #c0392b; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Reset All</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analysis-section">
+                    <h3 style="margin-top:0; border-bottom:2px solid #eee; padding-bottom:10px;">Analysis Results</h3>
+                    
+                    <!-- Molar Relation (Updated Label) -->
+                    <div class="metric-card">
+                        <div class="metric-title">Left Molar Relation</div>
+                        <div class="metric-value" id="molar-result">--</div>
+                        <div class="metric-desc" id="molar-desc">UL6 Cusp vs LL6 Groove</div>
+                    </div>
+
+                    <!-- Canine Relation (Updated Label) -->
+                    <div class="metric-card">
+                        <div class="metric-title">Left Canine Relation</div>
+                        <div class="metric-value" id="canine-result">--</div>
+                        <div class="metric-desc" id="canine-desc">UL3 Mesial vs LL3 Distal</div>
+                    </div>
+
+                    <!-- Incisor Relation -->
+                    <div class="metric-card">
+                        <div class="metric-title">Incisor Relation</div>
+                        <div class="metric-value" id="incisor-result">--</div>
+                        <div class="metric-desc" id="incisor-desc">Overjet & Overbite Analysis</div>
+                    </div>
+                    
+                    <div class="metric-card" style="border-left-color: #f39c12;">
+                        <div class="metric-title">Calibration Status</div>
+                        <div class="metric-value" id="calib-status" style="font-size:14px;">Pixels (Default)</div>
+                        <div class="metric-desc">Click 'Calibration' for mm accuracy.</div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <!-- Calibration Modal -->
+<div id="calibration-modal" class="modal">
+  <div class="modal-content modal-calib calib-unified" role="dialog" aria-modal="true" aria-labelledby="calibTitle">
+    <div class="modal-header">
+      <h2 class="modal-title" id="calibTitle">Calibration Settings</h2>
+      <button class="close-modal close-calib" type="button" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <p class="modal-subtitle">Choose calibration method to convert pixels to real-world measurements.</p>
+
+      <div class="calib-grid calibration-options">
+        <div class="calib-card calibration-option" id="calib-card-manual" data-mode="manual" tabindex="0">
+          <div class="calib-icon calibration-icon">📏</div>
+          <h3 class="calib-card-title">Manual (mm)</h3>
+          <p class="calib-card-desc">Enter a known measurement in millimeters for accurate conversion.</p>
+
+          <div class="calib-manual-input calibration-input" id="calib-manual-input">
+            <label for="known-dist-mm">Known distance (mm)</label>
+            <input type="number" id="known-dist-mm" placeholder="e.g. 10" min="0" step="0.1">
+            <div class="calib-help">Tip: the scale uses the distance between your first two placed points.</div>
+          </div>
+        </div>
+
+        <div class="calib-card calibration-option" id="calib-card-pixels" data-mode="pixels" tabindex="0">
+          <div class="calib-icon calibration-icon">🔢</div>
+          <h3 class="calib-card-title">Continue with Pixels</h3>
+          <p class="calib-card-desc">Use pixel measurements without converting to mm.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer modal-actions calib-actions">
+      <button class="btn btn-dark" type="button" onclick="closeCalModal()">Close</button>
+      <button class="btn btn-blue" id="apply-calib-btn" type="button">Apply</button>
+    </div>
+  </div>
+</div>
+
+
+    <!-- Reference Modal --><!-- Reference Modal -->
+    <div id="reference-modal" class="modal">
+        <div class="modal-content modal-ref" role="dialog" aria-modal="true" aria-labelledby="refTitle">
+            <button class="close-modal close-ref" type="button" aria-label="Close">&times;</button>
+            <h2 class="modal-title" id="refTitle">Dental Analysis Reference Guide</h2>
+            <p class="modal-subtitle">Place these dental landmarks accurately for precise analysis (Left Side).</p>
+
+            <div class="ref-layout">
+                <div class="ref-image-box" id="ref-image-box">
+                    <img src="referance image7.png" alt="Reference image7" onerror="this.onerror=null; this.style.display='none'; this.parentElement.classList.add('no-img');">
+                    <div class="ref-img-fallback">Reference image: referance image7.png</div>
+                </div>
+
+                <!-- CHANGED: References updated to Left (UL/LL) -->
+                <div class="ref-list">
+                    <div class="ref-item">
+                        <div class="ref-item-title">1. UL6 Mesio-buccal Cusp (Mandatory):</div>
+                        <div class="ref-item-desc">Mesio-buccal cusp of Upper Left 1st molar.</div>
+                    </div>
+                    <div class="ref-item">
+                        <div class="ref-item-title">2. LL6 Mesio-buccal Groove (Mandatory):</div>
+                        <div class="ref-item-desc">Mesio-buccal groove of Lower Left 1st molar.</div>
+                    </div>
+                    <div class="ref-item">
+                        <div class="ref-item-title">3. UL3 Mesial Slope (Mandatory):</div>
+                        <div class="ref-item-desc">Mesial slope/contact point of Upper Left canine.</div>
+                    </div>
+                    <div class="ref-item">
+                        <div class="ref-item-title">4. LL3 Distal Slope (Mandatory):</div>
+                        <div class="ref-item-desc">Distal slope/contact point of Lower Left canine.</div>
+                    </div>
+                    <div class="ref-item">
+                        <div class="ref-item-title">5. Upper Incisor Mid-labial Surface (Mandatory):</div>
+                        <div class="ref-item-desc">Mid-labial surface point of the upper incisor.</div>
+                    </div>
+                    <div class="ref-item">
+                        <div class="ref-item-title">6. Lower Incisor Mid-labial Surface (Mandatory):</div>
+                        <div class="ref-item-desc">Mid-labial surface point of the lower incisor.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Print-only Report -->
+    <div id="print-report" aria-hidden="true">
+        <div class="print-page">
+            <div class="print-header">
+                <div class="print-title">Dental Occlusion Analysis Report (Left)</div>
+                <div class="print-meta" id="print-meta">Generated</div>
+            </div>
+
+            <div class="print-image-wrap">
+                <img class="print-image" id="print-image" alt="Analyzed Ceph">
+            </div>
+
+            <div class="print-results" id="print-results"></div>
+        </div>
+    </div>
+
+<input type="file" id="image-upload" accept="image/*" style="display: none;">
+
+
+    <script>
+        // --- 1. CONFIGURATION ---
+        // CHANGED: Labels to UL/LL
+        const POINT_LABELS = [
+            "UL6 Mesio-buccal Cusp",
+            "LL6 Mesio-buccal Groove",
+            "UL3 Mesial Slope",
+            "LL3 Distal Slope",
+            "Upper Incisor Mid-labial Surface",
+            "Lower Incisor Mid-labial Surface"
+        ];
+
+        let state = {
+            imageLoaded: false,
+            points: new Array(6).fill(null),
+            currentPointIndex: 0,
+            image: null,
+            canvas: null,
+            ctx: null,
+            isDragging: false,
+            dragIndex: null,
+            pixelsPerMM: 10,
+            calibrated: false,
+            calibMode: "pixels"
+        };
+
+        // --- 2. INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            state.canvas = document.getElementById('face-canvas');
+            state.ctx = state.canvas.getContext('2d');
+            
+            document.getElementById('image-upload').addEventListener('change', handleImageUpload);
+            state.canvas.addEventListener('mousedown', handleMouseDown);
+            state.canvas.addEventListener('mousemove', handleMouseMove);
+            state.canvas.addEventListener('mouseup', handleMouseUp);
+            
+            document.getElementById('reset-btn').addEventListener('click', resetAll);
+            document.getElementById('start-analysis-btn').addEventListener('click', performAnalysis);
+            document.getElementById('undo-point-btn').addEventListener('click', undoPoint);
+            
+            document.getElementById('change-img-btn').addEventListener('click', () => {
+                document.getElementById('image-upload').click();
+            });
+            
+            document.getElementById('export-btn').addEventListener('click', () => {
+                try{
+                    preparePrintReport();
+                }catch(e){
+                    console.error('Print preparation failed:', e);
+                }
+                setTimeout(() => window.print(), 200);
+            });
+
+            function preparePrintReport(){
+                const imgEl = document.getElementById('print-image');
+                const metaEl = document.getElementById('print-meta');
+                const resEl  = document.getElementById('print-results');
+
+                if(state && state.canvas && state.imageLoaded){
+                    imgEl.src = state.canvas.toDataURL('image/png');
+                }else{
+                    imgEl.removeAttribute('src');
+                }
+
+                const now = new Date();
+                metaEl.textContent = 'Generated: ' + now.toLocaleString();
+
+                const items = [
+                    // CHANGED: Labels for report
+                    { t: 'Left Molar Relation',  v: safeText('molar-result'),   d: safeText('molar-desc')  },
+                    { t: 'Left Canine Relation', v: safeText('canine-result'),  d: safeText('canine-desc') },
+                    { t: 'Incisor Relation',      v: safeText('incisor-result'), d: safeText('incisor-desc')},
+                    { t: 'Calibration Status',    v: safeText('calib-status'),  d: 'Units: ' + (state && state.calibMode ? state.calibMode : 'pixels') }
+                ];
+
+                resEl.innerHTML = items.map(it => `
+                    <div class="p-item">
+                        <div class="p-title">${escapeHtml(it.t)}</div>
+                        <div class="p-value">${escapeHtml(it.v || '--')}</div>
+                        <div class="p-desc">${escapeHtml(it.d || '')}</div>
+                    </div>
+                `).join('');
+
+                // RRZ Notes (added)
+                try{
+                    const notesHtml = (window.rrzNotesToReportHtml ? window.rrzNotesToReportHtml() : '');
+                    if(notesHtml) resEl.innerHTML += notesHtml;
+                }catch(e){}
+
+            }
+
+            function safeText(id){
+                const el = document.getElementById(id);
+                return el ? (el.textContent || '').trim() : '';
+            }
+
+            function escapeHtml(str){
+                return String(str)
+                    .replaceAll('&','&amp;')
+                    .replaceAll('<','&lt;')
+                    .replaceAll('>','&gt;')
+                    .replaceAll('"','&quot;')
+                    .replaceAll("'","&#039;");
+            }
+            
+            // Modals Logic
+            const calModal = document.getElementById('calibration-modal');
+            const refModal = document.getElementById('reference-modal');
+
+            const manualCard = document.getElementById('calib-card-manual');
+            const pixelsCard = document.getElementById('calib-card-pixels');
+            const manualInputWrap = document.getElementById('calib-manual-input');
+
+            function setCalibMode(mode){
+                state.calibMode = mode;
+                const isManual = mode === 'manual';
+
+                manualCard.classList.toggle('selected', isManual);
+                pixelsCard.classList.toggle('selected', !isManual);
+
+                if(manualInputWrap) manualInputWrap.style.display = isManual ? 'block' : 'none';
+            }
+
+            function openCalModal(){
+                setCalibMode(state.calibrated ? 'manual' : 'pixels');
+                calModal.style.display = 'block';
+            }
+
+            function closeCalModal(){ calModal.style.display = 'none'; }
+            function closeRefModal(){ refModal.style.display = 'none'; }
+
+            document.getElementById('calibration-btn').onclick = openCalModal;
+            document.querySelector('.close-calib').onclick = closeCalModal;
+
+            document.getElementById('reference-btn').onclick = () => refModal.style.display = 'block';
+            document.querySelector('.close-ref').onclick = closeRefModal;
+
+            manualCard.addEventListener('click', () => setCalibMode('manual'));
+            pixelsCard.addEventListener('click', () => setCalibMode('pixels'));
+
+            [manualCard, pixelsCard].forEach(card => {
+                card.addEventListener('keydown', (ev) => {
+                    if(ev.key === 'Enter' || ev.key === ' '){
+                        ev.preventDefault();
+                        card.click();
+                    }
+                });
+            });
+
+            window.onclick = (e) => {
+                if(e.target === calModal) closeCalModal();
+                if(e.target === refModal) closeRefModal();
+            };
+
+            document.getElementById('apply-calib-btn').onclick = () => {
+                if(state.calibMode === 'pixels'){
+                    state.calibrated = false;
+                    state.pixelsPerMM = 10;
+                    document.getElementById('calib-status').textContent = 'Pixels (Default)';
+                    closeCalModal();
+                    if(state.points.every(pt => pt)) performAnalysis();
+                    return;
+                }
+
+                const val = parseFloat(document.getElementById('known-dist-mm').value);
+                if(!(val > 0)){
+                    alert('Please enter a valid distance in millimeters.');
+                    return;
+                }
+
+                if(state.points[0] && state.points[1]) {
+                    const distPx = Math.hypot(
+                        state.points[0].x - state.points[1].x,
+                        state.points[0].y - state.points[1].y
+                    );
+                    state.pixelsPerMM = distPx / val;
+                } else {
+                    state.pixelsPerMM = 100 / val;
+                }
+
+                state.calibrated = true;
+                document.getElementById('calib-status').textContent = `1mm = ${state.pixelsPerMM.toFixed(1)}px`;
+                closeCalModal();
+
+                if(state.points.every(pt => pt)) performAnalysis();
+            };
+
+            initPointsList();
+            rrzAutoLoadFromPhoto();
+            // Safety: never leave overlay stuck (network/IDB/sessionStorage edge cases)
+            const RRZ_AUTOLOAD_TIMEOUT_MS = 2500;
+            setTimeout(() => {
+                try{
+                    const ov = document.getElementById('auto-load-overlay');
+                    if (!ov) return;
+                    if (ov.style.display !== 'none' && !state.imageLoaded){
+                        ov.style.display = 'none';
+                        document.documentElement.classList.remove('from-photo');
+                        const ua = document.getElementById('upload-area');
+                        if (ua) ua.classList.add('active');
+                    }
+                }catch(e){}
+            }, RRZ_AUTOLOAD_TIMEOUT_MS);
+
+        });
+
+        function initPointsList() {
+            const list = document.getElementById('points-list');
+            list.innerHTML = '';
+            POINT_LABELS.forEach((label, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `${i + 1}. ${label}`;
+                list.appendChild(opt);
+            });
+            list.addEventListener('change', (e) => {
+                state.currentPointIndex = parseInt(e.target.value);
+            });
+            updateListSelection();
+        }
+
+        // --- 3. IMAGE HANDLING ---
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => loadImg(evt.target.result);
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        }
+
+        function loadImg(src) {
+            const img = new Image();
+            img.onload = () => {
+                state.image = img;
+                state.imageLoaded = true;
+                
+                const maxW = 800, maxH = 600;
+                let w = img.width, h = img.height;
+                if(w > maxW) { h = (maxW/w)*h; w = maxW; }
+                if(h > maxH) { w = (maxH/h)*w; h = maxH; }
+                
+                state.canvas.width = w;
+                state.canvas.height = h;
+                
+                document.getElementById('upload-area').classList.remove('active');
+                document.getElementById('upload-area').style.display = 'none';
+                document.getElementById('canvas-container').classList.add('active');
+                document.getElementById('image-controls').classList.add('active');
+                
+                resetPoints();
+                draw();
+            };
+            img.src = src;
+        }
+
+        // --- 4. INTERACTION ---
+        function getPos(e) {
+            const rect = state.canvas.getBoundingClientRect();
+            const scaleX = state.canvas.width / rect.width;
+            const scaleY = state.canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function handleMouseDown(e) {
+            if(!state.imageLoaded) return;
+            const {x, y} = getPos(e);
+
+            for(let i=0; i<state.points.length; i++) {
+                const p = state.points[i];
+                if(p && Math.hypot(p.x-x, p.y-y) < 10) {
+                    state.isDragging = true;
+                    state.dragIndex = i;
+                    return;
+                }
+            }
+
+            if(state.currentPointIndex < POINT_LABELS.length) {
+                state.points[state.currentPointIndex] = {x, y};
+                state.currentPointIndex++;
+                updateListSelection();
+                updatePointsCount();
+                draw();
+            }
+        }
+
+        function handleMouseMove(e) {
+            if(state.isDragging && state.dragIndex !== null) {
+                const {x, y} = getPos(e);
+                state.points[state.dragIndex] = {x, y};
+                draw();
+            }
+        }
+
+        function handleMouseUp() {
+            state.isDragging = false;
+            state.dragIndex = null;
+        }
+
+        function undoPoint() {
+            if(state.currentPointIndex > 0) {
+                state.currentPointIndex--;
+                state.points[state.currentPointIndex] = null;
+                updateListSelection();
+                updatePointsCount();
+                draw();
+                document.querySelectorAll('.metric-value').forEach(el => {
+                    if(el.id !== 'calib-status') el.textContent = '--';
+                });
+            }
+        }
+
+        function resetAll() {
+            resetPoints();
+            document.querySelectorAll('.metric-value').forEach(el => {
+                if(el.id !== 'calib-status') el.textContent = '--';
+            });
+            draw();
+        }
+
+        function resetPoints() {
+            state.points = new Array(6).fill(null);
+            state.currentPointIndex = 0;
+            updateListSelection();
+            updatePointsCount();
+        }
+
+        function updateListSelection() {
+            const list = document.getElementById('points-list');
+            if(state.currentPointIndex < list.options.length) {
+                list.value = state.currentPointIndex;
+            }
+        }
+        
+        function updatePointsCount() {
+            const count = state.points.filter(p => p).length;
+            document.getElementById('points-count').textContent = `${count}/6`;
+        }
+
+        // --- 5. DRAWING ---
+        function draw() {
+            const {ctx, canvas} = state;
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            if(state.image) ctx.drawImage(state.image, 0,0, canvas.width, canvas.height);
+
+            if(state.points[0] && state.points[1]) drawLine(0, 1, '#e74c3c');
+            if(state.points[2] && state.points[3]) drawLine(2, 3, '#2ecc71');
+            if(state.points[4] && state.points[5]) drawLine(4, 5, '#3498db');
+
+            state.points.forEach((p, i) => {
+                if(!p) return;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+                ctx.fillStyle = i % 2 === 0 ? 'black' : 'red';
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.stroke();
+                
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText(i+1, p.x + 8, p.y - 8);
+            });
+        }
+
+        function drawLine(i1, i2, color) {
+            const p1 = state.points[i1];
+            const p2 = state.points[i2];
+            state.ctx.beginPath();
+            state.ctx.moveTo(p1.x, p1.y);
+            state.ctx.lineTo(p2.x, p2.y);
+            state.ctx.strokeStyle = color;
+            state.ctx.lineWidth = 2;
+            state.ctx.stroke();
+        }
+
+        // --- 6. CALCULATIONS (MODIFIED FOR LEFT FACING) ---
+        function performAnalysis() {
+            const p = state.points;
+            if(!p.every(pt => pt)) {
+                alert("Please place all 6 points first.");
+                return;
+            }
+
+            const ppm = state.pixelsPerMM;
+
+            // IMPORTANT: For LEFT facing images:
+            // Anterior (Front) is Lower X (Left side of screen).
+            // Posterior (Back) is Higher X (Right side of screen).
+            // Normal relation (Class I/Overjet) usually means Upper is 'anterior' (Lower X) relative to Lower.
+            // In standard coordinate math: X(right) > X(left).
+            // 
+            // Right Facing Logic (Original):
+            // Diff = Upper.x - Lower.x
+            // If Upper is Forward (Right/High X) => Diff > 0 => Class II.
+            //
+            // Left Facing Logic (New):
+            // Upper Forward means Upper is LEFT (Lower X). Lower is Right (Higher X).
+            // Upper.x < Lower.x.
+            // If we want "Positive" to mean "Class II / Forward Maxilla":
+            // We need: (Lower.x - Upper.x) > 0.
+            
+            // 1. Molar (UL6 vs LL6)
+            // CHANGED: Inverted calculation order for Left Facing
+            const diffMolar = (p[1].x - p[0].x) / ppm; 
+            
+            let molarRes = "", molarClass = "";
+            if (Math.abs(diffMolar) < 0.5) { molarRes = "Class I"; molarClass = "class-i"; }
+            else if (diffMolar > 0) { molarRes = "Class II"; molarClass = "class-ii"; }
+            else { molarRes = "Class III"; molarClass = "class-iii"; }
+            renderResult('molar-result', molarRes, molarClass, diffMolar);
+
+            // 2. Canine (UL3 vs LL3)
+            // CHANGED: Inverted calculation order for Left Facing
+            const diffCanine = (p[3].x - p[2].x) / ppm;
+            
+            let canineRes = "", canineClass = "";
+
+            // UPDATED LOGIC FOR CANINE (1.5mm threshold)
+            // Left Facing: (Lower.x - Upper.x)
+            // Positive (> 1.5) means Lower is Right (posterior) of Upper => Class II
+            // Negative (< -1.5) means Lower is Left (anterior) of Upper => Class III
+            
+            if (diffCanine > 1.5) { 
+                canineRes = "Class II"; 
+                canineClass = "class-ii"; 
+            }
+            else if (diffCanine < -1.5) { 
+                canineRes = "Class III"; 
+                canineClass = "class-iii"; 
+            }
+            else { 
+                canineRes = "Class I"; 
+                canineClass = "class-i"; 
+            }
+            renderResult('canine-result', canineRes, canineClass, diffCanine);
+
+            // 3. Incisor (Overjet)
+            // CHANGED: Inverted calculation order for Left Facing (Lower X - Upper X)
+            // If Upper is ahead (Left, smaller X), (Lower - Upper) is positive.
+            const overjet = (p[5].x - p[4].x) / ppm;
+            
+            // Vertical (Overbite) - Y axis remains same (Top is 0, Down is +)
+            // Positive value usually means Upper is higher (smaller Y) than Lower? 
+            // No, Overbite usually measures vertical overlap. 
+            // Let's keep original Y logic: (Upper.y - Lower.y).
+            // If Upper is 'higher' visually (smaller Y), and Lower is 'lower' (larger Y).
+            // p[4].y < p[5].y => Result negative.
+            // Let's stick to original logic order for Y unless Y axis was flipped, which it isn't.
+            const verticalDiff = (p[4].y - p[5].y) / ppm;
+
+            let incRes = "Undefined", incClass = "undefined";
+
+            // UPDATED INCISOR LOGIC:
+            // Check if upper incisor is on the same vertical axis as lower incisor
+            // (meaning horizontal difference is negligible/zero).
+            if (Math.abs(overjet) < 0.5) { 
+                incRes = "Edge to Edge Relation"; 
+                incClass = "class-i"; // Green (safe) color
+            }
+            else if (overjet <= -4.5) { incRes = "Class III"; incClass = "class-iii"; }
+            else if (overjet >= 3.0) { incRes = "Class II Div 1"; incClass = "class-ii"; }
+            else if (overjet > 0 && verticalDiff >= 2.0) { incRes = "Class II Div 2"; incClass = "class-ii"; }
+            else { 
+                // Normal Overjet -> Class I
+                // Reverse Overjet -> Crossbite
+                if(overjet > 0) {
+                    incRes = "Class I"; 
+                    incClass = "class-i";
+                } else {
+                    incRes = "Crossbite";
+                    incClass = "class-iii";
+                }
+            }
+            
+            const detail = `OJ: ${overjet.toFixed(1)}mm, OB: ${verticalDiff.toFixed(1)}mm`;
+            document.getElementById('incisor-result').innerHTML = `<span class="class-result ${incClass}">${incRes}</span> <div style="font-size:12px;color:#555;margin-top:2px;">${detail}</div>`;
+        }
+
+        function renderResult(elemId, text, cssClass, val) {
+            const el = document.getElementById(elemId);
+            const valStr = (val !== undefined) ? ` (${val > 0 ? '+' : ''}${val.toFixed(1)}mm)` : '';
+            el.innerHTML = `<span class="class-result ${cssClass}">${text}</span> <span style="font-size:13px; font-weight:normal;">${valStr}</span>`;
+        }
+
+        async function rrzAutoLoadFromPhoto(){
+            try{
+                const qs = new URLSearchParams(location.search);
+                const from = qs.get('from') || '';
+                const slot = qs.get('slot') || '';
+                const autocal = qs.get('autocal') === '1';
+
+                const keys = [
+                    `rrz_${slot}_image`,
+                    `rrz_${slot}_image_dataurl`,
+                    'rrz_lateral_image',
+                    'rrz_lateral_image_dataurl',
+                    'rrz_uploaded_image',
+                    'uploadedImageDataUrl',
+                    'selectedImageDataUrl'
+                ];
+
+                if(from === 'photo' || slot){
+                    const ov = document.getElementById('auto-load-overlay');
+                    if(ov) ov.style.display = 'flex';
+
+                    let dataUrlFound = null;
+                    for(const k of keys){
+                        const v = sessionStorage.getItem(k);
+                        if(v && typeof v === 'string' && v.startsWith('data:image')){
+                            dataUrlFound = v;
+                            break;
+                        }
+                    }
+
+                    // Robust fallback: load from the Photo Grid IndexedDB when sessionStorage is unavailable/too large
+                    if(!dataUrlFound && slot){
+                        dataUrlFound = await new Promise((resolve) => {
+                            try{
+                                const req = indexedDB.open('rrz_clinical_photos_db', 1);
+                                req.onerror = () => resolve(null);
+                                req.onsuccess = () => {
+                                    const db = req.result;
+                                    try{
+                                        const tx = db.transaction('images', 'readonly');
+                                        const getReq = tx.objectStore('images').get(String(slot||''));
+                                        getReq.onerror = () => { try{db.close();}catch(e){} resolve(null); };
+                                        getReq.onsuccess = () => {
+                                            const rec = getReq.result;
+                                            if(rec && rec.blob){
+                                                const fr = new FileReader();
+                                                fr.onload = () => { try{db.close();}catch(e){} resolve(String(fr.result||'')); };
+                                                fr.onerror = () => { try{db.close();}catch(e){} resolve(null); };
+                                                fr.readAsDataURL(rec.blob);
+                                            }else{ try{db.close();}catch(e){} resolve(null); }
+                                        };
+                                    }catch(e){ try{db.close();}catch(e2){} resolve(null); }
+                                };
+                            }catch(e){ resolve(null); }
+                        });
+                    }
+
+                    if(dataUrlFound){
+                        loadImg(dataUrlFound);
+                        if(autocal){
+                            // Open the calibration modal automatically when coming from photo grid
+                            setTimeout(() => {
+                                try{ const b = document.getElementById('calibration-btn'); if(b) b.click(); }catch(e){}
+                            }, 250);
+                        }
+                    }
+
+                    if(ov) ov.style.display = 'none';
+                }
+            }catch(e){
+            }
+
+            const ov2 = document.getElementById('auto-load-overlay');
+            if(ov2) ov2.style.display = 'none';
+        }
+
+    
+
+// === RRZ NOTES HELPERS (added) ===
+(function(){
+  function rrzNotesSlotKey(){
+    try{
+      const qs = new URLSearchParams(location.search);
+      const slot = qs.get('slot') || '';
+      const from = qs.get('from') || '';
+      return (slot ? ('slot:'+slot) : '') + (from ? ('|from:'+from) : '');
+    }catch(e){
+      return '';
+    }
+  }
+
+  function rrzNotesStorageKey(){
+    return 'rrz_photo_notes::' + location.pathname + '::' + rrzNotesSlotKey();
+  }
+
+  function rrzReadNotes(){
+    const empty = { crowding:'', gingivalMargin:'', gingivalColor:'', otherFindings:'' };
+    try{
+      const raw = localStorage.getItem(rrzNotesStorageKey());
+      if(!raw) return empty;
+      const obj = JSON.parse(raw);
+      return {
+        crowding: (obj.crowding||''),
+        gingivalMargin: (obj.gingivalMargin||''),
+        gingivalColor: (obj.gingivalColor||''),
+        otherFindings: (obj.otherFindings||'')
+      };
+    }catch(e){
+      return empty;
+    }
+  }
+
+  function rrzWriteNotes(n){
+    try{ localStorage.setItem(rrzNotesStorageKey(), JSON.stringify(n||{})); }catch(e){}
+  }
+
+  function rrzEscapeHtml(str){
+    return String(str||'')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;");
+  }
+
+  window.rrzGetNotes = function(){
+    const n = rrzReadNotes();
+    const c = document.getElementById('note-crowding');
+    const gm = document.getElementById('note-gingival-margin');
+    const gc = document.getElementById('note-gingival-color');
+    const of = document.getElementById('note-other-findings');
+    if(c) n.crowding = (c.value||'').trim();
+    if(gm) n.gingivalMargin = (gm.value||'').trim();
+    if(gc) n.gingivalColor = (gc.value||'').trim();
+    if(of) n.otherFindings = (of.value||'').trim();
+    rrzWriteNotes(n);
+    return n;
+  };
+
+  window.rrzNotesToPrintHtml = function(){
+    const n = window.rrzGetNotes ? window.rrzGetNotes() : rrzReadNotes();
+    const rows = [];
+    if(n.crowding) rows.push(['Crowding', n.crowding]);
+    if(n.gingivalMargin) rows.push(['Gingival Margin', n.gingivalMargin]);
+    if(n.gingivalColor) rows.push(['Gingival color', n.gingivalColor]);
+    if(n.otherFindings) rows.push(['Other Findings', n.otherFindings]);
+    if(!rows.length) return '';
+    return `
+      <div class="section" style="margin-top:18px;">
+        <hr style="border:0; border-top:1px solid #cbd5e1; margin: 14px 0;"/>
+        <h3>Notes</h3>
+        <table>
+          <tr><th>Item</th><th>Value</th></tr>
+          ${rows.map(([k,v]) => `<tr><td>${rrzEscapeHtml(k)}</td><td>${rrzEscapeHtml(v)}</td></tr>`).join('')}
+        </table>
+      </div>
+    `;
+  };
+
+  window.rrzNotesToReportHtml = function(){
+    const n = window.rrzGetNotes ? window.rrzGetNotes() : rrzReadNotes();
+    const rows = [];
+    if(n.crowding) rows.push(`<div class="p-item"><div class="p-title">Crowding</div><div class="p-value">${rrzEscapeHtml(n.crowding)}</div></div>`);
+    if(n.gingivalMargin) rows.push(`<div class="p-item"><div class="p-title">Gingival Margin</div><div class="p-value">${rrzEscapeHtml(n.gingivalMargin)}</div></div>`);
+    if(n.gingivalColor) rows.push(`<div class="p-item"><div class="p-title">Gingival color</div><div class="p-value">${rrzEscapeHtml(n.gingivalColor)}</div></div>`);
+    if(n.otherFindings) rows.push(`<div class="p-item"><div class="p-title">Other Findings</div><div class="p-value">${rrzEscapeHtml(n.otherFindings)}</div></div>`);
+    if(!rows.length) return '';
+    return `
+      <div style="margin-top:14px;">
+        <hr style="border:0; border-top:1px solid #cbd5e1; margin: 14px 0;"/>
+        <div style="font-weight:800; margin: 0 0 10px;">Notes</div>
+        ${rows.join('')}
+      </div>
+    `;
+  };
+
+  window.rrzInitNotes = function(){
+    const panel = document.getElementById('user-notes-panel');
+    if(!panel) return;
+    const n = rrzReadNotes();
+    const c = document.getElementById('note-crowding');
+    const gm = document.getElementById('note-gingival-margin');
+    const gc = document.getElementById('note-gingival-color');
+    const of = document.getElementById('note-other-findings');
+    if(c) c.value = n.crowding || '';
+    if(gm) gm.value = n.gingivalMargin || '';
+    if(gc) gc.value = n.gingivalColor || '';
+    if(of) of.value = n.otherFindings || '';
+
+    const saveNow = () => { try{ window.rrzGetNotes && window.rrzGetNotes(); }catch(e){} };
+    [c,gm,gc,of].forEach(el => { if(el){ el.addEventListener('input', saveNow); el.addEventListener('change', saveNow); } });
+
+    const toggle = (on) => { panel.style.display = on ? 'block' : 'none'; };
+
+    // Toggle based on common global state flags if present
+    try{
+      if(typeof state === 'object' && state && ('imageLoaded' in state)) toggle(!!state.imageLoaded);
+      else toggle(false);
+    }catch(e){ toggle(false); }
+
+
+    // RRZ_NOTES_VISIBILITY_WATCH: ensure panel appears after auto-load from dashboard/PWA caches.
+    (function(){
+      let tries = 0;
+      const qs = (function(){ try{ return new URLSearchParams(location.search); }catch(e){ return null; } })();
+      const openedFromDashboard = !!(qs && ((qs.get('from') === 'photo') || qs.get('slot')));
+      const t = setInterval(() => {
+        tries++;
+        let loaded = false;
+        try{ loaded = !!(typeof state === 'object' && state && state.imageLoaded); }catch(e){}
+        if (loaded){
+          try{ toggle(true); }catch(e){}
+          clearInterval(t);
+          return;
+        }
+        // After ~3 seconds: if opened from dashboard, show notes anyway (even if image load failed),
+        // so user can still type notes and the page won't look "missing".
+        if (tries >= 30){
+          if (openedFromDashboard){
+            try{ toggle(true); }catch(e){}
+          }
+          clearInterval(t);
+        }
+      }, 100);
+    })();
+    // Hook image upload/reset buttons if present (supports different ids)
+    const up = document.getElementById('image-upload') || document.getElementById('file-input');
+    if(up){ up.addEventListener('change', () => setTimeout(() => toggle(true), 80)); }
+
+    const ch = document.getElementById('change-img-btn');
+    if(ch){ ch.addEventListener('click', () => setTimeout(() => toggle(true), 80)); }
+
+    const rs = document.getElementById('reset-btn');
+    if(rs){ rs.addEventListener('click', () => setTimeout(() => {
+      try{ if(typeof state === 'object' && state && ('imageLoaded' in state)) toggle(!!state.imageLoaded); }
+      catch(e){}
+    }, 80)); }
+
+    // If resetAll() exists (some workflows use inline onclick), wrap it once.
+    try{
+      if(typeof window.resetAll === 'function' && !window.resetAll.__rrz_wrapped){
+        const _orig = window.resetAll;
+        const _wrap = function(){
+          const ret = _orig.apply(this, arguments);
+          setTimeout(() => {
+            try{ if(typeof state === 'object' && state && ('imageLoaded' in state)) toggle(!!state.imageLoaded); else toggle(false); }
+            catch(e){ toggle(false); }
+          }, 80);
+          return ret;
+        };
+        _wrap.__rrz_wrapped = true;
+        window.resetAll = _wrap;
+      }
+    }catch(e){}
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    try{ window.rrzInitNotes && window.rrzInitNotes(); }catch(e){}
+  });
+})();
+
+</script>
+</body>
+</html>
