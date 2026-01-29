@@ -1,7 +1,6 @@
 // netlify/functions/ai.js
 
-export async function handler(event) {
-  // CORS (اختياري لكنه مفيد لو بتجرب من المتصفح)
+exports.handler = async (event) => {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
@@ -71,8 +70,8 @@ export async function handler(event) {
     console.error("FUNCTION_CRASH", e);
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       body: JSON.stringify({ ok: false, error: "Function error", details: String(e) }),
     };
   }
-}
+};
